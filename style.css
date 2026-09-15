@@ -1,0 +1,261 @@
+@import url("./style-original.css");
+
+/* AFTER DARK — VISUAL PASS v3 */
+.site-header{padding-top:24px;padding-bottom:24px}
+.index-trigger{width:36px;height:36px;padding:0!important;display:grid!important;place-items:center;position:relative;font-size:0!important;border:1px solid rgba(232,221,200,.4)!important;background:rgba(8,7,6,.18)!important;transition:all .3s var(--ease)}
+.index-trigger:hover{background:var(--red)!important;border-color:var(--milk)!important;transform:translateY(-2px)}
+.index-trigger i,.index-trigger i:after{width:14px!important;height:1px!important}.index-trigger i:after{top:5px!important}.header-meta{gap:24px}
+.index-panel{inset:auto 24px 24px auto!important;width:min(590px,calc(100vw - 48px))!important;height:min(68vh,610px)!important;padding:25px 30px!important;background:rgba(121,21,34,.98)!important;border:1px solid rgba(232,221,200,.3)!important;box-shadow:0 30px 100px rgba(0,0,0,.5)!important;transform:translateY(calc(100% + 30px))!important}.index-panel.active{transform:translateY(0)!important}.index-nav a{font-size:clamp(42px,5.2vw,72px)!important;line-height:.82}.index-nav a:hover{padding-left:18px!important}
+.search-section{min-height:0!important;padding-bottom:65px!important;position:relative}.search-section:after{content:"01 / SEARCH ARCHIVE";position:absolute;right:var(--pad);bottom:25px;font:8px var(--mono);letter-spacing:.12em;color:var(--red2)}
+.search-head{position:relative;margin-top:38px!important;margin-bottom:30px!important}.search-head:before{content:"ARCHIVE / QUERY";position:absolute;right:0;top:8px;font:8px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.search-box{max-width:680px!important;min-height:68px;border-top:1px solid rgba(232,221,200,.3)!important;position:relative;margin-left:8vw!important}.search-box:before{content:"QUERY";position:absolute;left:0;top:-7px;padding-right:12px;background:var(--soft);font:7px var(--mono);letter-spacing:.12em;color:var(--red2)}.search-box input{padding:18px 0 14px!important}.search-box button{width:64px!important;border-left:1px solid var(--line)!important;margin:10px 0!important;font-size:24px!important}.search-box button:hover{background:rgba(232,221,200,.06)!important;transform:translate(3px,-3px)}
+.search-info{max-width:680px!important;margin-left:8vw!important;padding-bottom:9px!important;border-bottom:1px solid var(--line)!important}.search-info:after{content:"TMDB / LIVE SEARCH";margin-left:auto;color:var(--red2)}
+.search-results{display:none;height:430px!important;min-height:0!important;margin:30px 0 0 8vw!important;width:min(680px,calc(100% - 8vw))!important;border-top:1px solid rgba(232,221,200,.28)!important}.search-results:not(:empty){display:block}.search-results:empty{display:none!important}.search-results-head{padding-top:11px!important}.search-result{grid-template-columns:32px 62px minmax(0,1fr) auto!important;gap:20px!important;min-height:94px!important;position:relative}.search-result:after{content:"↗";position:absolute;right:0;top:50%;font:12px var(--mono);color:rgba(232,221,200,.25);transform:translateY(-50%)}.search-result:hover:after{color:var(--milk);transform:translate(3px,-53%)}.search-result-poster,.search-result-poster img{width:62px!important;min-width:62px!important;max-width:62px!important;height:78px!important;min-height:78px!important;max-height:78px!important}.search-result-info h3{font-size:24px!important}.search-result-add{position:relative;z-index:2;margin-right:24px;padding:12px 14px!important;border:1px solid rgba(232,221,200,.3)!important}.search-result-add:hover{background:rgba(232,221,200,.08)!important;border-color:var(--milk)!important}
+.archive-section{min-height:0!important;padding-bottom:25px!important}.archive-title-wrap{margin-top:35px!important}.archive-title-wrap h2{font-size:clamp(65px,9vw,130px)!important}.archive-description{margin-top:20px!important}.archive-controls{margin-top:30px!important}.archive-track{gap:16px!important;padding-top:18px!important;padding-bottom:15px!important}.archive-card{flex-basis:clamp(185px,16vw,240px)!important;padding-bottom:5px!important}.archive-card h3{font-size:19px!important;line-height:1.05!important;height:40px!important;display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;margin-top:8px!important}.archive-card-meta{margin-top:7px!important}.archive-actions{gap:8px!important;margin-top:9px!important}.archive-action{min-width:100px!important;padding:15px 17px!important;border:1px solid rgba(232,221,200,.4)!important;font-size:9px!important}.archive-remove{margin-top:5px!important}.archive-carousel-ui{padding-top:0!important}.archive-carousel-button{width:48px!important;height:48px!important}.archive-footer{display:none!important}.archive-track-wrap > .archive-hint,.archive-track-wrap .drag-hint,.archive-track-wrap .archive-drag,.archive-track-wrap [class*="drag"]{display:none!important}
+.movie-night{min-height:0!important}.movie-night-filter{position:relative;padding:20px 0!important;border-top:1px solid rgba(232,221,200,.16)!important}.movie-night-filter:last-of-type{border-bottom:1px solid rgba(232,221,200,.16)!important}.movie-night-filter:before{content:"";position:absolute;left:-16px;top:20px;width:2px;height:0;background:var(--red2);transition:height .4s var(--ease)}.movie-night-filter:has(.movie-night-option.active):before{height:calc(100% - 40px)}.movie-night-filter-head{margin-bottom:13px!important;display:flex;align-items:center;gap:14px}.movie-night-filter-head span{font-size:8px!important;color:var(--red2)!important}.movie-night-filter-head strong{font:9px var(--mono)!important;letter-spacing:.12em}.movie-night-options{display:flex;flex-wrap:wrap;gap:7px!important}.movie-night-option{min-height:34px!important;padding:8px 13px!important;background:rgba(232,221,200,.025)!important;border:1px solid rgba(232,221,200,.16)!important;transition:.25s!important}.movie-night-option:hover{border-color:rgba(232,221,200,.55)!important;transform:translateY(-1px)}.movie-night-option.active{background:var(--milk)!important;border-color:var(--milk)!important;color:var(--black)!important;box-shadow:0 5px 25px rgba(232,221,200,.08)}.movie-night-country-select{min-height:44px!important;padding-left:14px!important;background:rgba(232,221,200,.025)!important;border:1px solid rgba(232,221,200,.18)!important}.movie-night-check{padding:15px 0!important}.movie-night-check-box{width:18px!important;height:18px!important}.decide-button{position:relative!important;min-height:92px!important;margin-top:28px!important;padding:18px 62px 18px 20px!important;background:var(--red)!important;border:1px solid rgba(232,221,200,.4)!important;color:var(--milk)!important;overflow:hidden!important;transition:.35s var(--ease)!important}.decide-button:before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 0 42%,rgba(232,221,200,.14) 50%,transparent 58%);transform:translateX(-120%);transition:transform .7s var(--ease)}.decide-button:hover{transform:translateY(-3px)!important;background:var(--red2)!important;border-color:var(--milk)!important}.decide-button:hover:before{transform:translateX(120%)}.decide-button span{display:block;font-size:clamp(28px,4vw,50px)!important;line-height:.9;letter-spacing:-.06em;text-align:left}.decide-button small{display:block;margin-top:8px;text-align:left;font:8px var(--mono);letter-spacing:.08em;opacity:.65}.decide-button strong{position:absolute;right:20px;top:50%;font:28px var(--mono);transform:translateY(-50%)}
+/* =========================================================
+   MOVIE NIGHT — STATIC THOUGHT CLOUD
+========================================================= */
+
+.movie-night-modal-window{
+  position:relative!important;
+}
+
+/* Само окно поиска */
+.movie-night-reveal{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:var(--black)!important;
+  z-index:2!important;
+}
+
+.movie-night-reveal-line{
+  display:none!important;
+}
+
+/* =========================================================
+   STATIC CLOUD
+========================================================= */
+
+.movie-night-reveal:before{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+
+  width:min(72vw,760px)!important;
+  height:min(58vh,500px)!important;
+
+  transform:translate(-50%,-50%) rotate(-5deg)!important;
+
+  border-radius:
+    47% 53% 42% 58% /
+    56% 43% 57% 44%!important;
+
+  background:
+    radial-gradient(
+      ellipse 42% 48% at 30% 42%,
+      rgba(245,241,232,.98) 0%,
+      rgba(245,241,232,.92) 42%,
+      rgba(245,241,232,.48) 64%,
+      transparent 80%
+    ),
+    radial-gradient(
+      ellipse 45% 42% at 68% 32%,
+      rgba(245,241,232,.98) 0%,
+      rgba(245,241,232,.9) 44%,
+      rgba(245,241,232,.4) 65%,
+      transparent 81%
+    ),
+    radial-gradient(
+      ellipse 50% 45% at 55% 72%,
+      rgba(245,241,232,.96) 0%,
+      rgba(245,241,232,.82) 44%,
+      rgba(245,241,232,.35) 66%,
+      transparent 82%
+    ),
+    radial-gradient(
+      ellipse 35% 40% at 84% 65%,
+      rgba(245,241,232,.88) 0%,
+      rgba(245,241,232,.35) 55%,
+      transparent 82%
+    )!important;
+
+  filter:blur(25px)!important;
+  opacity:.94!important;
+
+  pointer-events:none!important;
+  z-index:0!important;
+}
+
+/* дополнительное мягкое ядро облака */
+.movie-night-reveal:after{
+  content:""!important;
+  position:absolute!important;
+  left:52%!important;
+  top:49%!important;
+
+  width:min(52vw,560px)!important;
+  height:min(42vh,390px)!important;
+
+  transform:translate(-50%,-50%) rotate(8deg)!important;
+
+  border-radius:
+    54% 46% 58% 42% /
+    44% 57% 43% 56%!important;
+
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(255,255,255,.34) 0%,
+      rgba(255,255,255,.18) 44%,
+      transparent 74%
+    )!important;
+
+  filter:blur(32px)!important;
+  opacity:.75!important;
+
+  pointer-events:none!important;
+  z-index:1!important;
+}
+
+/* =========================================================
+   TITLES INSIDE CLOUD
+========================================================= */
+
+.movie-night-reveal-track{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+
+  display:block!important;
+  overflow:hidden!important;
+
+  z-index:4!important;
+}
+
+/* Каждый фильм */
+.movie-night-reveal-track span{
+  position:absolute!important;
+
+  left:50%!important;
+  top:50%!important;
+
+  width:max-content!important;
+  max-width:42%!important;
+
+  font-family:var(--display)!important;
+  font-size:clamp(18px,2.5vw,40px)!important;
+  line-height:.95!important;
+  font-weight:600!important;
+  letter-spacing:-.035em!important;
+
+  color:var(--red)!important;
+
+  white-space:nowrap!important;
+
+  opacity:0!important;
+
+  pointer-events:none!important;
+
+  z-index:5!important;
+
+  transform:
+    translate(var(--x),var(--y))
+    translate(-50%,-50%)
+    scale(.35)!important;
+
+  animation:
+    movieThought
+    2.8s cubic-bezier(.2,.7,.25,1)
+    var(--delay,0s)
+    forwards!important;
+}
+
+/* =========================================================
+   TEXT ANIMATION
+========================================================= */
+
+@keyframes movieThought{
+
+  /* маленькая точка в облаке */
+  0%{
+    opacity:0;
+
+    transform:
+      translate(var(--x),var(--y))
+      translate(-50%,-50%)
+      scale(.35);
+  }
+
+  /* начинает проявляться */
+  14%{
+    opacity:.5;
+  }
+
+  /* становится заметным */
+  32%{
+    opacity:1;
+
+    transform:
+      translate(
+        calc(var(--x) * .68),
+        calc(var(--y) * .68)
+      )
+      translate(-50%,-50%)
+      scale(.68);
+  }
+
+  /* движется к центру */
+  55%{
+    opacity:1;
+
+    transform:
+      translate(
+        calc(var(--x) * .28),
+        calc(var(--y) * .28)
+      )
+      translate(-50%,-50%)
+      scale(.94);
+  }
+
+  /* достигает центра */
+  70%{
+    opacity:.95;
+
+    transform:
+      translate(0,0)
+      translate(-50%,-50%)
+      scale(1.05);
+  }
+
+  /* начинает растворяться */
+  84%{
+    opacity:.42;
+
+    transform:
+      translate(0,0)
+      translate(-50%,-50%)
+      scale(1.18);
+  }
+
+  /* исчезает */
+  100%{
+    opacity:0;
+
+    transform:
+      translate(0,0)
+      translate(-50%,-50%)
+      scale(1.34);
+  }
+}
+@keyframes thoughtToCenter{0%{opacity:0;transform:translate(var(--start-x),var(--start-y)) translate(-50%,-50%) scale(calc(var(--size) * .72)) rotate(var(--rotation,0deg))}12%{opacity:.28}32%{opacity:.7}52%{opacity:1;transform:translate(calc(var(--start-x) * .45),calc(var(--start-y) * .45)) translate(-50%,-50%) scale(var(--size)) rotate(0deg)}68%{opacity:1;transform:translate(0,0) translate(-50%,-50%) scale(var(--size)) rotate(0deg)}80%{opacity:.65;transform:translate(0,0) translate(-50%,-50%) scale(calc(var(--size) * 1.08)) rotate(0deg)}100%{opacity:0;transform:translate(0,0) translate(-50%,-50%) scale(calc(var(--size) * 1.25)) rotate(0deg)}}
+.ratings-section{position:relative}.ratings-section:before{content:"05 / PRIVATE RECORD";position:absolute;right:var(--pad);top:40px;font:8px var(--mono);letter-spacing:.1em;color:var(--red2)}
+@media(max-width:800px){.index-panel{right:12px!important;bottom:12px!important;width:calc(100vw - 24px)!important;height:min(78vh,620px)!important;padding:22px!important}.index-nav a{font-size:clamp(38px,12vw,70px)!important}.search-head:before{display:none}.search-box,.search-info{margin-left:0!important;max-width:100%!important}.search-results{height:390px!important;min-height:0!important;width:100%!important;margin-left:0!important}.archive-card{flex-basis:62vw!important}.movie-night-filter:before{left:-8px}.ratings-section:before{display:none}}

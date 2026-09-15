@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AFTER DARK — личная коллекция кино">
+  <title>AFTER DARK — Cinema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,200..800&family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="cursor"><span></span></div>
+  <header class="site-header">
+    <a href="#top" class="logo">CINEMA</a>
+    <div class="header-meta">
+      <span>PRIVATE CINEMA</span>
+      <span>EST. 2026</span>
+      <button class="index-trigger" type="button">INDEX <i></i></button>
+    </div>
+  </header>
+  <aside class="index-panel">
+    <div class="index-top">
+      <span>INDEX</span>
+      <button class="index-close" type="button">CLOSE ×</button>
+    </div>
+    <nav class="index-nav">
+      <a href="#top"><span>00</span>HOME</a>
+      <a href="#search"><span>01</span>SEARCH</a>
+      <a href="#archive"><span>02</span>LIBRARY</a>
+      <a href="#movie-night"><span>03</span>MOVIE NIGHT</a>
+      <a href="#ratings"><span>04</span>RATINGS</a>
+    </nav>
+    <div class="index-bottom">
+      <span>FILMS / SERIES / ANIMATION</span>
+      <span>2026</span>
+    </div>
+  </aside>
+  <main>
+    <section class="hero" id="top">
+      <div class="hero-red"></div>
+      <div class="hero-grain"></div>
+      <div class="hero-topline">
+        <span class="hero-number">001 / 005</span>
+        <span class="hero-category">PERSONAL SELECTION</span>
+        <span class="hero-status">PRIVATE / 2026</span>
+      </div>
+      <div class="hero-title">
+        <div class="hero-after">AFTER</div>
+        <div class="hero-dark">DARK</div>
+      </div>
+      <div class="hero-side-note">
+        <span>01—05</span>
+        <p>личная коллекция фильмов, сериалов и всего, что хочется посмотреть.</p>
+      </div>
+      <div class="hero-bottom">
+        <span>EST. 2026</span>
+        <span>FILMS / SERIES / ANIMATION</span>
+        <span>FILE / 001</span>
+      </div>
+    </section>
+    <section class="search-section" id="search">
+      <div class="section-marker">01 / SEARCH</div>
+      <div class="search-head">
+        <p class="eyebrow">FIND SOMETHING</p>
+        <h2>SEARCH<br><em>THE COLLECTION</em></h2>
+      </div>
+      <div class="search-box">
+        <input id="searchInput" type="text" placeholder="название, режиссёр, год..." autocomplete="off">
+        <button id="searchButton" type="button">↗</button>
+      </div>
+      <div class="search-info">
+  <span>FILMS / SERIES / ANIMATION</span>
+  <span>PRIVATE DATABASE</span>
+</div>
+      <div id="searchResults" class="search-results"></div>
+    </section>
+    <section class="archive-section" id="archive">
+      <div class="archive-header">
+        <div class="section-marker light">02 / LIBRARY</div>
+        <div class="archive-title-wrap">
+          <p class="eyebrow">THINGS TO WATCH</p>
+          <h2>THE<br><em>LIBRARY</em></h2>
+        </div>
+        <p class="archive-description">здесь хранится всё, что мы оставили на потом.</p>
+      </div>
+      <div class="archive-controls">
+        <div class="filter-group">
+          <button class="filter active" data-type="all">ALL</button>
+          <button class="filter" data-type="film">FILMS</button>
+          <button class="filter" data-type="series">SERIES</button>
+          <button class="filter" data-type="animation">ANIMATION</button>
+        </div>
+        <div class="archive-counter">
+          <span id="visibleCount">00</span> / <span id="totalCount">00</span>
+        </div>
+      </div>
+      <div class="archive-track-wrap">
+        <div class="archive-track" id="archiveTrack"></div>
+      </div>
+      <div class="archive-footer">
+        <span>DRAG TO EXPLORE</span>
+        <span>← →</span>
+        <span>2026</span>
+      </div>
+    </section>
+    <section class="movie-night" id="movie-night">
+      <div class="movie-night-noise"></div>
+      <div class="section-marker">03 / MOVIE NIGHT</div>
+      <div class="movie-night-layout">
+        <div class="movie-night-intro">
+          <p class="movie-night-kicker">DON'T KNOW WHAT TO WATCH?</p>
+          <h2 class="movie-night-title">LET THE<br>ARCHIVE<br><em>DECIDE.</em></h2>
+          <p class="movie-night-description">
+            A RANDOM TITLE FROM THE WORLDWIDE TMDB DATABASE — SELECTED BY YOUR RULES.
+          </p>
+          <div class="movie-night-index">
+            <span>03</span>
+            <i></i>
+            <span>RANDOM SELECTION</span>
+          </div>
+        </div>
+        <div class="movie-night-settings">
+          <div class="movie-night-filter">
+            <div class="movie-night-filter-head"><span>01</span><strong>TYPE</strong></div>
+            <div class="movie-night-options">
+              <button class="movie-night-option active" type="button" data-filter-type="all">ANY</button>
+              <button class="movie-night-option" type="button" data-filter-type="film">FILM</button>
+              <button class="movie-night-option" type="button" data-filter-type="series">SERIES</button>
+              <button class="movie-night-option" type="button" data-filter-type="animation">ANIMATION</button>
+            </div>
+          </div>
+          <div class="movie-night-filter">
+            <div class="movie-night-filter-head"><span>02</span><strong>GENRE</strong></div>
+            <div class="movie-night-options movie-night-options-wide">
+              <button class="movie-night-option active" type="button" data-genre="any">ANY</button>
+              <button class="movie-night-option" type="button" data-genre="drama">DRAMA</button>
+              <button class="movie-night-option" type="button" data-genre="comedy">COMEDY</button>
+              <button class="movie-night-option" type="button" data-genre="thriller">THRILLER</button>
+              <button class="movie-night-option" type="button" data-genre="horror">HORROR</button>
+              <button class="movie-night-option" type="button" data-genre="crime">CRIME</button>
+              <button class="movie-night-option" type="button" data-genre="romance">ROMANCE</button>
+              <button class="movie-night-option" type="button" data-genre="fantasy">FANTASY</button>
+              <button class="movie-night-option" type="button" data-genre="sci-fi">SCI-FI</button>
+              <button class="movie-night-option" type="button" data-genre="mystery">MYSTERY</button>
+              <button class="movie-night-option" type="button" data-genre="documentary">DOCUMENTARY</button>
+            </div>
+          </div>
+          <div class="movie-night-filter">
+            <div class="movie-night-filter-head"><span>03</span><strong>YEAR</strong></div>
+            <div class="movie-night-options">
+              <button class="movie-night-option active" type="button" data-year="any">ANY</button>
+              <button class="movie-night-option" type="button" data-year="before-1990">BEFORE 1990</button>
+              <button class="movie-night-option" type="button" data-year="1990-2000">90s</button>
+              <button class="movie-night-option" type="button" data-year="2000-2010">00s</button>
+              <button class="movie-night-option" type="button" data-year="2010-2020">10s</button>
+              <button class="movie-night-option" type="button" data-year="2020">2020+</button>
+            </div>
+          </div>
+          <div class="movie-night-filter">
+            <div class="movie-night-filter-head"><span>04</span><strong>COUNTRY</strong></div>
+            <div class="movie-night-country">
+              <select class="movie-night-country-select" id="movieNightCountry" aria-label="Select country">
+                <option value="any">ANY COUNTRY</option>
+                <option value="US">USA</option>
+                <option value="GB">UK</option>
+                <option value="FR">FRANCE</option>
+                <option value="DE">GERMANY</option>
+                <option value="IT">ITALY</option>
+                <option value="ES">SPAIN</option>
+                <option value="JP">JAPAN</option>
+                <option value="KR">SOUTH KOREA</option>
+                <option value="CN">CHINA</option>
+                <option value="HK">HONG KONG</option>
+                <option value="TW">TAIWAN</option>
+                <option value="IN">INDIA</option>
+                <option value="CA">CANADA</option>
+                <option value="AU">AUSTRALIA</option>
+                <option value="RU">RUSSIA</option>
+                <option value="SE">SWEDEN</option>
+                <option value="NO">NORWAY</option>
+                <option value="DK">DENMARK</option>
+                <option value="FI">FINLAND</option>
+                <option value="NL">NETHERLANDS</option>
+                <option value="BE">BELGIUM</option>
+                <option value="CH">SWITZERLAND</option>
+                <option value="PL">POLAND</option>
+                <option value="CZ">CZECH REPUBLIC</option>
+                <option value="BR">BRAZIL</option>
+                <option value="MX">MEXICO</option>
+                <option value="AR">ARGENTINA</option>
+                <option value="IE">IRELAND</option>
+                <option value="TR">TURKEY</option>
+                <option value="TH">THAILAND</option>
+                <option value="ID">INDONESIA</option>
+                <option value="IR">IRAN</option>
+                <option value="IL">ISRAEL</option>
+              </select>
+              <span class="movie-night-country-arrow">↘</span>
+            </div>
+          </div>
+          <div class="movie-night-filter">
+            <div class="movie-night-filter-head"><span>05</span><strong>RATING</strong></div>
+            <div class="movie-night-options">
+              <button class="movie-night-option active" type="button" data-rating="0">ANY</button>
+              <button class="movie-night-option" type="button" data-rating="5">★ 5+</button>
+              <button class="movie-night-option" type="button" data-rating="6">★ 6+</button>
+              <button class="movie-night-option" type="button" data-rating="7">★ 7+</button>
+              <button class="movie-night-option" type="button" data-rating="7.5">★ 7.5+</button>
+              <button class="movie-night-option" type="button" data-rating="8">★ 8+</button>
+              <button class="movie-night-option" type="button" data-rating="8.5">★ 8.5+</button>
+            </div>
+          </div>
+          <div class="movie-night-rule">
+            <label class="movie-night-check" for="excludeArchive">
+              <input type="checkbox" id="excludeArchive">
+              <span class="movie-night-check-box"></span>
+              <span class="movie-night-check-text">EXCLUDE TITLES<br>ALREADY IN ARCHIVE</span>
+            </label>
+          </div>
+          <button class="decide-button" id="decideButton" type="button">
+            <span>DECIDE</span>
+            <small>LET THE ARCHIVE CHOOSE</small>
+            <strong>↗</strong>
+          </button>
+        </div>
+      </div>
+    </section>
+    <div class="movie-night-modal" id="movieNightModal" aria-hidden="true">
+      <div class="movie-night-modal-backdrop" id="movieNightModalBackdrop"></div>
+      <div class="movie-night-modal-window">
+        <button class="movie-night-modal-close" id="movieNightModalClose" type="button" aria-label="Close">×</button>
+        <div class="movie-night-reveal" id="movieNightReveal">
+          <div class="movie-night-reveal-label">SELECTING FROM TMDB</div>
+          <div class="movie-night-reveal-track" id="movieNightRevealTrack"><span>---</span></div>
+          <div class="movie-night-reveal-line"></div>
+        </div>
+        <div class="movie-night-final" id="movieNightFinal">
+          <div class="movie-night-final-poster">
+            <img id="movieNightPoster" src="" alt="">
+            <div class="movie-night-poster-index" id="movieNightPosterIndex">01</div>
+          </div>
+          <div class="movie-night-final-content">
+            <div class="movie-night-final-meta">
+              <span id="movieNightType">FILM</span>
+              <span>·</span>
+              <span id="movieNightYear">2026</span>
+              <span>·</span>
+              <span id="movieNightRating">★ 8.0</span>
+            </div>
+            <h3 id="movieNightTitle">MOVIE TITLE</h3>
+            <div class="movie-night-final-submeta" id="movieNightSubmeta">USA / DRAMA</div>
+            <p class="movie-night-final-overview" id="movieNightOverview">Description.</p>
+            <div class="movie-night-final-status">
+              <span class="movie-night-archive-status" id="movieNightArchiveStatus">FROM TMDB</span>
+            </div>
+            <div class="movie-night-final-actions">
+              <button class="movie-night-action primary" id="movieNightOpen" type="button">OPEN FILE ↗</button>
+              <button class="movie-night-action secondary" id="movieNightAdd" type="button">ADD TO ARCHIVE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <section class="ratings-section" id="ratings">
+      <div class="ratings-header">
+        <div class="section-marker">04 / RATINGS</div>
+        <div>
+          <p class="eyebrow">AFTER WATCHING</p>
+          <h2>OUR<br><em>RATINGS</em></h2>
+        </div>
+        <button class="auth-button" id="authButton" type="button">LOG IN / REGISTER</button>
+      </div>
+      <div class="ratings-controls">
+        <div class="rating-filters">
+          <button class="rating-filter active" data-rating-filter="all">ALL</button>
+          <button class="rating-filter" data-rating-filter="film">FILMS</button>
+          <button class="rating-filter" data-rating-filter="series">SERIES</button>
+          <button class="rating-filter" data-rating-filter="animation">ANIMATION</button>
+        </div>
+        <div class="sort-group">
+          <span>SORT</span>
+          <button class="sort-button active" data-sort="high">HIGHEST</button>
+          <button class="sort-button" data-sort="low">LOWEST</button>
+          <button class="sort-button" data-sort="recent">RECENT</button>
+          <button class="sort-button" data-sort="oldest">OLDEST</button>
+        </div>
+      </div>
+      <div class="ratings-list" id="ratingsList"></div>
+    </section>
+    <footer class="site-footer">
+      <div class="footer-main">AFTER DARK</div>
+      <div class="footer-meta">
+        <span>PRIVATE CINEMA</span>
+        <span>© 2026</span>
+        <a href="#top">↑</a>
+      </div>
+    </footer>
+  </main>
+  <div class="film-modal" id="filmModal">
+    <div class="film-modal-inner">
+      <button class="modal-close" id="modalClose" type="button">CLOSE ×</button>
+      <div class="modal-loader" id="modalLoader">
+        <span>SELECTING</span>
+        <div class="loader-number">00</div>
+      </div>
+      <div class="modal-result" id="modalResult">
+        <span class="modal-label">TONIGHT'S FILM</span>
+        <div class="modal-number">001</div>
+        <h3 id="modalTitle">THE GODFATHER</h3>
+        <div class="modal-details">
+          <span id="modalYear">1972</span>
+          <span id="modalDirector">FRANCIS FORD COPPOLA</span>
+        </div>
+        <p id="modalDescription">—</p>
+        <button class="reroll-button" id="rerollButton" type="button">ДРУГОЙ ФИЛЬМ ↗</button>
+      </div>
+    </div>
+  </div>
+  <div class="auth-modal" id="authModal">
+    <div class="auth-box">
+      <button class="modal-close" id="authClose" type="button">CLOSE ×</button>
+      <span class="modal-label">PRIVATE ACCESS</span>
+      <h3>WHO'S<br><em>WATCHING?</em></h3>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth="login">LOG IN</button>
+        <button class="auth-tab" data-auth="register">REGISTER</button>
+      </div>
+      <form id="authForm">
+        <input type="text" id="authName" placeholder="name" required>
+        <input type="password" placeholder="password" required>
+        <button type="submit">ENTER ↗</button>
+      </form>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
