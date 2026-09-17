@@ -20,8 +20,8 @@
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
     .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
     .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
-    .movie-night-empty-state{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#171214;background:#f1ece5;font:500 11px/1.6 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
-    .movie-night-empty-state span{display:block;opacity:.58}
+    .movie-night-empty-state{position:absolute!important;inset:0!important;z-index:999!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:30px!important;color:#171214!important;background:#f1ece5!important;font:500 11px/1.6 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+    .movie-night-empty-state span{display:block!important;color:#171214!important;opacity:.7!important;visibility:visible!important}
     .movie-night-reveal.is-empty{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
   `;
   document.head.appendChild(style);
