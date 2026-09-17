@@ -16,10 +16,12 @@
     .header-auth-menu-name{display:block;margin-bottom:18px;font:500 13px/1.2 "Bricolage Grotesque",sans-serif;text-transform:uppercase}
     .header-auth-logout{border:0;border-top:1px solid rgba(23,18,20,.16);padding:14px 0 0;width:100%;background:transparent;text-align:left;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.12em;color:inherit;cursor:pointer}
     .header-auth-logout:hover{opacity:.55}
+    .movie-night-year-specific{margin-top:10px;display:flex;align-items:center;gap:10px}
+    .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
+    .movie-night-year-specific-select{min-width:112px;border:0;border-bottom:1px solid currentColor;background:transparent;color:inherit;padding:7px 22px 7px 0;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
   `;
   document.head.appendChild(style);
 
-  const originalAlert=window.alert;
   window.alert=message=>{
     let modal=document.querySelector(".auth-feedback");
     if(!modal){
@@ -45,25 +47,19 @@
     const button=document.querySelector(".header-auth-button");
     const meta=document.querySelector(".header-meta");
     if(!button||!meta)return;
-
     const wrap=document.createElement("div");
     wrap.className="header-auth-wrap";
     button.parentNode.insertBefore(wrap,button);
     wrap.appendChild(button);
-
     const menu=document.createElement("div");
     menu.className="header-auth-menu";
     menu.innerHTML='<span class="header-auth-menu-label">PRIVATE ACCESS</span><strong class="header-auth-menu-name">ACCOUNT</strong><button class="header-auth-logout" type="button">LOG OUT ↗</button>';
     wrap.appendChild(menu);
-
     const logout=menu.querySelector(".header-auth-logout");
     const name=menu.querySelector(".header-auth-menu-name");
-
     button.replaceWith(button.cloneNode(true));
     const freshButton=wrap.querySelector(".header-auth-button");
-
     const closeMenu=()=>menu.classList.remove("active");
-
     freshButton.addEventListener("click",async()=>{
       try{
         await supabaseReady;
@@ -73,7 +69,6 @@
         menu.classList.toggle("active");
       }catch(e){authError(e.message)}
     });
-
     logout.addEventListener("click",async()=>{
       try{
         await supabaseReady;
@@ -82,9 +77,51 @@
         if(error)throw error;
       }catch(e){authError(e.message)}
     });
-
     document.addEventListener("click",e=>{if(!wrap.contains(e.target))closeMenu()});
   }
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initProfileMenu);else initProfileMenu();
+  function fixSearchJump(){
+    const results=document.querySelector("#searchResults");
+    if(!results)return;
+    results.addEventListener("click",event=>{
+      if(!event.target.closest("[data-action='add'], .search-result-add"))return;
+      const y=window.scrollY;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:"instant"})));
+      setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),120);
+    },true);
+  }
+
+  function addExactYears(){
+    const yearGroup=document.querySelector("[data-year='2020']")?.parentElement;
+    const baseButton=document.querySelector("[data-year='2020']");
+    if(!yearGroup||!baseButton||yearGroup.querySelector(".movie-night-year-specific"))return;
+    const wrap=document.createElement("div");
+    wrap.className="movie-night-year-specific";
+    const label=document.createElement("span");
+    label.className="movie-night-year-specific-label";
+    label.textContent="EXACT YEAR";
+    const select=document.createElement("select");
+    select.className="movie-night-year-specific-select";
+    select.innerHTML='<option value="">SELECT</option>';
+    for(let year=2026;year>=1950;year--){
+      const option=document.createElement("option");
+      option.value=String(year);
+      option.textContent=String(year);
+      select.appendChild(option);
+    }
+    wrap.append(label,select);
+    yearGroup.appendChild(wrap);
+    select.addEventListener("change",()=>{
+      const year=select.value;
+      if(!year)return;
+      baseButton.dataset.year=year;
+      baseButton.textContent=year;
+      baseButton.click();
+      document.querySelectorAll("[data-year]").forEach(b=>b.classList.remove("active"));
+      baseButton.classList.add("active");
+    });
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{initProfileMenu();fixSearchJump();addExactYears()});
+  else{initProfileMenu();fixSearchJump();addExactYears()}
 })();
