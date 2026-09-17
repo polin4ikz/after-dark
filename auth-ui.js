@@ -20,6 +20,7 @@
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
     .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
     .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
+    .movie-night-no-results{padding:42px 20px;text-align:center;font:500 11px/1.5 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
   `;
   document.head.appendChild(style);
 
@@ -103,7 +104,7 @@
       setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),120);
     },true);
     document.addEventListener("pointerdown",event=>{
-      if(!results.classList.contains("has-results")&& !results.children.length)return;
+      if(!results.classList.contains("has-results")&&!results.children.length)return;
       if(event.target.closest("#searchInput,#searchButton,#searchResults"))return;
       results.innerHTML="";
       results.classList.remove("has-results");
@@ -146,6 +147,22 @@
     });
   }
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears()});
-  else{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears()}
+  function initMovieNightNoResults(){
+    const selectors=["#movieNightResult","#movie-night-result",".movie-night-result",".movie-night-output",".movie-night-reveal","[data-movie-night-result]"];
+    const find=()=>selectors.map(s=>document.querySelector(s)).find(Boolean);
+    const ensure=()=>{
+      const target=find();
+      if(!target)return;
+      const text=(target.textContent||"").trim();
+      if(text)return;
+      if(target.querySelector(".movie-night-no-results"))return;
+      target.innerHTML='<div class="movie-night-no-results">NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</div>';
+    };
+    const observer=new MutationObserver(()=>setTimeout(ensure,80));
+    observer.observe(document.body,{childList:true,subtree:true});
+    setInterval(ensure,500);
+  }
+
+  const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();initMovieNightNoResults()};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
