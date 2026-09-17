@@ -18,7 +18,8 @@
     .header-auth-logout:hover{opacity:.55}
     .movie-night-year-specific{margin-top:10px;display:flex;align-items:center;gap:10px}
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
-    .movie-night-year-specific-select{min-width:112px;border:0;border-bottom:1px solid currentColor;background:transparent;color:inherit;padding:7px 22px 7px 0;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
+    .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
+    .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
   `;
   document.head.appendChild(style);
 
@@ -101,6 +102,12 @@
       requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:"instant"})));
       setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),120);
     },true);
+    document.addEventListener("pointerdown",event=>{
+      if(!results.classList.contains("has-results")&& !results.children.length)return;
+      if(event.target.closest("#searchInput,#searchButton,#searchResults"))return;
+      results.innerHTML="";
+      results.classList.remove("has-results");
+    },true);
   }
 
   function addExactYears(){
@@ -114,7 +121,7 @@
     label.textContent="EXACT YEAR";
     const select=document.createElement("select");
     select.className="movie-night-year-specific-select";
-    select.innerHTML='<option value="">SELECT</option>';
+    select.innerHTML='<option value="">SELECT</option><option value="2020+">2020+</option>';
     for(let year=2026;year>=1950;year--){
       const option=document.createElement("option");
       option.value=String(year);
@@ -126,8 +133,13 @@
     select.addEventListener("change",()=>{
       const year=select.value;
       if(!year)return;
-      baseButton.dataset.year=year;
-      baseButton.textContent=year;
+      if(year==="2020+"){
+        baseButton.dataset.year="2020";
+        baseButton.textContent="2020+";
+      }else{
+        baseButton.dataset.year=`${year}-${year}`;
+        baseButton.textContent=year;
+      }
       baseButton.click();
       document.querySelectorAll("[data-year]").forEach(b=>b.classList.remove("active"));
       baseButton.classList.add("active");
