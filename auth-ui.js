@@ -154,8 +154,7 @@
     const reveal=document.querySelector("#movieNightReveal");
     const modal=document.querySelector("#movieNightModal");
     const modalWindow=document.querySelector(".movie-night-modal-window");
-    const final=document.querySelector("#movieNightFinal");
-    if(!reveal||!modal||!modalWindow||!final)return;
+    if(!reveal||!modal||!modalWindow)return;
     let emptyState=null;
     const clearEmpty=()=>{
       emptyState?.remove();
@@ -170,8 +169,6 @@
     };
     const check=()=>{
       const error=reveal.querySelector(".error");
-      const finalVisible=getComputedStyle(final).display!=="none"&&getComputedStyle(final).visibility!=="hidden";
-      if(finalVisible){clearEmpty();return}
       if(error){showEmpty();return}
       if(!modal.classList.contains("active"))clearEmpty();
     };
