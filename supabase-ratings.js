@@ -5,9 +5,6 @@
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
   const yearOf=x=>(x?.release_date||x?.first_air_date||"").slice(0,4)||"—";
-  const personKey=name=>String(name||"").trim().toLowerCase().replace(/ё/g,"е");
-  const isPolina=name=>/(^|[^a-zа-я])(polina|поля|полина)([^a-zа-я]|$)/i.test(personKey(name));
-  const isNastya=name=>/(^|[^a-zа-я])(nastya|nastia|анастасия|настя|настасия)([^a-zа-я]|$)/i.test(personKey(name));
 
   function addStyles(){
     const style=document.createElement("style");
@@ -96,21 +93,15 @@
   }
 
   function getPeople(profiles){
-    const currentId=state.session?.user?.id||null;
-    const polina=profiles.find(p=>isPolina(p.nickname));
-    const nastya=profiles.find(p=>isNastya(p.nickname));
-    if(polina||nastya)return [polina,nastya].filter(Boolean);
-    const current=profiles.find(p=>p.id===currentId);
-    const others=profiles.filter(p=>p.id!==currentId);
-    return [current,...others].filter(Boolean).slice(0,2);
+    return profiles
+      .filter(p=>p?.id&&String(p.nickname||"").trim())
+      .sort((a,b)=>String(a.nickname).localeCompare(String(b.nickname),undefined,{sensitivity:"base"}));
   }
 
   function render(){
     const list=document.querySelector("#ratingsList");
     if(!list)return;
-    const first=state.people[0],second=state.people[1];
-    const firstLabel=(first?.nickname||"POLINA").toUpperCase();
-    const secondLabel=(second?.nickname||"NASTYA").toUpperCase();
+    const people=state.people;
     let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
     data.sort((a,b)=>{
       if(state.sort==="recent")return new Date(b.latest||0)-new Date(a.latest||0);
@@ -119,11 +110,14 @@
       return state.sort==="low"?av-bv:bv-av;
     });
     list.innerHTML=data.length?data.map((r,i)=>{
-      const firstRating=first?r.items.find(x=>x.user_id===first.id)?.rating:null;
-      const secondRating=second?r.items.find(x=>x.user_id===second.id)?.rating:null;
+      const ratingsByUser=new Map(r.items.map(x=>[x.user_id,x.rating]));
       const avg=r.average==null?"—":r.average.toFixed(1);
       const own=r.byUser||null;
-      return `<article class="rating-card"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div><h3 class="rating-title">${esc(titleOf(r.film))}</h3></div><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span><span>${esc((r.latest||"").slice(0,10)||"—")}</span></div><div class="rating-scores"><div class="rating-score">${esc(firstLabel)}<strong>${firstRating==null?"—":Number(firstRating).toFixed(1)}</strong></div><div class="rating-score">${esc(secondLabel)}<strong>${secondRating==null?"—":Number(secondRating).toFixed(1)}</strong></div></div><div class="rating-average">AVG<strong>${avg}</strong></div>${own?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}</article>`;
+      const personCells=people.map(person=>{
+        const rating=ratingsByUser.get(person.id);
+        return `<div class="rating-score">${esc(String(person.nickname).toUpperCase())}<strong>${rating==null?"—":Number(rating).toFixed(1)}</strong></div>`;
+      }).join("");
+      return `<article class="rating-card"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div><h3 class="rating-title">${esc(titleOf(r.film))}</h3></div><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span><span>${esc((r.latest||"").slice(0,10)||"—")}</span></div><div class="rating-scores">${personCells}</div><div class="rating-average">AVG<strong>${avg}</strong></div>${own?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}</article>`;
     }).join(""):"<div class=\"rating-empty\">NO RATINGS YET.</div>";
   }
 
@@ -137,7 +131,7 @@
       if(filmsError)throw filmsError;
       const{data:ratingData,error:ratingError}=await supabaseClient.from("ratings").select("tmdb_id,user_id,rating,created_at,updated_at").order("updated_at",{ascending:false});
       if(ratingError)throw ratingError;
-      const{data:profiles,error:profileError}=await supabaseClient.from("profiles").select("id,nickname");
+      const{data:profiles,error:profileError}=await supabaseClient.from("profiles").select("id,nickname").order("nickname",{ascending:true});
       if(profileError)throw profileError;
       state.people=getPeople(profiles||[]);
       const grouped=new Map();
