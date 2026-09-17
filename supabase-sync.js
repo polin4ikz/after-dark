@@ -136,3 +136,10 @@ searchResults?.addEventListener("click",async e=>{
   b.textContent="SAVE FAILED";
   b.classList.add("save-failed")
 },{capture:true});
+
+(()=>{
+  const s=document.createElement("script");
+  s.src="supabase-ratings.js";
+  s.async=false;
+  document.body.appendChild(s);
+})();
