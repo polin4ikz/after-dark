@@ -20,9 +20,10 @@
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
     .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
     .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
-    .movie-night-empty-state{position:absolute!important;inset:0!important;z-index:20!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:30px!important;color:#171214!important;background:#f1ece5!important;font:500 11px/1.6 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
-    .movie-night-empty-state span{display:block!important;color:#171214!important;opacity:.7!important;visibility:visible!important}
-    #movieNightReveal.movie-night-empty-active > .movie-night-reveal-label,#movieNightReveal.movie-night-empty-active > .movie-night-reveal-track,#movieNightReveal.movie-night-empty-active > .movie-night-reveal-line{visibility:hidden!important;opacity:0!important}
+    .movie-night-empty-state{position:absolute!important;inset:0!important;z-index:999999!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:30px!important;color:#171214!important;background:#f1ece5!important;font:500 11px/1.6 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+    .movie-night-empty-state span{display:block!important;color:#171214!important;opacity:1!important;visibility:visible!important}
+    .movie-night-error-overlay{position:absolute!important;inset:0!important;z-index:2147483647!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#f1ece5!important;color:#171214!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;text-align:center!important}
+    .movie-night-error-overlay span{display:block!important;color:#171214!important;font:500 11px/1.7 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important}
   `;
   document.head.appendChild(style);
 
@@ -151,42 +152,34 @@
 
   function initMovieNightNoResults(){
     const reveal=document.querySelector("#movieNightReveal");
+    const modal=document.querySelector("#movieNightModal");
+    const modalWindow=document.querySelector(".movie-night-modal-window");
     const final=document.querySelector("#movieNightFinal");
-    if(!reveal||!final)return;
+    if(!reveal||!modal||!modalWindow||!final)return;
     let emptyState=null;
-    let timer=null;
     const clearEmpty=()=>{
-      if(timer){clearTimeout(timer);timer=null}
-      reveal.classList.remove("movie-night-empty-active");
       emptyState?.remove();
       emptyState=null;
     };
     const showEmpty=()=>{
       if(emptyState)return;
       emptyState=document.createElement("div");
-      emptyState.className="movie-night-empty-state";
+      emptyState.className="movie-night-error-overlay";
       emptyState.innerHTML="<span>NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</span>";
-      reveal.appendChild(emptyState);
-      reveal.classList.add("movie-night-empty-active");
+      modalWindow.appendChild(emptyState);
     };
     const check=()=>{
-      const revealActive=reveal.classList.contains("active");
+      const error=reveal.querySelector(".error");
       const finalVisible=getComputedStyle(final).display!=="none"&&getComputedStyle(final).visibility!=="hidden";
-      if(finalVisible||!revealActive){clearEmpty();return}
-      if(!emptyState&&!timer){
-        timer=setTimeout(()=>{
-          timer=null;
-          const stillActive=reveal.classList.contains("active");
-          const stillHidden=getComputedStyle(final).display==="none"||getComputedStyle(final).visibility==="hidden";
-          if(stillActive&&stillHidden)showEmpty();
-        },2800);
-      }
+      if(finalVisible){clearEmpty();return}
+      if(error){showEmpty();return}
+      if(!modal.classList.contains("active"))clearEmpty();
     };
-    const observer=new MutationObserver(()=>setTimeout(check,80));
+    const observer=new MutationObserver(()=>setTimeout(check,50));
     observer.observe(reveal,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class","style"]});
-    const finalObserver=new MutationObserver(()=>setTimeout(check,80));
-    finalObserver.observe(final,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
-    setInterval(check,300);
+    const modalObserver=new MutationObserver(()=>setTimeout(check,50));
+    modalObserver.observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
+    setInterval(check,200);
   }
 
   const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();initMovieNightNoResults()};
