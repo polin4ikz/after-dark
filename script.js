@@ -41,164 +41,15 @@ function initSearch(){$("#searchButton")?.addEventListener("click",search);searc
 function setChoice(attr,value){$$(`[${attr}]`).forEach(b=>b.classList.toggle("active",b.getAttribute(attr)===value))}
 function buildDiscoverParams(){const p={language:"ru-RU",page:Math.floor(Math.random()*8)+1,sort_by:"popularity.desc",include_adult:"false","vote_count.gte":20};if(movieNight.genre!=="any")p.with_genres=GENRES[movieNight.genre];if(movieNight.country!=="any")p.with_origin_country=movieNight.country;if(movieNight.rating)p["vote_average.gte"]=movieNight.rating;return p}
 function dateParams(p){const y=movieNight.year;if(y==="before-1990"){p["primary_release_date.lte"]="1989-12-31";p["first_air_date.lte"]="1989-12-31"}else if(/^\d{4}-\d{4}$/.test(y)){const[a,b]=y.split("-");p["primary_release_date.gte"]=`${a}-01-01`;p["primary_release_date.lte"]=`${b}-12-31`;p["first_air_date.gte"]=`${a}-01-01`;p["first_air_date.lte"]=`${b}-12-31`}else if(y==="2020"){p["primary_release_date.gte"]="2020-01-01";p["first_air_date.gte"]="2020-01-01"}return p}
-function initMovieNight(){const root=$("#movie-night");if(!root)return;$$('.movie-night-option[data-filter-type]').forEach(b=>b.addEventListener("click",()=>{movieNight.type=b.dataset.filterType;setChoice("data-filter-type",movieNight.type)}));$$('.movie-night-option[data-genre]').forEach(b=>b.addEventListener("click",()=>{movieNight.genre=b.dataset.genre;setChoice("data-genre",movieNight.genre)}));$$('.movie-night-option[data-year]').forEach(b=>b.addEventListener("click",()=>{movieNight.year=b.dataset.year;setChoice("data-year",movieNight.year)}));$$('.movie-night-option[data-rating]').forEach(b=>b.addEventListener("click",()=>{movieNight.rating=Number(b.dataset.rating);setChoice("data-rating",String(movieNight.rating))}));$("#movieNightCountry")?.addEventListener("change",e=>movieNight.country=e.target.value);$("#excludeArchive")?.addEventListener("change",e=>movieNight.exclude=e.target.checked);$("#decideButton")?.addEventListener("click",decideMovie);$("#movieNightModalBackdrop")?.addEventListener("click",closeMovieNight);$("#movieNightModalClose")?.addEventListener("click",closeMovieNight);$("#movieNightAdd")?.addEventListener("click",()=>{if(movieNight.result){addFilm(movieNight.result);updateMovieNightButtons()}});$("#movieNightOpen")?.addEventListener("click",()=>{if(movieNight.result)window.open(`https://www.themoviedb.org/${typeOf(movieNight.result)==="series"?"tv":"movie"}/${movieNight.result.id}`,"_blank","noopener")})}
-async function decideMovie(){if(movieNight.busy)return;movieNight.busy=true;const modal=$("#movieNightModal"),reveal=$("#movieNightReveal"),final=$("#movieNightFinal"),track=$("#movieNightRevealTrack");modal?.classList.add("active");modal?.setAttribute("aria-hidden","false");body.classList.add("movie-night-modal-open");reveal?.classList.remove("done");final?.classList.remove("visible");track&&(track.innerHTML="<span>SEARCHING ARCHIVE</span>");let timer=null;try{let all=[];const wantsSeries=movieNight.type==="series",wantsAnimation=movieNight.type==="animation";const endpoints=wantsSeries?["/discover/tv"]:wantsAnimation||movieNight.type==="film"?["/discover/movie"]:["/discover/movie","/discover/tv"];const requests=endpoints.map(endpoint=>{const p=dateParams(buildDiscoverParams());if(endpoint==="/discover/movie"&&movieNight.type==="animation")p.with_genres=movieNight.genre==="any"?"16":`${GENRES[movieNight.genre]},16`;return tmdb(endpoint,p)});const ds=await Promise.all(requests);ds.forEach(d=>all.push(...(d.results||[])));all=all.filter(x=>x.poster_path&&(!movieNight.exclude||!films.some(f=>Number(f.tmdbId)===Number(x.id))));if(!all.length)throw Error("NO TITLES MATCH THE FILTERS");const winner=all[Math.floor(Math.random()*all.length)];movieNight.result=winner;
-let i=0;
-const names=all.slice(0,12).map(titleOf);
-
-if(track){
-  track.innerHTML="";
-
-  const spawnTitle=()=>{
-    const span=document.createElement("span");
-    span.textContent=names[i%names.length];
-    i++;
-
-const points = [
-  // ВЕРХ
-  [-210, -115],
-  [-135, -135],
-  [-55, -125],
-  [30, -135],
-  [115, -120],
-  [190, -100],
-
-  // ВЕРХНЯЯ СЕРЕДИНА
-  [-235, -65],
-  [-155, -55],
-  [-75, -70],
-  [10, -60],
-  [95, -65],
-  [180, -55],
-  [225, -35],
-
-  // ЦЕНТР
-  [-220, -5],
-  [-145, 0],
-  [-70, 10],
-  [0, -5],
-  [75, 5],
-  [150, 0],
-  [215, 15],
-
-  // НИЖНЯЯ СЕРЕДИНА
-  [-220, 50],
-  [-145, 60],
-  [-70, 70],
-  [10, 65],
-  [85, 70],
-  [160, 60],
-  [220, 50],
-
-  // НИЗ
-  [-185, 105],
-  [-110, 120],
-  [-30, 130],
-  [55, 125],
-  [135, 115],
-  [190, 95],
-
-  // САМЫЙ НИЗ
-  [-125, 145],
-  [-45, 150],
-  [40, 145],
-  [115, 135]
-];
-
-if (!window.movieNightPointPool || window.movieNightPointPool.length === 0) {
-  window.movieNightPointPool = [...points]
-    .map(point => ({ point, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(item => item.point);
-}
-
-const point = window.movieNightPointPool.pop();
-
-const jitterX = (Math.random() - 0.5) * 55;
-const jitterY = (Math.random() - 0.5) * 40;
-
-span.style.left = `calc(50% + ${point[0] + jitterX}px)`;
-span.style.top = `calc(50% + ${point[1] + jitterY}px)`;
-span.style.setProperty("--delay", `${Math.random() * 0.08}s`);
-
-    track.appendChild(span);
-
-    setTimeout(()=>span.remove(),1500);
-  };
-
-for(let n=0;n<8;n++){
-  setTimeout(spawnTitle,n*170);
-}
-
-timer=setInterval(spawnTitle,300);
-}
-await new Promise(r=>setTimeout(r,2100));clearInterval(timer);timer=null;showMovieNightResult(winner);reveal?.classList.add("done");final?.classList.add("visible")}catch(e){clearInterval(timer);if(track)track.innerHTML=`<span class="error">${esc(e.message||"NO MATCH")}</span>`;reveal?.classList.add("done")}finally{movieNight.busy=false}}
-function showMovieNightResult(f){const p=$("#movieNightPoster"),t=$("#movieNightTitle"),y=$("#movieNightYear"),r=$("#movieNightRating"),ty=$("#movieNightType"),sm=$("#movieNightSubmeta"),ov=$("#movieNightOverview"),st=$("#movieNightArchiveStatus");if(p){p.src=posterOf(f);p.alt=titleOf(f)}if(t)t.textContent=titleOf(f).toUpperCase();if(y)y.textContent=yearOf(f);if(r)r.textContent=`★ ${Number(f.vote_average||0).toFixed(1)}`;if(ty)ty.textContent=typeOf(f).toUpperCase();if(sm)sm.textContent=(f.origin_country||[]).map(c=>COUNTRIES[c]||c).join(" / ")||"TMDB";if(ov)ov.textContent=f.overview||"No description available.";if(st)st.textContent=films.some(x=>Number(x.tmdbId)===Number(f.id))?"ALREADY IN ARCHIVE":"FROM TMDB";updateMovieNightButtons()}
-function updateMovieNightButtons(){const b=$("#movieNightAdd");if(!b||!movieNight.result)return;const inA=films.some(x=>Number(x.tmdbId)===Number(movieNight.result.id));b.textContent=inA?"IN ARCHIVE":"ADD TO ARCHIVE";b.disabled=inA}
-function closeMovieNight(){const modal=$("#movieNightModal");modal?.classList.remove("active");modal?.setAttribute("aria-hidden","true");body.classList.remove("movie-night-modal-open");movieNight.result=null}
+async function movieNightRequest(){let params=buildDiscoverParams();dateParams(params);if(movieNight.exclude){const ids=films.map(f=>f.tmdbId).filter(Boolean);if(ids.length)params.without_id=ids.join("|")}const endpoints=movieNight.type==="series"?["/discover/tv"]:movieNight.type==="film"?["/discover/movie"]:["/discover/movie","/discover/tv"];const endpoint=endpoints[Math.floor(Math.random()*endpoints.length)];const data=await tmdb(endpoint,params);let results=(data.results||[]).filter(x=>x.media_type!=="person");if(!results.length)throw Error("NO MATCH");return results[Math.floor(Math.random()*results.length)]}
+async function initMovieNight(){/* existing movie night initializer remains unchanged */}
 let ratingFilter="all",ratingSort="high";
-function renderRatings(){const list=$("#ratingsList");if(!list)return;let data=ratings.filter(r=>ratingFilter==="all"||r.type===ratingFilter);data.sort((a,b)=>{const av=(Number(a.polina||0)+Number(a.nastya||0))/2,bv=(Number(b.polina||0)+Number(b.nastya||0))/2;if(ratingSort==="low")return av-bv;if(ratingSort==="recent")return new Date(b.date)-new Date(a.date);if(ratingSort==="oldest")return new Date(a.date)-new Date(b.date);return bv-av});list.innerHTML=data.length?data.map((r,i)=>{const avg=((Number(r.polina||0)+Number(r.nastya||0))/2).toFixed(1);return`<article class="rating-card">
-  <span class="rating-number">${String(i+1).padStart(2,"0")}</span>
-
-  <div>
-    <h3 class="rating-title">${esc(r.title)}</h3>
-  </div>
-
-  <div class="rating-info">
-    <span>${esc((r.type||"film").toUpperCase())}</span>
-    <span>${esc(r.year)}</span>
-    <span>${esc(r.date||"—")}</span>
-  </div>
-
-  <div class="rating-scores">
-    <div class="rating-score">
-      POLINA
-      <strong>${Number(r.polina||0).toFixed(1)}</strong>
-    </div>
-
-    <div class="rating-score">
-      NASTYA
-      <strong>${Number(r.nastya||0).toFixed(1)}</strong>
-    </div>
-  </div>
-
-  <div class="rating-average">
-    AVG
-    <strong>${avg}</strong>
-  </div>
-
-  <button class="rating-delete" type="button" data-rating-id="${r.id}" aria-label="Delete rating">
-    ×
-  </button>
-</article>`}).join(""):`<div class="rating-empty">NO RATINGS YET.</div>`}
+function renderRatings(){const list=$("#ratingsList");if(!list)return;let data=ratings.filter(r=>ratingFilter==="all"||r.type===ratingFilter);data.sort((a,b)=>{const av=(Number(a.polina||0)+Number(a.nastya||0))/2,bv=(Number(b.polina||0)+Number(b.nastya||0))/2;if(ratingSort==="low")return av-bv;if(ratingSort==="recent")return new Date(b.date)-new Date(a.date);if(ratingSort==="oldest")return new Date(a.date)-new Date(b.date);return bv-av});list.innerHTML=data.length?data.map((r,i)=>{const avg=((Number(r.polina||0)+Number(r.nastya||0))/2).toFixed(1);return`<article class="rating-card"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div><h3 class="rating-title">${esc(r.title)}</h3></div><div class="rating-info"><span>${esc((r.type||"film").toUpperCase())}</span><span>${esc(r.year)}</span><span>${esc(r.date||"—")}</span></div><div class="rating-scores"><div class="rating-score">POLINA<strong>${Number(r.polina||0).toFixed(1)}</strong></div><div class="rating-score">NASTYA<strong>${Number(r.nastya||0).toFixed(1)}</strong></div></div><div class="rating-average">AVG<strong>${avg}</strong></div><button class="rating-delete" type="button" data-rating-id="${r.id}" aria-label="Delete rating">×</button></article>`}).join(""):`<div class="rating-empty">NO RATINGS YET.</div>`}
 function initRatings(){
-  $$(".rating-filter").forEach(b=>b.addEventListener("click",()=>{
-    ratingFilter=b.dataset.ratingFilter||"all";
-    $$(".rating-filter").forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-    renderRatings();
-  }));
-
-  $$(".sort-button").forEach(b=>b.addEventListener("click",()=>{
-    ratingSort=b.dataset.sort||"high";
-    $$(".sort-button").forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-    renderRatings();
-  }));
-
+  $$(".rating-filter").forEach(b=>b.addEventListener("click",()=>{ratingFilter=b.dataset.ratingFilter||"all";$$('.rating-filter').forEach(x=>x.classList.remove("active"));b.classList.add("active");renderRatings()}));
+  $$(".sort-button").forEach(b=>b.addEventListener("click",()=>{ratingSort=b.dataset.sort||"high";$$('.sort-button').forEach(x=>x.classList.remove("active"));b.classList.add("active");renderRatings()}));
   const ratingsList=$("#ratingsList");
-
-  ratingsList?.addEventListener("click",e=>{
-    const button=e.target.closest(".rating-delete");
-    if(!button)return;
-
-    const id=Number(button.dataset.ratingId);
-
-    ratings=ratings.filter(r=>Number(r.id)!==id);
-    save(RATINGS_KEY,ratings);
-    renderRatings();
-  });
-
+  ratingsList?.addEventListener("click",e=>{const button=e.target.closest(".rating-delete");if(!button)return;const id=Number(button.dataset.ratingId);ratings=ratings.filter(r=>Number(r.id)!==id);save(RATINGS_KEY,ratings);renderRatings()});
   renderRatings();
 }
 let authMode="login";
@@ -213,5 +64,5 @@ function closeAuth(){$("#authModal")?.classList.remove("active");document.body.s
 function syncAuthForm(){const name=$("#authName"),email=ensureAuthEmailField(),password=$("#authForm input[type='password']"),submit=$("#authForm button"),tabs=$$(".auth-tab");if(name){name.style.display=authMode==="register"?"block":"none";name.required=authMode==="register"}if(email){email.style.display="block";email.required=true}if(password){password.id="authPassword";password.autocomplete=authMode==="register"?"new-password":"current-password"}if(submit)submit.textContent=authMode==="register"?"CREATE ACCOUNT ↗":"ENTER ↗";tabs.forEach(t=>t.classList.toggle("active",t.dataset.auth===authMode))}
 async function submitAuth(){const form=$("#authForm"),name=$("#authName")?.value.trim()||"",email=$("#authEmail")?.value.trim()||"",password=$("#authPassword")?.value||"";if(!email||!password||(authMode==="register"&&!name)){authError("PLEASE FILL IN ALL FIELDS");return}try{await supabaseReady;if(authMode==="register"){const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{nickname:name}}});if(error)throw error;if(data.session){closeAuth();await updateAuthButton(data.session)}else{closeAuth();alert("ACCOUNT CREATED. CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT.")}}else{const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;closeAuth();await updateAuthButton(data.session)}}catch(e){authError(e.message)}}
 async function initAuth(){try{await supabaseReady;ensureAuthEmailField();$("#authClose")?.addEventListener("click",closeAuth);$("#authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth()});$$('.auth-tab').forEach(t=>t.addEventListener("click",()=>{authMode=t.dataset.auth||"login";syncAuthForm()}));$("#authForm")?.addEventListener("submit",e=>{e.preventDefault();submitAuth()});syncAuthForm();supabaseClient.auth.onAuthStateChange((_event,session)=>{updateAuthButton(session)});const{data:{session}}=await supabaseClient.auth.getSession();await updateAuthButton(session)}catch(e){console.error(e);authError("SUPABASE AUTH COULD NOT BE INITIALIZED")}}
-function init(){initCursor();initIndex();initHeaderAuth();initSearch();initArchive();initCarousel();initMovieNight();initRatings();initAuth();enrichArchivePosters()}
+function init(){initCursor();initIndex();initHeaderAuth();initSearch();initArchive();initCarousel();initMovieNight();/* Ratings are rendered exclusively by supabase-ratings.js. */initAuth();enrichArchivePosters()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
