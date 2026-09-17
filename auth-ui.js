@@ -80,11 +80,23 @@
     document.addEventListener("click",e=>{if(!wrap.contains(e.target))closeMenu()});
   }
 
+  function keepSearchPosition(){
+    const remember=()=>{
+      const y=window.scrollY;
+      requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:"instant"}));
+      setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),80);
+      setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),450);
+    };
+    document.querySelector("#searchInput")?.addEventListener("input",remember,true);
+    document.querySelector("#searchButton")?.addEventListener("click",remember,true);
+    document.querySelector("#searchInput")?.addEventListener("keydown",e=>{if(e.key==="Enter")remember()},true);
+  }
+
   function fixSearchJump(){
     const results=document.querySelector("#searchResults");
     if(!results)return;
     results.addEventListener("click",event=>{
-      if(!event.target.closest("[data-action='add'], .search-result-add"))return;
+      if(!event.target.closest("[data-add-tmdb], [data-action='add'], .search-add-button, .search-result-add"))return;
       const y=window.scrollY;
       requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:"instant"})));
       setTimeout(()=>window.scrollTo({top:y,left:0,behavior:"instant"}),120);
@@ -122,6 +134,6 @@
     });
   }
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{initProfileMenu();fixSearchJump();addExactYears()});
-  else{initProfileMenu();fixSearchJump();addExactYears()}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears()});
+  else{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears()}
 })();
