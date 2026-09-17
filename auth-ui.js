@@ -9,6 +9,13 @@
     .auth-feedback-text{margin:0;max-width:330px;font:400 12px/1.65 "Geist Mono",monospace;text-transform:uppercase;opacity:.68}
     .auth-feedback-close{margin-top:28px;border:0;background:transparent;padding:0;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.12em;cursor:pointer;color:inherit}
     .auth-feedback-close:hover{opacity:.55}
+    .header-auth-wrap{position:relative;display:inline-flex;align-items:center}
+    .header-auth-menu{position:absolute;top:calc(100% + 12px);right:0;width:190px;padding:18px;background:#f1ece5;color:#171214;box-shadow:0 18px 50px rgba(0,0,0,.28);opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:1000}
+    .header-auth-menu.active{opacity:1;transform:translateY(0);pointer-events:auto}
+    .header-auth-menu-label{display:block;margin-bottom:14px;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;opacity:.45}
+    .header-auth-menu-name{display:block;margin-bottom:18px;font:500 13px/1.2 "Bricolage Grotesque",sans-serif;text-transform:uppercase}
+    .header-auth-logout{border:0;border-top:1px solid rgba(23,18,20,.16);padding:14px 0 0;width:100%;background:transparent;text-align:left;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.12em;color:inherit;cursor:pointer}
+    .header-auth-logout:hover{opacity:.55}
   `;
   document.head.appendChild(style);
 
@@ -33,4 +40,51 @@
     else{title.textContent="NOTICE";body.textContent=text}
     modal.classList.add("active");
   };
+
+  function initProfileMenu(){
+    const button=document.querySelector(".header-auth-button");
+    const meta=document.querySelector(".header-meta");
+    if(!button||!meta)return;
+
+    const wrap=document.createElement("div");
+    wrap.className="header-auth-wrap";
+    button.parentNode.insertBefore(wrap,button);
+    wrap.appendChild(button);
+
+    const menu=document.createElement("div");
+    menu.className="header-auth-menu";
+    menu.innerHTML='<span class="header-auth-menu-label">PRIVATE ACCESS</span><strong class="header-auth-menu-name">ACCOUNT</strong><button class="header-auth-logout" type="button">LOG OUT ↗</button>';
+    wrap.appendChild(menu);
+
+    const logout=menu.querySelector(".header-auth-logout");
+    const name=menu.querySelector(".header-auth-menu-name");
+
+    button.replaceWith(button.cloneNode(true));
+    const freshButton=wrap.querySelector(".header-auth-button");
+
+    const closeMenu=()=>menu.classList.remove("active");
+
+    freshButton.addEventListener("click",async()=>{
+      try{
+        await supabaseReady;
+        const{data:{session}}=await supabaseClient.auth.getSession();
+        if(!session){closeMenu();openAuth();return}
+        name.textContent=(session.user.user_metadata?.nickname||session.user.email?.split("@")[0]||"ACCOUNT").toUpperCase();
+        menu.classList.toggle("active");
+      }catch(e){authError(e.message)}
+    });
+
+    logout.addEventListener("click",async()=>{
+      try{
+        await supabaseReady;
+        closeMenu();
+        const{error}=await supabaseClient.auth.signOut();
+        if(error)throw error;
+      }catch(e){authError(e.message)}
+    });
+
+    document.addEventListener("click",e=>{if(!wrap.contains(e.target))closeMenu()});
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initProfileMenu);else initProfileMenu();
 })();
