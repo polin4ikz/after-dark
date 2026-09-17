@@ -1,10 +1,13 @@
 (()=>{
-  const state={filter:"all",sort:"high",rows:[],session:null};
+  const state={filter:"all",sort:"high",rows:[],session:null,people:[]};
   let modal=null;
 
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
   const yearOf=x=>(x?.release_date||x?.first_air_date||"").slice(0,4)||"—";
+  const personKey=name=>String(name||"").trim().toLowerCase().replace(/ё/g,"е");
+  const isPolina=name=>/(^|[^a-zа-я])(polina|поля|полина)([^a-zа-я]|$)/i.test(personKey(name));
+  const isNastya=name=>/(^|[^a-zа-я])(nastya|nastia|анастасия|настя|настасия)([^a-zа-я]|$)/i.test(personKey(name));
 
   function addStyles(){
     const style=document.createElement("style");
@@ -29,14 +32,7 @@
     if(modal)return modal;
     modal=document.createElement("div");
     modal.className="supabase-rating-modal";
-    modal.innerHTML=`<div class="supabase-rating-box">
-      <button class="supabase-rating-close" type="button">CLOSE ×</button>
-      <span class="supabase-rating-label">PRIVATE RATING</span>
-      <h3 class="supabase-rating-title"></h3>
-      <p class="supabase-rating-current"></p>
-      <input class="supabase-rating-input" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="0.0">
-      <button class="supabase-rating-save" type="button">SAVE RATING ↗</button>
-    </div>`;
+    modal.innerHTML=`<div class="supabase-rating-box"><button class="supabase-rating-close" type="button">CLOSE ×</button><span class="supabase-rating-label">PRIVATE RATING</span><h3 class="supabase-rating-title"></h3><p class="supabase-rating-current"></p><input class="supabase-rating-input" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="0.0"><button class="supabase-rating-save" type="button">SAVE RATING ↗</button></div>`;
     document.body.appendChild(modal);
     modal.querySelector(".supabase-rating-close").addEventListener("click",closeModal);
     modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
@@ -86,10 +82,7 @@
       if(error)throw error;
       closeModal();
       await loadRatings();
-    }catch(e){
-      console.error("RATING SAVE FAILED",e);
-      alert(`RATING COULD NOT BE SAVED: ${e.message}`);
-    }finally{button.disabled=false}
+    }catch(e){console.error("RATING SAVE FAILED",e);alert(`RATING COULD NOT BE SAVED: ${e.message}`)}finally{button.disabled=false}
   }
 
   async function deleteMyRating(id){
@@ -102,11 +95,22 @@
     }catch(e){console.error("RATING DELETE FAILED",e);alert(`RATING COULD NOT BE DELETED: ${e.message}`)}
   }
 
-  function personKey(name){return String(name||"").trim().toLowerCase()}
+  function getPeople(profiles){
+    const currentId=state.session?.user?.id||null;
+    const polina=profiles.find(p=>isPolina(p.nickname));
+    const nastya=profiles.find(p=>isNastya(p.nickname));
+    if(polina||nastya)return [polina,nastya].filter(Boolean);
+    const current=profiles.find(p=>p.id===currentId);
+    const others=profiles.filter(p=>p.id!==currentId);
+    return [current,...others].filter(Boolean).slice(0,2);
+  }
 
   function render(){
     const list=document.querySelector("#ratingsList");
     if(!list)return;
+    const first=state.people[0],second=state.people[1];
+    const firstLabel=(first?.nickname||"POLINA").toUpperCase();
+    const secondLabel=(second?.nickname||"NASTYA").toUpperCase();
     let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
     data.sort((a,b)=>{
       if(state.sort==="recent")return new Date(b.latest||0)-new Date(a.latest||0);
@@ -115,15 +119,11 @@
       return state.sort==="low"?av-bv:bv-av;
     });
     list.innerHTML=data.length?data.map((r,i)=>{
-      const polina=r.byPolina?.rating,nastya=r.byNastya?.rating,avg=r.average==null?"—":r.average.toFixed(1),own=r.byUser||null;
-      return `<article class="rating-card">
-        <span class="rating-number">${String(i+1).padStart(2,"0")}</span>
-        <div><h3 class="rating-title">${esc(titleOf(r.film))}</h3></div>
-        <div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span><span>${esc((r.latest||"").slice(0,10)||"—")}</span></div>
-        <div class="rating-scores"><div class="rating-score">POLINA<strong>${polina==null?"—":Number(polina).toFixed(1)}</strong></div><div class="rating-score">NASTYA<strong>${nastya==null?"—":Number(nastya).toFixed(1)}</strong></div></div>
-        <div class="rating-average">AVG<strong>${avg}</strong></div>
-        ${own?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}
-      </article>`;
+      const firstRating=first?r.items.find(x=>x.user_id===first.id)?.rating:null;
+      const secondRating=second?r.items.find(x=>x.user_id===second.id)?.rating:null;
+      const avg=r.average==null?"—":r.average.toFixed(1);
+      const own=r.byUser||null;
+      return `<article class="rating-card"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div><h3 class="rating-title">${esc(titleOf(r.film))}</h3></div><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span><span>${esc((r.latest||"").slice(0,10)||"—")}</span></div><div class="rating-scores"><div class="rating-score">${esc(firstLabel)}<strong>${firstRating==null?"—":Number(firstRating).toFixed(1)}</strong></div><div class="rating-score">${esc(secondLabel)}<strong>${secondRating==null?"—":Number(secondRating).toFixed(1)}</strong></div></div><div class="rating-average">AVG<strong>${avg}</strong></div>${own?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}</article>`;
     }).join(""):"<div class=\"rating-empty\">NO RATINGS YET.</div>";
   }
 
@@ -132,28 +132,25 @@
       await supabaseReady;
       const session=state.session||await currentSession();
       state.session=session;
-      if(!session){state.rows=[];render();return}
+      if(!session){state.rows=[];state.people=[];render();return}
       const{data:filmsData,error:filmsError}=await supabaseClient.from("archive").select("tmdb_id,title,name,release_date,first_air_date,type").order("created_at",{ascending:false});
       if(filmsError)throw filmsError;
       const{data:ratingData,error:ratingError}=await supabaseClient.from("ratings").select("tmdb_id,user_id,rating,created_at,updated_at").order("updated_at",{ascending:false});
       if(ratingError)throw ratingError;
       const{data:profiles,error:profileError}=await supabaseClient.from("profiles").select("id,nickname");
       if(profileError)throw profileError;
-      const names=new Map((profiles||[]).map(p=>[p.id,p.nickname]));
+      state.people=getPeople(profiles||[]);
       const grouped=new Map();
       (ratingData||[]).forEach(row=>{
         const film=(filmsData||[]).find(f=>Number(f.tmdb_id)===Number(row.tmdb_id));
         if(!film)return;
         if(!grouped.has(row.tmdb_id))grouped.set(row.tmdb_id,{film,items:[]});
-        grouped.get(row.tmdb_id).items.push({...row,nickname:names.get(row.user_id)||"USER"});
+        grouped.get(row.tmdb_id).items.push({...row,nickname:(profiles||[]).find(p=>p.id===row.user_id)?.nickname||"USER"});
       });
       state.rows=[...grouped.values()].map(g=>{
-        const byPolina=g.items.find(x=>personKey(x.nickname)==="polina");
-        const byNastya=g.items.find(x=>personKey(x.nickname)==="nastya");
-        const byUser=state.session?g.items.find(x=>x.user_id===state.session.user.id):null;
         const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);
         const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");
-        return{...g,byPolina,byNastya,byUser,average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
+        return{...g,byUser:state.session?g.items.find(x=>x.user_id===state.session.user.id):null,average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
       });
       render();
     }catch(e){
