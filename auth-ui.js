@@ -20,9 +20,9 @@
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
     .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
     .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
-    .movie-night-empty-state{position:absolute!important;inset:0!important;z-index:999!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:30px!important;color:#171214!important;background:#f1ece5!important;font:500 11px/1.6 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+    .movie-night-empty-state{position:absolute!important;inset:0!important;z-index:20!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:30px!important;color:#171214!important;background:#f1ece5!important;font:500 11px/1.6 "Geist Mono",monospace!important;letter-spacing:.12em!important;text-transform:uppercase!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
     .movie-night-empty-state span{display:block!important;color:#171214!important;opacity:.7!important;visibility:visible!important}
-    .movie-night-reveal.is-empty{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    #movieNightReveal.movie-night-empty-active > .movie-night-reveal-label,#movieNightReveal.movie-night-empty-active > .movie-night-reveal-track,#movieNightReveal.movie-night-empty-active > .movie-night-reveal-line{visibility:hidden!important;opacity:0!important}
   `;
   document.head.appendChild(style);
 
@@ -151,34 +151,41 @@
 
   function initMovieNightNoResults(){
     const reveal=document.querySelector("#movieNightReveal");
-    const modalWindow=document.querySelector(".movie-night-modal-window");
-    if(!reveal||!modalWindow)return;
+    const final=document.querySelector("#movieNightFinal");
+    if(!reveal||!final)return;
     let emptyState=null;
+    let timer=null;
     const clearEmpty=()=>{
-      reveal.classList.remove("is-empty");
+      if(timer){clearTimeout(timer);timer=null}
+      reveal.classList.remove("movie-night-empty-active");
       emptyState?.remove();
       emptyState=null;
     };
     const showEmpty=()=>{
       if(emptyState)return;
-      reveal.classList.add("is-empty");
       emptyState=document.createElement("div");
       emptyState.className="movie-night-empty-state";
       emptyState.innerHTML="<span>NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</span>";
-      modalWindow.appendChild(emptyState);
+      reveal.appendChild(emptyState);
+      reveal.classList.add("movie-night-empty-active");
     };
     const check=()=>{
-      const text=(reveal.textContent||"").trim();
-      const final=document.querySelector("#movieNightFinal");
-      const finalVisible=final&&getComputedStyle(final).display!=="none"&&getComputedStyle(final).visibility!=="hidden";
-      if(finalVisible){clearEmpty();return}
-      if(reveal.classList.contains("active")&&text===""){showEmpty();return}
-      if(!reveal.classList.contains("active")&&emptyState){clearEmpty()}
+      const revealActive=reveal.classList.contains("active");
+      const finalVisible=getComputedStyle(final).display!=="none"&&getComputedStyle(final).visibility!=="hidden";
+      if(finalVisible||!revealActive){clearEmpty();return}
+      if(!emptyState&&!timer){
+        timer=setTimeout(()=>{
+          timer=null;
+          const stillActive=reveal.classList.contains("active");
+          const stillHidden=getComputedStyle(final).display==="none"||getComputedStyle(final).visibility==="hidden";
+          if(stillActive&&stillHidden)showEmpty();
+        },2800);
+      }
     };
     const observer=new MutationObserver(()=>setTimeout(check,80));
     observer.observe(reveal,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class","style"]});
-    const modalObserver=new MutationObserver(()=>setTimeout(check,80));
-    modalObserver.observe(modalWindow,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
+    const finalObserver=new MutationObserver(()=>setTimeout(check,80));
+    finalObserver.observe(final,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
     setInterval(check,300);
   }
 
