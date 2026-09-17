@@ -20,7 +20,9 @@
     .movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.5;white-space:nowrap}
     .movie-night-year-specific-select{width:92px;min-width:92px;height:30px;padding:5px 24px 5px 9px;border:1px solid rgba(241,236,229,.35);border-radius:0;background:#171214;color:#f1ece5;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.08em;outline:none;cursor:pointer}
     .movie-night-year-specific-select option{background:#171214;color:#f1ece5}
-    .movie-night-no-results{padding:42px 20px;text-align:center;font:500 11px/1.5 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+    .movie-night-empty-state{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#171214;background:#f1ece5;font:500 11px/1.6 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
+    .movie-night-empty-state span{display:block;opacity:.58}
+    .movie-night-reveal.is-empty{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
   `;
   document.head.appendChild(style);
 
@@ -148,19 +150,36 @@
   }
 
   function initMovieNightNoResults(){
-    const selectors=["#movieNightResult","#movie-night-result",".movie-night-result",".movie-night-output",".movie-night-reveal","[data-movie-night-result]"];
-    const find=()=>selectors.map(s=>document.querySelector(s)).find(Boolean);
-    const ensure=()=>{
-      const target=find();
-      if(!target)return;
-      const text=(target.textContent||"").trim();
-      if(text)return;
-      if(target.querySelector(".movie-night-no-results"))return;
-      target.innerHTML='<div class="movie-night-no-results">NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</div>';
+    const reveal=document.querySelector("#movieNightReveal");
+    const modalWindow=document.querySelector(".movie-night-modal-window");
+    if(!reveal||!modalWindow)return;
+    let emptyState=null;
+    const clearEmpty=()=>{
+      reveal.classList.remove("is-empty");
+      emptyState?.remove();
+      emptyState=null;
     };
-    const observer=new MutationObserver(()=>setTimeout(ensure,80));
-    observer.observe(document.body,{childList:true,subtree:true});
-    setInterval(ensure,500);
+    const showEmpty=()=>{
+      if(emptyState)return;
+      reveal.classList.add("is-empty");
+      emptyState=document.createElement("div");
+      emptyState.className="movie-night-empty-state";
+      emptyState.innerHTML="<span>NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</span>";
+      modalWindow.appendChild(emptyState);
+    };
+    const check=()=>{
+      const text=(reveal.textContent||"").trim();
+      const final=document.querySelector("#movieNightFinal");
+      const finalVisible=final&&getComputedStyle(final).display!=="none"&&getComputedStyle(final).visibility!=="hidden";
+      if(finalVisible){clearEmpty();return}
+      if(reveal.classList.contains("active")&&text===""){showEmpty();return}
+      if(!reveal.classList.contains("active")&&emptyState){clearEmpty()}
+    };
+    const observer=new MutationObserver(()=>setTimeout(check,80));
+    observer.observe(reveal,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class","style"]});
+    const modalObserver=new MutationObserver(()=>setTimeout(check,80));
+    modalObserver.observe(modalWindow,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
+    setInterval(check,300);
   }
 
   const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();initMovieNightNoResults()};
