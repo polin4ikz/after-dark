@@ -112,7 +112,7 @@ archiveTrack?.addEventListener("click",async e=>{
   if(b.dataset.action==="remove")await archiveSyncRemove(id);
   else if(b.dataset.action==="watch"){
     const f=films.find(x=>Number(x.tmdbId)===id);
-    if(f)await archiveSyncWatch(id,f.watched);
+    if(f)await archiveSyncWatch(id,f.watched)
   }
 },{capture:true});
 
@@ -138,8 +138,13 @@ searchResults?.addEventListener("click",async e=>{
 },{capture:true});
 
 (()=>{
-  const s=document.createElement("script");
-  s.src="supabase-ratings.js";
-  s.async=false;
-  document.body.appendChild(s);
+  const ratingsScript=document.createElement("script");
+  ratingsScript.src="supabase-ratings.js";
+  ratingsScript.async=false;
+  document.body.appendChild(ratingsScript);
+
+  const fixScript=document.createElement("script");
+  fixScript.src="supabase-site-fix.js";
+  fixScript.async=false;
+  document.body.appendChild(fixScript);
 })();
