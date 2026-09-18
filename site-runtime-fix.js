@@ -18,7 +18,7 @@
     document.querySelector("#decideButton")?.addEventListener("click",decideMovieFixed);
     document.querySelector("#movieNightModalBackdrop")?.addEventListener("click",closeMovieNightFixed);
     document.querySelector("#movieNightModalClose")?.addEventListener("click",closeMovieNightFixed);
-    document.querySelector("#movieNightAdd")?.addEventListener("click",()=>{if(movieNight.result){addFilm(movieNight.result);updateMovieNightButtonsFixed()}});
+    document.querySelector("#movieNightAdd")?.addEventListener("click",async()=>{if(!movieNight.result)return;const added=addFilm(movieNight.result);if(!added){updateMovieNightButtonsFixed();return}const savedFilm=films.find(x=>Number(x.tmdbId)===Number(movieNight.result.id));const ok=savedFilm?await archiveSyncUpsert(savedFilm):false;if(!ok){films=films.filter(x=>Number(x.tmdbId)!==Number(movieNight.result.id));save(ARCHIVE_KEY,films);renderArchive();alert("COULD NOT SAVE TO ARCHIVE");return}updateMovieNightButtonsFixed()});
     document.querySelector("#movieNightOpen")?.addEventListener("click",()=>{if(movieNight.result)window.open(`https://www.themoviedb.org/${typeOf(movieNight.result)==="series"?"tv":"movie"}/${movieNight.result.id}`,"_blank","noopener")});
   }
 
