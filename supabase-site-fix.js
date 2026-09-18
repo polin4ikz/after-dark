@@ -5,14 +5,23 @@
   const yearOf=x=>(x?.release_date||x?.first_air_date||"").slice(0,4)||"—";
   async function getSession(){await supabaseReady;const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;return data.session||null}
   async function ensureProfile(s){
-    if(!s?.user?.id)return;
-    const{data,error}=await supabaseClient.from("profiles").select("id,nickname").eq("id",s.user.id).maybeSingle();
-    if(error)throw error;
-    if(data?.nickname?.trim())return data;
-    const nickname=String(s.user.user_metadata?.nickname||s.user.email?.split("@")[0]||"USER").trim();
-    const{data:created,error:createError}=await supabaseClient.from("profiles").upsert({id:s.user.id,nickname},{onConflict:"id"}).select("id,nickname").single();
-    if(createError)throw createError;
-    return created;
+    if(!s?.user?.id)return null;
+    await supabaseReady;
+    for(let attempt=0;attempt<4;attempt++){
+      try{
+        const{data,error}=await supabaseClient.from("profiles").select("id,nickname").eq("id",s.user.id).maybeSingle();
+        if(error)throw error;
+        if(data?.nickname?.trim())return data;
+        const nickname=String(s.user.user_metadata?.nickname||s.user.email?.split("@")[0]||"USER").trim();
+        const{data:created,error:createError}=await supabaseClient.from("profiles").upsert({id:s.user.id,nickname},{onConflict:"id"}).select("id,nickname").single();
+        if(createError)throw createError;
+        return created;
+      }catch(e){
+        if(attempt===3){console.warn("PROFILE SYNC DELAYED",e.message);return null}
+        await new Promise(r=>setTimeout(r,300*(attempt+1)));
+      }
+    }
+    return null;
   }
   async function syncHeader(){try{session=await getSession();if(session)await ensureProfile(session);await updateAuthButton(session)}catch(e){console.error("AUTH SESSION SYNC FAILED",e)}}
   function installAuthFallback(){
@@ -28,7 +37,7 @@
           if(data.session){await ensureProfile(data.session);closeAuth();await updateAuthButton(data.session)}else{closeAuth();alert("ACCOUNT CREATED.")}
         }else{
           const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;
-          session=data.session||null;await ensureProfile(session);closeAuth();await updateAuthButton(session);
+          session=data.session||null;closeAuth();await updateAuthButton(session);
         }
       }catch(error){console.error("AUTH LOGIN FAILED",error);authError(error.message||"AUTHENTICATION FAILED")}
     },true);
@@ -63,7 +72,7 @@
     document.querySelectorAll("#ratings .rating-filter").forEach(button=>button.addEventListener("click",()=>{filterMode=button.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
     document.querySelectorAll("#ratings .sort-button").forEach(button=>button.addEventListener("click",()=>{sortMode=button.dataset.sort||"high";document.querySelectorAll("#ratings .sort-button").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
   }
-  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;if(session)await ensureProfile(session);await updateAuthButton(session)})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
+  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;await updateAuthButton(session)})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
   function forceRatingsColumns(){
     const list=document.querySelector("#ratingsList");if(!list)return;
