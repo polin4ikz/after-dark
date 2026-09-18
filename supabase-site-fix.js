@@ -59,6 +59,7 @@
       }).join(""):"<div class=\"rating-empty\">NO RATINGS YET.</div>";
     }catch(error){console.error("SUPABASE RATINGS RENDER FAILED",error);list.innerHTML='<div class="rating-empty">RATINGS CONNECTION FAILED.</div>'}
   }
+  window.__siteRatingsRender=renderSupabaseRatings;
   function bindRatingControls(){
     document.querySelectorAll("#ratings .rating-filter").forEach(button=>button.addEventListener("click",()=>{filterMode=button.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
     document.querySelectorAll("#ratings .sort-button").forEach(button=>button.addEventListener("click",()=>{sortMode=button.dataset.sort||"high";document.querySelectorAll("#ratings .sort-button").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
