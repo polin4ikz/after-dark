@@ -23,7 +23,7 @@
     }
     return null;
   }
-  async function syncHeader(){try{session=await getSession();if(session)await ensureProfile(session);await updateAuthButton(session)}catch(e){console.error("AUTH SESSION SYNC FAILED",e)}}
+  async function syncHeader(){try{session=await getSession();await updateAuthButton(session);if(session)ensureProfile(session).catch(e=>console.warn("PROFILE SYNC DELAYED",e.message))}catch(e){console.error("AUTH SESSION SYNC FAILED",e)}}
   function installAuthFallback(){
     const form=document.querySelector("#authForm");if(!form)return;
     form.addEventListener("submit",async e=>{
