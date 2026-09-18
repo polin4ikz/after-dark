@@ -60,4 +60,26 @@
   function closeMovieNightFixed(){const modal=document.querySelector("#movieNightModal");modal?.classList.remove("active");modal?.setAttribute("aria-hidden","true");document.body.classList.remove("movie-night-modal-open");movieNight.result=null}
 
   window.initMovieNight=initMovieNightFixed;
+
+  // script.js initializes Movie Night before this runtime fix is loaded,
+  // so attach a capture-phase handler here to replace the legacy add handler.
+  document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
+    e.stopImmediatePropagation();
+    if(!movieNight.result)return;
+    const id=Number(movieNight.result.id);
+    let savedFilm=films.find(x=>Number(x.tmdbId)===id);
+    if(!savedFilm){addFilm(movieNight.result);savedFilm=films.find(x=>Number(x.tmdbId)===id)}
+    if(!savedFilm){updateMovieNightButtonsFixed();return}
+    const ok=await archiveSyncUpsert(savedFilm);
+    if(!ok){
+      console.error("MOVIE NIGHT SUPABASE SAVE FAILED");
+      films=films.filter(x=>Number(x.tmdbId)!==id);
+      save(ARCHIVE_KEY,films);
+      renderArchive();
+      alert("COULD NOT SAVE TO ARCHIVE");
+      return
+    }
+    console.log("MOVIE NIGHT ARCHIVE SAVED",savedFilm);
+    updateMovieNightButtonsFixed();
+  },{capture:true});
 })();
