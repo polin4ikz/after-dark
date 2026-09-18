@@ -168,16 +168,18 @@
     modal.querySelector(".ad-film-detail-backdrop").addEventListener("click",close);
     document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("active"))close()});
 
-    track.addEventListener("click",async e=>{
-      if(e.target.closest("[data-action]") || e.target.closest("button,a")) return;
-      const card=e.target.closest(".archive-card");
+    document.addEventListener("click",async e=>{
+      const card=e.target.closest("#archiveTrack .archive-card");
       if(!card) return;
 
+      if(e.target.closest("[data-action]") || e.target.closest("button,a")) return;
+
       const id=Number(card.dataset.id);
-      const film=(window.films||films).find(x=>Number(x.tmdbId)===id);
+      const film=films.find(x=>Number(x.tmdbId)===id);
       if(!film) return;
 
       e.preventDefault();
+      e.stopPropagation();
 
       const image=modal.querySelector(".ad-film-detail-image");
       const file=modal.querySelector(".ad-film-detail-file");
@@ -188,11 +190,10 @@
       const overview=modal.querySelector(".ad-film-detail-overview");
       const extra=modal.querySelector(".ad-film-detail-extra");
 
-      const index=(window.films||films).findIndex(x=>Number(x.tmdbId)===id)+1;
+      const index=films.findIndex(x=>Number(x.tmdbId)===id)+1;
       const baseTitle=titleOf(film);
-      const poster=posterOf(film);
 
-      image.src=poster||"";
+      image.src=posterOf(film)||"";
       image.alt=baseTitle;
       file.textContent=\`FILE / \${String(Math.max(1,index)).padStart(3,"0")}\`;
       number.textContent=String(Math.max(1,index)).padStart(3,"0");
@@ -240,7 +241,7 @@
       }finally{
         modal.classList.remove("is-loading");
       }
-    });
+    },true);;
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initFilmDetail);
