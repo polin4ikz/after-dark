@@ -25,10 +25,10 @@
         await supabaseReady;
         if(mode==="register"){
           const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{nickname:name}}});if(error)throw error;
-          if(data.session){await ensureProfile(data.session);closeAuth();await updateAuthButton(data.session);await renderSupabaseRatings()}else{closeAuth();alert("ACCOUNT CREATED.")}
+          if(data.session){await ensureProfile(data.session);closeAuth();await updateAuthButton(data.session)}else{closeAuth();alert("ACCOUNT CREATED.")}
         }else{
           const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;
-          session=data.session||null;await ensureProfile(session);closeAuth();await updateAuthButton(session);await renderSupabaseRatings();
+          session=data.session||null;await ensureProfile(session);closeAuth();await updateAuthButton(session);
         }
       }catch(error){console.error("AUTH LOGIN FAILED",error);authError(error.message||"AUTHENTICATION FAILED")}
     },true);
@@ -59,12 +59,11 @@
       }).join(""):"<div class=\"rating-empty\">NO RATINGS YET.</div>";
     }catch(error){console.error("SUPABASE RATINGS RENDER FAILED",error);list.innerHTML='<div class="rating-empty">RATINGS CONNECTION FAILED.</div>'}
   }
-  window.__siteRatingsRender=renderSupabaseRatings;
   function bindRatingControls(){
     document.querySelectorAll("#ratings .rating-filter").forEach(button=>button.addEventListener("click",()=>{filterMode=button.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
     document.querySelectorAll("#ratings .sort-button").forEach(button=>button.addEventListener("click",()=>{sortMode=button.dataset.sort||"high";document.querySelectorAll("#ratings .sort-button").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
   }
-  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();await renderSupabaseRatings();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;if(session)await ensureProfile(session);await updateAuthButton(session);await renderSupabaseRatings()})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
+  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;if(session)await ensureProfile(session);await updateAuthButton(session);await renderSupabaseRatings()})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
   function forceRatingsColumns(){
     const list=document.querySelector("#ratingsList");if(!list)return;
