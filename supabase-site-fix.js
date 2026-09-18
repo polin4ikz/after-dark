@@ -63,7 +63,7 @@
     document.querySelectorAll("#ratings .rating-filter").forEach(button=>button.addEventListener("click",()=>{filterMode=button.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
     document.querySelectorAll("#ratings .sort-button").forEach(button=>button.addEventListener("click",()=>{sortMode=button.dataset.sort||"high";document.querySelectorAll("#ratings .sort-button").forEach(x=>x.classList.remove("active"));button.classList.add("active");renderSupabaseRatings()},true));
   }
-  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;if(session)await ensureProfile(session);await updateAuthButton(session);await renderSupabaseRatings()})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
+  async function init(){try{await supabaseReady;installAuthFallback();bindRatingControls();await syncHeader();supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{session=newSession||null;if(session)await ensureProfile(session);await updateAuthButton(session)})}catch(error){console.error("SITE SUPABASE FIX FAILED",error)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
   function forceRatingsColumns(){
     const list=document.querySelector("#ratingsList");if(!list)return;
