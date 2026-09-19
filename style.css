@@ -1296,3 +1296,34 @@ body::-webkit-scrollbar{
   opacity:.92!important;
   transform:rotate(-6deg) scale(1.04)!important;
 }
+
+/* LIBRARY — milkier, grainier light */
+.archive-section:after{
+  background:
+    radial-gradient(ellipse 38% 31% at 30% 34%,rgba(247,239,226,.94) 0%,rgba(239,230,214,.76) 38%,rgba(232,221,200,.42) 62%,transparent 82%),
+    radial-gradient(ellipse 45% 35% at 65% 30%,rgba(250,243,232,.88) 0%,rgba(240,231,216,.62) 42%,rgba(232,221,200,.28) 66%,transparent 84%),
+    radial-gradient(ellipse 49% 40% at 69% 67%,rgba(244,235,221,.80) 0%,rgba(235,224,207,.48) 44%,rgba(214,198,179,.20) 68%,transparent 86%),
+    radial-gradient(ellipse 34% 31% at 28% 76%,rgba(249,240,225,.70) 0%,rgba(232,221,200,.34) 52%,transparent 84%)!important;
+  filter:blur(25px)!important;
+  opacity:.98!important;
+}
+.archive-section:before{
+  content:""!important;
+  position:absolute!important;
+  right:-3vw!important;
+  top:0!important;
+  width:82vw!important;
+  height:54vw!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  border-radius:52% 48% 43% 57% / 46% 54% 47% 53%!important;
+  background:
+    radial-gradient(circle at 22% 30%,rgba(255,250,241,.18) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 71% 42%,rgba(255,250,241,.14) 0 1px,transparent 1.8px),
+    radial-gradient(circle at 48% 70%,rgba(92,50,47,.08) 0 1px,transparent 1.7px)!important;
+  background-size:17px 19px,23px 21px,29px 27px!important;
+  filter:blur(.35px)!important;
+  opacity:.72!important;
+  mix-blend-mode:soft-light!important;
+  transform:rotate(-6deg) scale(1.04)!important;
+}
