@@ -76,20 +76,17 @@
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
   function forceRatingsColumns(){
     const list=document.querySelector("#ratingsList");if(!list)return;
+    list.querySelector(".ratings-dynamic-head")?.remove();
     list.querySelectorAll(".rating-card").forEach(card=>{
       const scores=card.querySelector(".rating-scores");
-      if(scores){scores.style.display="grid";scores.style.gridTemplateColumns="repeat(auto-fit,minmax(72px,1fr))";scores.style.gap="18px";scores.style.visibility="visible";scores.style.opacity="1";}
+      if(scores){
+        scores.style.display="grid";
+        scores.style.gridTemplateColumns="repeat(auto-fit,minmax(72px,1fr))";
+        scores.style.gap="18px";
+        scores.style.visibility="visible";
+        scores.style.opacity="1";
+      }
     });
-    let head=list.querySelector(".ratings-dynamic-head");
-    const first=list.querySelector(".rating-card");
-    const names=first?[...first.querySelectorAll(".rating-score span")].map(x=>x.textContent.trim()).filter(Boolean):[];
-    if(!names.length){head?.remove();return}
-    if(!head){head=document.createElement("div");head.className="ratings-dynamic-head";list.insertBefore(head,first||null)}
-    head.innerHTML="";
-    const left=document.createElement("span");left.textContent="YOUR RATINGS";head.appendChild(left);
-    names.forEach(name=>{const x=document.createElement("span");x.textContent=name;head.appendChild(x)});
-    const avg=document.createElement("span");avg.textContent="AVG";head.appendChild(avg);
-    head.style.display="grid";head.style.gridTemplateColumns="1fr repeat("+names.length+",90px) 70px";head.style.gap="18px";head.style.padding="0 0 10px";head.style.borderBottom="1px solid rgba(232,221,200,.15)";head.style.font="8px Geist Mono,monospace";head.style.letterSpacing=".08em";head.style.color="#bdb09a";
   }
   const ratingsColumnObserver=new MutationObserver(()=>requestAnimationFrame(forceRatingsColumns));
   if(document.querySelector("#ratingsList"))ratingsColumnObserver.observe(document.querySelector("#ratingsList"),{childList:true,subtree:true});
