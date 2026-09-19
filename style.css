@@ -1184,3 +1184,92 @@ body::-webkit-scrollbar{
 .ratings-section .rating-progress > *{
   background:var(--ratings-red)!important;
 }
+
+/* RATINGS — visible controls and dark red structure on milk */
+.ratings-section .section-marker{
+  color:var(--ratings-bordeaux)!important;
+  opacity:.72!important;
+}
+.ratings-section .eyebrow{
+  color:var(--ratings-bordeaux)!important;
+  opacity:.72!important;
+}
+.ratings-section .auth-button{
+  color:var(--ratings-bordeaux)!important;
+  border-color:rgba(84,19,31,.28)!important;
+  background:transparent!important;
+}
+.ratings-section .auth-button:hover{
+  background:var(--ratings-bordeaux)!important;
+  color:var(--milk)!important;
+  border-color:var(--ratings-bordeaux)!important;
+}
+.ratings-controls{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:30px!important;
+  margin-top:34px!important;
+  padding:14px 0!important;
+  border-top:1px solid var(--ratings-line)!important;
+  border-bottom:1px solid var(--ratings-line)!important;
+}
+.rating-filters,.sort-group{
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+}
+.rating-filter,.sort-button{
+  appearance:none!important;
+  border:1px solid transparent!important;
+  background:transparent!important;
+  color:var(--ratings-bordeaux)!important;
+  padding:9px 11px!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.08em!important;
+  cursor:none!important;
+}
+.rating-filter:hover,.sort-button:hover{
+  border-color:rgba(84,19,31,.25)!important;
+}
+.rating-filter.active,.sort-button.active{
+  background:var(--ratings-bordeaux)!important;
+  color:var(--milk)!important;
+  border-color:var(--ratings-bordeaux)!important;
+}
+.sort-group>span{
+  margin-right:7px!important;
+  color:var(--ratings-red)!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.1em!important;
+}
+.ratings-list{
+  margin-top:0!important;
+  border-top:0!important;
+}
+.ratings-list .rating-card{
+  color:var(--black)!important;
+  border-bottom:1px solid var(--ratings-line)!important;
+}
+.ratings-list .rating-number,
+.ratings-list .rating-score strong,
+.ratings-list .rating-average strong{
+  color:var(--ratings-red)!important;
+}
+.ratings-list .rating-info,
+.ratings-list .rating-score span,
+.ratings-list .rating-average{
+  color:var(--ratings-bordeaux)!important;
+}
+.ratings-list .rating-delete{
+  color:var(--ratings-bordeaux)!important;
+  border-color:rgba(84,19,31,.22)!important;
+}
+.ratings-list .rating-delete:hover{
+  color:var(--milk)!important;
+  background:var(--ratings-bordeaux)!important;
+  border-color:var(--ratings-bordeaux)!important;
+}
+.ratings-list .rating-title{
+  color:var(--black)!important;
+}
