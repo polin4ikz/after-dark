@@ -1273,3 +1273,9 @@ body::-webkit-scrollbar{
 .ratings-list .rating-title{
   color:var(--black)!important;
 }
+
+/* RATINGS — remove legacy duplicate heading */
+#ratingsList .ratings-dynamic-head,
+#ratingsList [data-ratings-header="legacy"]{
+  display:none!important;
+}
