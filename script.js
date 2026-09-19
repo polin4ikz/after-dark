@@ -256,4 +256,4 @@ async function initAuth(){try{await supabaseReady;ensureAuthEmailField();$("#aut
 function init(){initCursor();initIndex();initHeaderAuth();initSearch();initArchive();initCarousel();initMovieNight();/* Ratings are rendered by Supabase. */initAuth();enrichArchivePosters()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 
-(function(){const s=document.createElement('script');s.src='after-dark-upgrade.js?v=20260919';s.async=false;document.body.appendChild(s);const f=document.createElement('script');f.src='after-dark-final.js?v=20260919';s.async=false;document.body.appendChild(s)})();
+(function(){const s=document.createElement('script');s.src='after-dark-upgrade.js?v=20260919';s.async=false;document.body.appendChild(s);const f=document.createElement('script');f.src='after-dark-final.js?v=20260919';f.async=false;document.body.appendChild(f)})();
