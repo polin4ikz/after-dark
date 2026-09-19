@@ -1775,3 +1775,26 @@ body::-webkit-scrollbar{
 .archive-editorial-mark b{
   margin-left:11%!important;
 }
+
+/* MOVIE NIGHT — restore button hit area */
+.movie-night-modal-window .movie-night-modal-close,
+.movie-night-modal-window .movie-night-action,
+.movie-night-modal-window #movieNightAdd,
+.movie-night-modal-window #movieNightOpen{
+  position:relative!important;
+  z-index:100!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+.movie-night-modal-window .movie-night-final{
+  position:relative!important;
+  z-index:50!important;
+  pointer-events:auto!important;
+}
+.movie-night-modal-window .movie-night-reveal{
+  pointer-events:none!important;
+}
+.movie-night-modal-window .movie-night-reveal-track,
+.movie-night-modal-window .movie-night-reveal-label{
+  pointer-events:none!important;
+}
