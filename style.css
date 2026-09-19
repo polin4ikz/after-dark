@@ -995,3 +995,30 @@ body::-webkit-scrollbar{
     right:-28vw!important;
   }
 }
+
+/* HERO SPOT — soft diffused edges */
+.hero-red{
+  background:
+    radial-gradient(ellipse at 42% 44%,
+      rgba(183,34,48,.9) 0%,
+      rgba(165,28,44,.76) 32%,
+      rgba(142,22,39,.46) 52%,
+      rgba(116,18,34,.18) 68%,
+      transparent 82%)!important;
+  filter:blur(22px)!important;
+  transform:translateY(-50%) rotate(-8deg) scale(1.06)!important;
+  opacity:.88!important;
+}
+.hero-red:before{
+  inset:-12%!important;
+  opacity:.16!important;
+  mix-blend-mode:soft-light!important;
+}
+.hero-red:after{
+  inset:8%!important;
+  width:auto!important;
+  height:auto!important;
+  border-radius:50%!important;
+  filter:blur(32px)!important;
+  opacity:.42!important;
+}
