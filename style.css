@@ -845,3 +845,11 @@ body::-webkit-scrollbar{
  .ad-film-detail-actions{margin-top:30px!important}
  .ad-film-detail-actions button[data-detail-action="tmdb"]{margin-left:0!important}
 }
+
+/* FILM DETAIL — STATIC VIEWPORT */
+.ad-film-detail{overflow:hidden!important}
+.ad-film-detail-window{height:min(720px,90vh)!important;max-height:min(720px,90vh)!important;overflow:hidden!important}
+.ad-film-detail-grid{height:100%!important;min-height:0!important;overflow:hidden!important}
+.ad-film-detail-poster,.ad-film-detail-image{height:100%!important;min-height:0!important;overflow:hidden!important}
+.ad-film-detail-content{height:100%!important;min-height:0!important;overflow:hidden!important}
+@media(max-width:900px){.ad-film-detail-window{height:90vh!important;max-height:90vh!important}.ad-film-detail-grid{height:100%!important;overflow:auto!important}.ad-film-detail-poster{height:360px!important;flex:none!important}.ad-film-detail-content{height:auto!important;overflow:visible!important}}
