@@ -1615,3 +1615,27 @@ body::-webkit-scrollbar{
 .archive-editorial-mark i{
   margin-top:28px!important;
 }
+
+/* LIBRARY — type counters visibility */
+.archive-editorial-mark b{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:9px!important;
+  margin-top:18px!important;
+  margin-left:27%!important;
+  color:rgba(232,221,200,.58)!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.13em!important;
+}
+.archive-editorial-mark .archive-stat{
+  display:block!important;
+  color:rgba(232,221,200,.58)!important;
+  white-space:nowrap!important;
+}
+.archive-editorial-mark .archive-stat strong{
+  display:inline!important;
+  margin:0!important;
+  font:500 10px/1 "Geist Mono",monospace!important;
+  letter-spacing:.05em!important;
+  color:rgba(232,221,200,.92)!important;
+}
