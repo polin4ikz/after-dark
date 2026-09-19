@@ -853,3 +853,78 @@ body::-webkit-scrollbar{
 .ad-film-detail-poster,.ad-film-detail-image{height:100%!important;min-height:0!important;overflow:hidden!important}
 .ad-film-detail-content{height:100%!important;min-height:0!important;overflow:hidden!important}
 @media(max-width:900px){.ad-film-detail-window{height:90vh!important;max-height:90vh!important}.ad-film-detail-grid{height:100%!important;overflow:auto!important}.ad-film-detail-poster{height:360px!important;flex:none!important}.ad-film-detail-content{height:auto!important;overflow:visible!important}}
+
+
+/* =========================================================
+   AFTER DARK — DESKTOP POLISH / LIBRARY + NAV + MOVIE NIGHT
+   Functional structure untouched.
+========================================================= */
+
+/* HEADER / INDEX */
+.site-header{z-index:100!important}
+.header-meta{align-items:center!important}
+.header-auth-button{min-height:36px!important;padding:0 13px!important;border:1px solid rgba(232,221,200,.24)!important;background:transparent!important;color:var(--milk)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.1em!important;cursor:none!important;transition:background .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease)!important}
+.header-auth-button:hover{background:rgba(232,221,200,.08)!important;border-color:rgba(232,221,200,.62)!important;transform:translateY(-1px)!important}
+.index-panel{z-index:500!important}
+.index-top{padding-bottom:16px!important;border-bottom:1px solid rgba(232,221,200,.2)!important}
+.index-nav{padding-top:18px!important}
+.index-nav a{display:flex!important;align-items:baseline!important;gap:18px!important}
+.index-nav a span{font-size:8px!important;letter-spacing:.08em!important;opacity:.5!important;min-width:22px!important}
+.index-bottom{border-top:1px solid rgba(232,221,200,.2)!important;padding-top:14px!important}
+
+/* LIBRARY */
+.archive-header{position:relative!important}
+.archive-description{max-width:430px!important;font-size:14px!important;line-height:1.55!important;color:rgba(232,221,200,.7)!important}
+.archive-controls{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;padding-bottom:12px!important;border-bottom:1px solid rgba(232,221,200,.22)!important}
+.filter-group{display:flex!important;align-items:center!important;gap:4px!important}
+.filter-group .filter{padding:10px 12px!important;border:1px solid transparent!important;color:rgba(232,221,200,.58)!important;background:transparent!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.09em!important;transition:color .25s var(--ease),background .25s var(--ease),border-color .25s var(--ease)!important}
+.filter-group .filter:hover{color:var(--milk)!important;border-color:rgba(232,221,200,.22)!important}
+.filter-group .filter.active{color:var(--black)!important;background:var(--milk)!important;border-color:var(--milk)!important}
+.archive-counter{font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.1em!important;color:rgba(232,221,200,.62)!important}
+.archive-counter #visibleCount{color:var(--milk)!important}
+.archive-track{scrollbar-width:none!important}
+.archive-card{position:relative!important;transition:transform .3s var(--ease)!important}
+.archive-card:hover{transform:translateY(-4px)!important}
+.archive-card-poster{position:relative!important;overflow:hidden!important;background:rgba(0,0,0,.18)!important}
+.archive-card-poster img{transition:transform .55s var(--ease),filter .55s var(--ease)!important}
+.archive-card:hover .archive-card-poster img{transform:scale(1.035)!important;filter:saturate(1.06)!important}
+.archive-card-poster:after{content:"OPEN FILE";position:absolute;right:9px;bottom:9px;padding:5px 6px;background:rgba(23,18,20,.76);color:var(--milk);font:500 7px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:0;transform:translateY(4px);transition:opacity .25s var(--ease),transform .25s var(--ease)!important;pointer-events:none}
+.archive-card:hover .archive-card-poster:after{opacity:1;transform:translateY(0)}
+.archive-card h3{letter-spacing:-.025em!important}
+.archive-card-meta{display:flex!important;justify-content:space-between!important;align-items:center!important;color:rgba(232,221,200,.6)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.09em!important;text-transform:uppercase!important}
+.archive-actions{opacity:.92!important}
+.archive-remove{font-size:8px!important;letter-spacing:.08em!important;transition:opacity .2s var(--ease),transform .2s var(--ease)!important}
+.archive-remove:hover{transform:translateX(2px)!important}
+.archive-carousel-ui{margin-top:24px!important;padding-top:14px!important;border-top:1px solid rgba(232,221,200,.16)!important}
+.archive-carousel-progress{background:rgba(232,221,200,.14)!important}
+
+/* MOVIE NIGHT */
+.movie-night-layout{gap:clamp(60px,8vw,140px)!important}
+.movie-night-intro{position:relative!important}
+.movie-night-description{max-width:360px!important;line-height:1.55!important;color:rgba(232,221,200,.58)!important}
+.movie-night-settings{border-top:1px solid rgba(232,221,200,.16)!important}
+.movie-night-filter{padding:18px 0!important}
+.movie-night-filter-head{justify-content:flex-start!important}
+.movie-night-filter-head span{width:18px!important;opacity:.75!important}
+.movie-night-options{gap:6px!important}
+.movie-night-option{border-color:rgba(232,221,200,.14)!important}
+.movie-night-option.active{box-shadow:none!important}
+.movie-night-country{position:relative!important;max-width:100%!important}
+.movie-night-country-select{width:100%!important;color:var(--milk)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important}
+.movie-night-check-text{font:500 9px/1.4 "Geist Mono",monospace!important;letter-spacing:.08em!important;color:rgba(232,221,200,.65)!important}
+.decide-button{min-height:82px!important;border-radius:0!important;box-shadow:none!important}
+.decide-button span{letter-spacing:-.055em!important}
+.decide-button strong{transition:transform .3s var(--ease)!important}
+.decide-button:hover strong{transform:translate(4px,-50%)!important}
+
+/* SEARCH → LIBRARY continuity */
+.search-result-add{transition:background .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease),transform .25s var(--ease)!important}
+.search-result-add:not(.added):hover{transform:translateY(-2px)!important}
+
+/* DESKTOP ONLY — keep mobile untouched for the later mobile pass */
+@media(min-width:901px){
+  .archive-track-wrap{padding-top:4px!important}
+  .archive-card-poster{aspect-ratio:2/3!important;height:auto!important;min-height:0!important}
+  .archive-card-poster img{width:100%!important;height:100%!important;object-fit:cover!important}
+  .movie-night-settings{padding-top:4px!important}
+}
