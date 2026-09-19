@@ -799,3 +799,20 @@ body::-webkit-scrollbar{
 
 /* AFTER DARK HOTFIX — archive controls */
 .archive-carousel-ui{display:flex!important;align-items:center;justify-content:space-between;gap:18px;margin-top:22px!important;position:relative;z-index:5}.archive-carousel-buttons{display:flex;gap:8px}.archive-carousel-button{display:inline-flex!important;align-items:center;justify-content:center;opacity:1!important;visibility:visible!important;pointer-events:auto!important}.archive-carousel-position{font:500 9px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:.58}.archive-carousel-progress{flex:1;height:1px;background:rgba(232,221,200,.18)}.archive-controls{position:relative;z-index:10}.filter-group,.filter-group .filter{position:relative;z-index:11;pointer-events:auto}.archive-remove{position:relative;z-index:12;pointer-events:auto;cursor:pointer}
+
+/* SEARCH — EDITORIAL RESULT PASS */
+.search-results{height:auto!important;max-height:720px!important;overflow:auto!important;margin-top:34px!important;width:min(920px,calc(100% - 8vw))!important}
+.search-results-head{display:flex!important;justify-content:space-between!important;align-items:center!important;padding:12px 0 10px!important;border-bottom:1px solid rgba(232,221,200,.22)!important;font:8px var(--mono)!important;letter-spacing:.12em!important;color:var(--muted)!important}
+.search-result{grid-template-columns:28px 76px minmax(0,1fr) auto!important;gap:18px!important;min-height:128px!important;padding:18px 0!important;border-bottom:1px solid rgba(232,221,200,.13)!important}
+.search-result-index{align-self:start!important;padding-top:4px!important;font:8px var(--mono)!important;color:var(--red2)!important}
+.search-result-poster,.search-result-poster img{width:76px!important;min-width:76px!important;max-width:76px!important;height:102px!important;min-height:102px!important;max-height:102px!important}
+.search-result-info{min-width:0!important;position:relative!important;padding-right:70px!important}
+.search-result-topline{display:flex!important;gap:12px!important;flex-wrap:wrap!important;margin-bottom:7px!important;font:8px var(--mono)!important;letter-spacing:.1em!important;color:var(--red2)!important}
+.search-result-info h3{font-size:27px!important;line-height:.98!important;margin:0!important;letter-spacing:-.02em!important}
+.search-result-original{margin:5px 0 0!important;font:9px var(--mono)!important;letter-spacing:.04em!important;color:var(--muted)!important}
+.search-result-overview{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;margin:10px 0 0!important;font-size:12px!important;line-height:1.45!important;color:rgba(232,221,200,.66)!important;max-width:650px!important}
+.search-result-rating{position:absolute!important;right:0!important;top:0!important;font:11px var(--mono)!important;color:var(--milk)!important}
+.search-result-rating span{color:var(--muted)!important}
+.search-result-add{align-self:center!important;min-width:112px!important;margin-right:4px!important;padding:13px 15px!important}
+.search-result-add.added{opacity:.55!important;cursor:default!important}
+.search-state{padding:28px 0!important;font:9px var(--mono)!important;letter-spacing:.12em!important;color:var(--muted)!important;border-bottom:1px solid rgba(232,221,200,.15)!important}
