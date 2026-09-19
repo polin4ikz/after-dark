@@ -24,3 +24,50 @@
  document.addEventListener("click",e=>{const closeBtn=e.target.closest("#movieNightModalClose"),backdrop=e.target.closest("#movieNightModalBackdrop");if(!closeBtn&&!backdrop)return;const mn=$("#movieNightModal");if(!mn)return;e.preventDefault();e.stopPropagation();mn.classList.remove("active");mn.setAttribute("aria-hidden","true");document.body.classList.remove("movie-night-modal-open");document.body.style.overflow=""},{capture:true});
  document.documentElement.classList.add("ad-readable");meta();setInterval(meta,1500);
 })();
+/* MOVIE NIGHT — interaction safety */
+(()=>{
+  const root=document.querySelector("#movie-night");
+  if(!root||root.dataset.adMovieNightSafety)return;
+  root.dataset.adMovieNightSafety="1";
+
+  root.addEventListener("click",e=>{
+    const option=e.target.closest(".movie-night-option");
+    if(option){
+      e.preventDefault();
+      if(option.dataset.filterType!==undefined) movieNight.type=option.dataset.filterType;
+      if(option.dataset.genre!==undefined) movieNight.genre=option.dataset.genre;
+      if(option.dataset.year!==undefined) movieNight.year=option.dataset.year;
+      if(option.dataset.rating!==undefined) movieNight.rating=Number(option.dataset.rating);
+      const group=option.parentElement;
+      group?.querySelectorAll(".movie-night-option").forEach(x=>x.classList.toggle("active",x===option));
+      return;
+    }
+
+    const decide=e.target.closest("#decideButton");
+    if(decide){
+      e.preventDefault();
+      window.decideMovie?.();
+    }
+  },true);
+
+  const reveal=document.querySelector("#movieNightReveal");
+  const final=document.querySelector("#movieNightFinal");
+  const syncReveal=()=>{
+    if(!reveal||!final)return;
+    const done=reveal.classList.contains("done");
+    reveal.style.pointerEvents=done?"none":"auto";
+    final.style.position="relative";
+    final.style.zIndex="5";
+    final.style.pointerEvents=done?"auto":"none";
+  };
+  if(reveal){
+    new MutationObserver(syncReveal).observe(reveal,{attributes:true,attributeFilter:["class"]});
+  }
+  syncReveal();
+
+  document.querySelector("#movieNightModalClose")?.addEventListener("click",()=>window.closeMovieNight?.(),true);
+  document.querySelector("#movieNightModalBackdrop")?.addEventListener("click",()=>window.closeMovieNight?.(),true);
+  document.querySelector("#movieNightAdd")?.addEventListener("click",()=>{
+    if(window.movieNight?.result){addFilm(window.movieNight.result);updateMovieNightButtons?.()}
+  },true);
+})();
