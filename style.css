@@ -1765,3 +1765,8 @@ body::-webkit-scrollbar{
 .archive-editorial-mark .archive-stat + .archive-stat{
   border-left:1px solid rgba(232,221,200,.28)!important;
 }
+
+/* LIBRARY — shift stats left */
+.archive-editorial-mark b{
+  margin-left:14%!important;
+}
