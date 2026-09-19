@@ -1639,3 +1639,72 @@ body::-webkit-scrollbar{
   letter-spacing:.05em!important;
   color:rgba(232,221,200,.92)!important;
 }
+
+/* LIBRARY — editorial mark aligned with heading */
+.archive-header{
+  position:relative!important;
+}
+.archive-editorial-mark{
+  position:absolute!important;
+  left:54%!important;
+  right:auto!important;
+  top:0!important;
+  width:min(39vw,580px)!important;
+  height:300px!important;
+  transform:rotate(-2deg)!important;
+  z-index:2!important;
+  pointer-events:none!important;
+}
+.archive-header > *:not(.archive-editorial-mark){
+  position:relative!important;
+  z-index:3!important;
+}
+.archive-editorial-mark strong{
+  display:block!important;
+  margin-left:7%!important;
+  font:300 clamp(170px,19vw,290px)/.72 Georgia,"Times New Roman",serif!important;
+  letter-spacing:-.09em!important;
+  color:rgba(232,221,200,.28)!important;
+}
+.archive-editorial-mark .archive-editorial-rule{
+  display:block!important;
+  width:58%!important;
+  height:1px!important;
+  margin:12px 0 18px 18%!important;
+  background:rgba(232,221,200,.55)!important;
+}
+.archive-editorial-mark > span:not(.archive-editorial-rule){
+  display:block!important;
+  margin-left:18%!important;
+  font:500 9px/1 "Geist Mono",monospace!important;
+  letter-spacing:.15em!important;
+  color:rgba(232,221,200,.62)!important;
+}
+.archive-editorial-mark b{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:9px!important;
+  margin:18px 0 0 27%!important;
+  color:rgba(232,221,200,.58)!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.13em!important;
+}
+.archive-editorial-mark .archive-stat{
+  display:block!important;
+  white-space:nowrap!important;
+}
+.archive-editorial-mark .archive-stat strong{
+  display:inline!important;
+  margin:0!important;
+  font:500 10px/1 "Geist Mono",monospace!important;
+  letter-spacing:.05em!important;
+  color:rgba(232,221,200,.92)!important;
+}
+.archive-editorial-mark i{
+  display:block!important;
+  margin:28px 0 0 68%!important;
+  color:rgba(232,221,200,.46)!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.15em!important;
+  font-style:normal!important;
+}
