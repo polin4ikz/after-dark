@@ -1728,3 +1728,17 @@ body::-webkit-scrollbar{
   font:500 12px/1 "Geist Mono",monospace!important;
   letter-spacing:.03em!important;
 }
+
+/* LIBRARY — stats in one row */
+.archive-editorial-mark b{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:baseline!important;
+  flex-wrap:nowrap!important;
+  gap:18px!important;
+}
+.archive-editorial-mark .archive-stat{
+  display:inline-flex!important;
+  align-items:baseline!important;
+  gap:6px!important;
+}
