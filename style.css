@@ -1599,3 +1599,19 @@ body::-webkit-scrollbar{
   margin-left:68%!important;
   color:rgba(232,221,200,.46)!important;
 }
+
+/* LIBRARY — editorial mark refinement */
+.archive-editorial-mark{
+  top:38px!important;
+}
+.archive-editorial-mark .archive-editorial-rule{
+  margin-top:12px!important;
+  margin-bottom:18px!important;
+}
+.archive-editorial-mark b{
+  margin-top:18px!important;
+  margin-left:27%!important;
+}
+.archive-editorial-mark i{
+  margin-top:28px!important;
+}
