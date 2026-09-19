@@ -1022,3 +1022,55 @@ body::-webkit-scrollbar{
   filter:blur(32px)!important;
   opacity:.42!important;
 }
+
+/* HERO SPOT — layered organic color cloud */
+.hero-red{
+  width:64vw!important;
+  height:62vw!important;
+  max-width:940px!important;
+  max-height:900px!important;
+  right:-13vw!important;
+  top:49%!important;
+  transform:translateY(-50%) rotate(-10deg) scale(1.04)!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(ellipse 38% 32% at 31% 39%,
+      rgba(218,54,63,.82) 0%,
+      rgba(198,38,52,.58) 42%,
+      transparent 76%),
+    radial-gradient(ellipse 42% 36% at 66% 31%,
+      rgba(161,24,43,.72) 0%,
+      rgba(143,20,39,.42) 44%,
+      transparent 78%),
+    radial-gradient(ellipse 48% 44% at 68% 69%,
+      rgba(190,31,48,.66) 0%,
+      rgba(145,20,38,.34) 48%,
+      transparent 80%),
+    radial-gradient(ellipse 36% 34% at 30% 75%,
+      rgba(113,15,32,.48) 0%,
+      transparent 78%)!important;
+  filter:blur(30px)!important;
+  opacity:.92!important;
+  overflow:visible!important;
+}
+.hero-red:before{
+  inset:-8%!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(ellipse 32% 25% at 44% 42%,rgba(255,104,94,.18),transparent 72%),
+    radial-gradient(ellipse 28% 34% at 70% 60%,rgba(78,8,24,.20),transparent 72%)!important;
+  filter:blur(24px)!important;
+  opacity:1!important;
+  mix-blend-mode:screen!important;
+}
+.hero-red:after{
+  width:42%!important;
+  height:38%!important;
+  left:35%!important;
+  top:30%!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle,rgba(235,62,67,.22) 0%,rgba(235,62,67,.08) 42%,transparent 74%)!important;
+  filter:blur(38px)!important;
+  opacity:1!important;
+}
