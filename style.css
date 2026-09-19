@@ -1074,3 +1074,26 @@ body::-webkit-scrollbar{
   filter:blur(38px)!important;
   opacity:1!important;
 }
+
+/* HERO SPOT — wider cloud spread */
+.hero-red{
+  width:108vw!important;
+  height:68vw!important;
+  max-width:none!important;
+  max-height:none!important;
+  right:-31vw!important;
+  top:50%!important;
+  transform:translateY(-50%) rotate(-9deg) scale(1.02)!important;
+  filter:blur(34px)!important;
+}
+.hero-red:before{
+  inset:-7% -4%!important;
+  filter:blur(28px)!important;
+}
+.hero-red:after{
+  width:48%!important;
+  height:42%!important;
+  left:29%!important;
+  top:28%!important;
+  filter:blur(42px)!important;
+}
