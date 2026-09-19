@@ -1708,3 +1708,23 @@ body::-webkit-scrollbar{
   letter-spacing:.15em!important;
   font-style:normal!important;
 }
+
+/* LIBRARY — counter numbers */
+.archive-editorial-mark .archive-stat{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:8px!important;
+  white-space:nowrap!important;
+}
+.archive-editorial-mark .archive-stat strong{
+  display:inline-block!important;
+  width:auto!important;
+  min-width:18px!important;
+  margin:0!important;
+  padding:0!important;
+  visibility:visible!important;
+  opacity:1!important;
+  color:rgba(232,221,200,.98)!important;
+  font:500 12px/1 "Geist Mono",monospace!important;
+  letter-spacing:.03em!important;
+}
