@@ -1770,3 +1770,8 @@ body::-webkit-scrollbar{
 .archive-editorial-mark b{
   margin-left:14%!important;
 }
+
+/* LIBRARY — shift stats a little further left */
+.archive-editorial-mark b{
+  margin-left:11%!important;
+}
