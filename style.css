@@ -1130,3 +1130,57 @@ body::-webkit-scrollbar{
 .ratings-section .rating-card{
   border-color:rgba(23,18,20,.16)!important;
 }
+
+/* RATINGS — red / bordeaux structure on milk */
+.ratings-section{
+  --ratings-red:#8f2030;
+  --ratings-bordeaux:#54131f;
+  --ratings-line:rgba(84,19,31,.24);
+}
+.ratings-section .ratings-header,
+.ratings-section .ratings-table,
+.ratings-section .rating-card,
+.ratings-section .ratings-list,
+.ratings-section .ratings-tabs{
+  border-color:var(--ratings-line)!important;
+}
+.ratings-section .ratings-table th,
+.ratings-section .ratings-table td,
+.ratings-section .rating-row,
+.ratings-section .rating-card{
+  border-color:var(--ratings-line)!important;
+}
+.ratings-section .ratings-table th,
+.ratings-section .rating-card-meta,
+.ratings-section .ratings-label,
+.ratings-section .ratings-count{
+  color:var(--ratings-bordeaux)!important;
+}
+.ratings-section .ratings-table td,
+.ratings-section .rating-card h3,
+.ratings-section .rating-card p{
+  color:var(--black)!important;
+}
+.ratings-section .rating-value,
+.ratings-section .rating-number,
+.ratings-section .rating-score{
+  color:var(--ratings-red)!important;
+}
+.ratings-section .ratings-tab{
+  color:var(--ratings-bordeaux)!important;
+  border-color:var(--ratings-line)!important;
+}
+.ratings-section .ratings-tab.active,
+.ratings-section .ratings-tab:hover{
+  background:var(--ratings-bordeaux)!important;
+  color:var(--milk)!important;
+  border-color:var(--ratings-bordeaux)!important;
+}
+.ratings-section .rating-bar,
+.ratings-section .rating-progress{
+  background:rgba(84,19,31,.10)!important;
+}
+.ratings-section .rating-bar > *,
+.ratings-section .rating-progress > *{
+  background:var(--ratings-red)!important;
+}
