@@ -1279,3 +1279,20 @@ body::-webkit-scrollbar{
 #ratingsList [data-ratings-header="legacy"]{
   display:none!important;
 }
+
+/* LIBRARY — organic milk light cloud */
+.archive-section:after{
+  right:-4vw!important;
+  top:-2%!important;
+  width:82vw!important;
+  height:54vw!important;
+  border-radius:52% 48% 43% 57% / 46% 54% 47% 53%!important;
+  background:
+    radial-gradient(ellipse 34% 28% at 30% 34%,rgba(232,221,200,.78) 0%,rgba(232,221,200,.48) 38%,transparent 78%),
+    radial-gradient(ellipse 42% 34% at 65% 30%,rgba(246,237,222,.64) 0%,rgba(232,221,200,.34) 44%,transparent 80%),
+    radial-gradient(ellipse 46% 38% at 69% 67%,rgba(232,221,200,.54) 0%,rgba(210,193,173,.25) 46%,transparent 82%),
+    radial-gradient(ellipse 32% 30% at 28% 76%,rgba(244,232,215,.40) 0%,transparent 80%)!important;
+  filter:blur(30px)!important;
+  opacity:.92!important;
+  transform:rotate(-6deg) scale(1.04)!important;
+}
