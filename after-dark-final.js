@@ -151,3 +151,30 @@
     window.decideMovie?.();
   },true);
 })();
+
+/* MOVIE NIGHT — pointer-level controls */
+(()=>{
+  if(document.documentElement.dataset.adMovieNightPointer)return;
+  document.documentElement.dataset.adMovieNightPointer="1";
+
+  document.addEventListener("pointerdown",e=>{
+    const b=e.target.closest?.("#movie-night .movie-night-option");
+    if(b){
+      if(b.dataset.filterType!==undefined) movieNight.type=b.dataset.filterType;
+      if(b.dataset.genre!==undefined) movieNight.genre=b.dataset.genre;
+      if(b.dataset.year!==undefined) movieNight.year=b.dataset.year;
+      if(b.dataset.rating!==undefined) movieNight.rating=Number(b.dataset.rating);
+
+      b.parentElement?.querySelectorAll(".movie-night-option").forEach(x=>x.classList.toggle("active",x===b));
+      return;
+    }
+
+    const decide=e.target.closest?.("#decideButton");
+    if(decide){
+      if(window.__movieNightPointerDecide)return;
+      window.__movieNightPointerDecide=true;
+      window.decideMovie?.();
+      setTimeout(()=>window.__movieNightPointerDecide=false,300);
+    }
+  },true);
+})();
