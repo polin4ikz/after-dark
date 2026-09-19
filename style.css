@@ -928,3 +928,70 @@ body::-webkit-scrollbar{
   .archive-card-poster img{width:100%!important;height:100%!important;object-fit:cover!important}
   .movie-night-settings{padding-top:4px!important}
 }
+
+/* =========================================================
+   AFTER DARK — HERO RED SPOT / ORGANIC TEXTURE TEST
+========================================================= */
+.hero-red{
+  position:absolute!important;
+  width:58vw!important;
+  height:58vw!important;
+  max-width:860px!important;
+  max-height:860px!important;
+  right:-10vw!important;
+  top:50%!important;
+  transform:translateY(-50%) rotate(-8deg)!important;
+  border-radius:47% 53% 58% 42% / 48% 43% 57% 52%!important;
+  background:
+    radial-gradient(ellipse at 38% 42%,
+      rgba(183,34,48,.96) 0%,
+      rgba(164,27,43,.88) 28%,
+      rgba(133,20,36,.68) 51%,
+      rgba(105,16,30,.28) 70%,
+      transparent 78%),
+    radial-gradient(ellipse at 67% 61%,
+      rgba(219,63,67,.28) 0%,
+      rgba(172,30,47,.12) 38%,
+      transparent 69%)!important;
+  filter:blur(1.5px)!important;
+  opacity:.92!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+
+/* fine paper-like grain living inside the color */
+.hero-red:before{
+  content:""!important;
+  position:absolute!important;
+  inset:-35%!important;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E")!important;
+  mix-blend-mode:soft-light!important;
+  opacity:.28!important;
+  transform:rotate(7deg)!important;
+  pointer-events:none!important;
+}
+
+/* subtle translucent pigment variation */
+.hero-red:after{
+  content:""!important;
+  position:absolute!important;
+  width:72%!important;
+  height:58%!important;
+  left:8%!important;
+  top:18%!important;
+  border-radius:62% 38% 48% 52% / 43% 57% 41% 59%!important;
+  background:
+    radial-gradient(circle at 30% 35%,rgba(255,117,105,.20),transparent 42%),
+    radial-gradient(circle at 72% 68%,rgba(78,8,23,.22),transparent 48%)!important;
+  filter:blur(18px)!important;
+  opacity:.8!important;
+  pointer-events:none!important;
+}
+
+@media(max-width:900px){
+  .hero-red{
+    width:90vw!important;
+    height:90vw!important;
+    right:-28vw!important;
+  }
+}
