@@ -1097,3 +1097,36 @@ body::-webkit-scrollbar{
   top:28%!important;
   filter:blur(42px)!important;
 }
+
+/* RATINGS — bring the milk tone into the section */
+.ratings-section{
+  background:var(--milk)!important;
+  color:var(--black)!important;
+}
+.ratings-section .ratings-header,
+.ratings-section .ratings-header h2,
+.ratings-section .ratings-header p,
+.ratings-section .ratings-empty,
+.ratings-section .rating-card,
+.ratings-section .rating-card h3,
+.ratings-section .rating-card p,
+.ratings-section .rating-card-meta,
+.ratings-section .ratings-tabs,
+.ratings-section .ratings-tab{
+  color:var(--black)!important;
+}
+.ratings-section .ratings-header{
+  border-color:rgba(23,18,20,.18)!important;
+}
+.ratings-section .ratings-tab{
+  border-color:rgba(23,18,20,.22)!important;
+}
+.ratings-section .ratings-tab.active,
+.ratings-section .ratings-tab:hover{
+  background:var(--black)!important;
+  color:var(--milk)!important;
+  border-color:var(--black)!important;
+}
+.ratings-section .rating-card{
+  border-color:rgba(23,18,20,.16)!important;
+}
