@@ -1548,3 +1548,53 @@ body::-webkit-scrollbar{
   position:relative!important;
   z-index:1!important;
 }
+
+/* LIBRARY — editorial archive mark */
+.archive-editorial-mark{
+  position:absolute!important;
+  left:53%!important;
+  top:7%!important;
+  width:min(38vw,560px)!important;
+  height:290px!important;
+  color:rgba(232,221,200,.62)!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  transform:rotate(-2deg)!important;
+}
+.archive-editorial-mark strong{
+  display:block!important;
+  margin-left:8%!important;
+  font:300 clamp(150px,18vw,270px)/.72 "Instrument Serif",serif!important;
+  letter-spacing:-.08em!important;
+  color:rgba(232,221,200,.16)!important;
+}
+.archive-editorial-mark .archive-editorial-rule{
+  display:block!important;
+  width:58%!important;
+  height:1px!important;
+  margin:-5px 0 15px 17%!important;
+  background:rgba(232,221,200,.38)!important;
+}
+.archive-editorial-mark span:not(.archive-editorial-rule),
+.archive-editorial-mark b,
+.archive-editorial-mark i{
+  display:block!important;
+  margin-left:17%!important;
+  font:500 8px/1 "Geist Mono",monospace!important;
+  letter-spacing:.14em!important;
+  font-style:normal!important;
+}
+.archive-editorial-mark b{
+  margin-top:22px!important;
+  margin-left:26%!important;
+  color:rgba(232,221,200,.36)!important;
+  font-size:7px!important;
+}
+.archive-editorial-mark i{
+  margin-top:38px!important;
+  margin-left:67%!important;
+  color:rgba(232,221,200,.34)!important;
+}
+.archive-header{position:relative!important}
+.archive-header > *:not(.archive-editorial-mark){position:relative!important;z-index:1!important}
+.archive-editorial-mark{z-index:0!important}
