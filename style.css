@@ -1357,3 +1357,24 @@ body::-webkit-scrollbar{
   opacity:.58!important;
   transform:rotate(-7deg) scale(1.02)!important;
 }
+
+/* LIBRARY — deep ink cloud */
+.archive-section:after{
+  right:-8vw!important;top:-2%!important;width:60vw!important;height:40vw!important;max-width:900px!important;max-height:600px!important;
+  border-radius:54% 46% 48% 52% / 44% 56% 45% 55%!important;
+  background:
+    radial-gradient(ellipse 40% 32% at 31% 35%,rgba(18,13,15,.92) 0%,rgba(25,14,18,.78) 42%,transparent 80%),
+    radial-gradient(ellipse 46% 36% at 68% 30%,rgba(10,9,11,.86) 0%,rgba(25,13,18,.58) 45%,transparent 82%),
+    radial-gradient(ellipse 48% 40% at 69% 68%,rgba(12,10,12,.80) 0%,rgba(40,15,23,.46) 48%,transparent 84%),
+    radial-gradient(ellipse 34% 30% at 27% 76%,rgba(20,12,15,.70) 0%,transparent 82%)!important;
+  filter:blur(27px)!important;opacity:.94!important;transform:rotate(-7deg) scale(1.02)!important;
+}
+.archive-section:before{
+  right:-7vw!important;top:0!important;width:60vw!important;height:40vw!important;max-width:900px!important;max-height:600px!important;
+  border-radius:54% 46% 48% 52% / 44% 56% 45% 55%!important;
+  background:
+    radial-gradient(circle at 24% 31%,rgba(232,221,200,.08) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 69% 44%,rgba(232,221,200,.07) 0 1px,transparent 1.8px),
+    radial-gradient(circle at 48% 72%,rgba(0,0,0,.12) 0 1px,transparent 1.7px)!important;
+  background-size:17px 19px,23px 21px,29px 27px!important;filter:blur(.3px)!important;opacity:.55!important;mix-blend-mode:soft-light!important;transform:rotate(-7deg) scale(1.02)!important;
+}
