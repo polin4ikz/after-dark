@@ -58,7 +58,7 @@
       track.addEventListener("click",e=>{
         const b=e.target.closest("[data-action='watch']");if(!b)return;
         e.preventDefault();e.stopImmediatePropagation();
-        const id=Number(b.dataset.id||b.closest(".archive-card")&&b.closest(".archive-card").dataset.id),film=window.films&&window.films.find(x=>Number(x.tmdbId)===id);
+        const id=Number(b.dataset.id||b.closest(".archive-card")&&b.closest(".archive-card").dataset.id),film=JSON.parse(localStorage.getItem("afterDarkArchive")||"[]").find(x=>Number(x.tmdbId)===id);
         if(film)window.openFilmCard(id,film);
       },true);
     }
@@ -66,8 +66,8 @@
     if(open&&!open.dataset.adOpenUpgrade){
       open.dataset.adOpenUpgrade="1";
       open.addEventListener("click",e=>{
-        e.preventDefault();e.stopImmediatePropagation();const r=window.movieNight&&window.movieNight.result;if(!r)return;
-        window.openFilmCard(r.id,{tmdbId:r.id,title:r.title,name:r.name,poster_path:r.poster_path||"",release_date:r.release_date||"",first_air_date:r.first_air_date||"",type:typeOf(r),vote_average:r.vote_average||0,genre_ids:r.genre_ids||[],watched:false});
+        e.preventDefault();e.stopImmediatePropagation();const title=($("#movieNightTitle")&&$("#movieNightTitle").textContent||"").trim();if(!title)return;
+        window.tmdb("/search/multi",{query:title,include_adult:"false",language:"ru-RU",page:1}).then(d=>{const r=(d.results||[]).find(x=>x.media_type==="movie"||x.media_type==="tv");if(!r)return;window.openFilmCard(r.id,{tmdbId:r.id,title:r.title,name:r.name,poster_path:r.poster_path||"",release_date:r.release_date||"",first_air_date:r.first_air_date||"",type:typeOf(r),vote_average:r.vote_average||0,genre_ids:r.genre_ids||[],watched:false})}).catch(()=>{})
       },true);
     }
     const controls=$(".archive-controls"),wrap=$(".archive-track-wrap");
@@ -78,7 +78,7 @@
     updateMeta();document.documentElement.classList.add("ad-readable");
   }
   function updateMeta(){
-    const films=window.films||[],m=meta(),d=m.updatedAt?new Date(m.updatedAt):null,dt=d&&!isNaN(d) ? d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"}):"—",count=String(films.length).padStart(3,"0");
+    const films=JSON.parse(localStorage.getItem("afterDarkArchive")||"[]"),m=meta(),d=m.updatedAt?new Date(m.updatedAt):null,dt=d&&!isNaN(d) ? d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"}):"—",count=String(films.length).padStart(3,"0");
     let box=$("#adArchiveMeta");if(!box){box=document.createElement("div");box.id="adArchiveMeta";box.className="ad-archive-meta";$(".archive-controls")&&$(".archive-controls").appendChild(box)}
     box.innerHTML="<span>ARCHIVE / "+count+" TITLES</span><span>LAST UPDATED / "+dt+"</span><span>PRIVATE / 02 VIEWERS</span>";
     const footer=$(".site-footer");if(footer){let f=footer.querySelector(".ad-footer-meta");if(!f){f=document.createElement("div");f.className="ad-footer-meta";$(".footer-center",footer)&&$(".footer-center",footer).appendChild(f)}f.innerHTML="<span>"+count+" TITLES CATALOGUED</span><span>02 VIEWERS</span><span>LAST UPDATED / "+dt+"</span>"}
