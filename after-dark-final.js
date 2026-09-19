@@ -101,3 +101,53 @@
     }
   },true);
 })();
+
+/* MOVIE NIGHT — restore filter controls */
+(()=>{
+  const root=document.querySelector("#movie-night");
+  if(!root||root.dataset.adMovieNightControls)return;
+  root.dataset.adMovieNightControls="1";
+
+  const setActive=(button,selector)=>{
+    button.parentElement?.querySelectorAll(selector).forEach(x=>x.classList.remove("active"));
+    button.classList.add("active");
+  };
+
+  root.querySelectorAll(".movie-night-option").forEach(button=>{
+    button.addEventListener("click",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+
+      if(button.dataset.filterType!==undefined){
+        movieNight.type=button.dataset.filterType;
+        setActive(button,".movie-night-option");
+      }
+      if(button.dataset.genre!==undefined){
+        movieNight.genre=button.dataset.genre;
+        setActive(button,".movie-night-option");
+      }
+      if(button.dataset.year!==undefined){
+        movieNight.year=button.dataset.year;
+        setActive(button,".movie-night-option");
+      }
+      if(button.dataset.rating!==undefined){
+        movieNight.rating=Number(button.dataset.rating);
+        setActive(button,".movie-night-option");
+      }
+    },true);
+  });
+
+  root.querySelector("#movieNightCountry")?.addEventListener("change",e=>{
+    movieNight.country=e.target.value;
+  },true);
+
+  root.querySelector("#excludeArchive")?.addEventListener("change",e=>{
+    movieNight.exclude=e.target.checked;
+  },true);
+
+  root.querySelector("#decideButton")?.addEventListener("click",e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    window.decideMovie?.();
+  },true);
+})();
