@@ -8,7 +8,8 @@ const supabaseReady=new Promise((resolve,reject)=>{if(window.supabase){supabaseC
 const $=(s,p=document)=>p.querySelector(s),$$=(s,p=document)=>[...p.querySelectorAll(s)];
 const body=document.body,cursor=$(".cursor"),archiveTrack=$("#archiveTrack"),searchInput=$("#searchInput"),searchResults=$("#searchResults");
 let films=load(ARCHIVE_KEY),currentType="all",searchController=null,searchTimer=null;
-let movieNight={type:"all",genre:"any",year:"any",country:"any",rating:0,exclude:false,result:null,busy:false};\nwindow.movieNight=movieNight;
+let movieNight={type:"all",genre:"any",year:"any",country:"any",rating:0,exclude:false,result:null,busy:false};
+window.movieNight=movieNight;
 let ratings=load(RATINGS_KEY);
 const GENRES={drama:18,comedy:35,thriller:53,horror:27,crime:80,romance:10749,fantasy:14,"sci-fi":878,mystery:9648,documentary:99};
 const COUNTRIES={US:"USA",GB:"UK",FR:"FRANCE",DE:"GERMANY",IT:"ITALY",ES:"SPAIN",JP:"JAPAN",KR:"SOUTH KOREA",CN:"CHINA",HK:"HONG KONG",TW:"TAIWAN",IN:"INDIA",CA:"CANADA",AU:"AUSTRALIA",RU:"RUSSIA",SE:"SWEDEN",NO:"NORWAY",DK:"DENMARK",FI:"FINLAND",NL:"NETHERLANDS",BE:"BELGIUM",CH:"SWITZERLAND",PL:"POLAND",CZ:"CZECH REPUBLIC",BR:"BRAZIL",MX:"MEXICO",AR:"ARGENTINA",IE:"IRELAND",TR:"TURKEY",TH:"THAILAND",ID:"INDONESIA",IR:"IRAN",IL:"ISRAEL"};
