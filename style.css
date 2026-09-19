@@ -1548,3 +1548,52 @@ body::-webkit-scrollbar{
   z-index:0!important;
 }
 .archive-section > *{position:relative!important;z-index:1!important}
+
+/* LIBRARY — irregular hand-built grid */
+.archive-section:before{
+  content:""!important;
+  position:absolute!important;
+  left:49%!important;
+  top:8%!important;
+  width:47vw!important;
+  height:34vw!important;
+  min-width:520px!important;
+  min-height:360px!important;
+  border:0!important;
+  background:
+    linear-gradient(90deg,transparent 0 8%,rgba(232,221,200,.30) 8% 8.15%,transparent 8.15% 100%) 0 0/100% 100%,
+    linear-gradient(90deg,transparent 0 31%,rgba(232,221,200,.24) 31% 31.12%,transparent 31.12% 100%) 0 0/100% 100%,
+    linear-gradient(90deg,transparent 0 57%,rgba(232,221,200,.30) 57% 57.14%,transparent 57.14% 100%) 0 0/100% 100%,
+    linear-gradient(90deg,transparent 0 82%,rgba(232,221,200,.22) 82% 82.12%,transparent 82.12% 100%) 0 0/100% 100%,
+    linear-gradient(0deg,transparent 0 14%,rgba(232,221,200,.25) 14% 14.14%,transparent 14.14% 100%) 0 0/100% 100%,
+    linear-gradient(0deg,transparent 0 39%,rgba(232,221,200,.30) 39% 39.14%,transparent 39.14% 100%) 0 0/100% 100%,
+    linear-gradient(0deg,transparent 0 64%,rgba(232,221,200,.22) 64% 64.12%,transparent 64.12% 100%) 0 0/100% 100%,
+    linear-gradient(0deg,transparent 0 87%,rgba(232,221,200,.28) 87% 87.14%,transparent 87.14% 100%) 0 0/100% 100%)!important;
+  clip-path:polygon(0 3%,18% 3%,18% 0,43% 0,43% 7%,67% 7%,67% 1%,100% 1%,100% 27%,94% 27%,94% 48%,100% 48%,100% 72%,88% 72%,88% 100%,61% 100%,61% 92%,37% 92%,37% 100%,9% 100%,9% 78%,0 78%)!important;
+  opacity:1!important;
+  transform:rotate(-2deg)!important;
+  pointer-events:none!important;
+  z-index:0!important;
+}
+.archive-section:after{
+  content:""!important;
+  position:absolute!important;
+  left:49%!important;
+  top:8%!important;
+  width:47vw!important;
+  height:34vw!important;
+  min-width:520px!important;
+  min-height:360px!important;
+  background:
+    linear-gradient(90deg,transparent 0 18%,rgba(232,221,200,.42) 18% 18.2%,transparent 18.2% 100%) 0 0/100% 43% no-repeat,
+    linear-gradient(90deg,transparent 0 43%,rgba(232,221,200,.34) 43% 43.16%,transparent 43.16% 100%) 0 0/100% 58% no-repeat,
+    linear-gradient(90deg,transparent 0 70%,rgba(232,221,200,.36) 70% 70.15%,transparent 70.15% 100%) 0 0/100% 34% no-repeat,
+    linear-gradient(0deg,transparent 0 24%,rgba(232,221,200,.36) 24% 24.18%,transparent 24.18% 100%) 0 0/52% 100% no-repeat,
+    linear-gradient(0deg,transparent 0 51%,rgba(232,221,200,.34) 51% 51.16%,transparent 51.16% 100%) 0 0/77% 100% no-repeat,
+    linear-gradient(0deg,transparent 0 78%,rgba(232,221,200,.38) 78% 78.18%,transparent 78.18% 100%) 0 0/41% 100% no-repeat!important;
+  opacity:.9!important;
+  transform:rotate(-2deg)!important;
+  pointer-events:none!important;
+  z-index:0!important;
+}
+.archive-section > *{position:relative!important;z-index:1!important}
