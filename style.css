@@ -1327,3 +1327,33 @@ body::-webkit-scrollbar{
   mix-blend-mode:soft-light!important;
   transform:rotate(-6deg) scale(1.04)!important;
 }
+
+/* LIBRARY — smaller milk cloud, keep text clear */
+.archive-section:after{
+  right:-10vw!important;
+  top:-1%!important;
+  width:58vw!important;
+  height:38vw!important;
+  max-width:860px!important;
+  max-height:560px!important;
+  border-radius:54% 46% 47% 53% / 45% 55% 44% 56%!important;
+  background:
+    radial-gradient(ellipse 38% 32% at 32% 36%,rgba(247,239,226,.92) 0%,rgba(239,230,214,.66) 42%,transparent 80%),
+    radial-gradient(ellipse 46% 36% at 67% 32%,rgba(250,243,232,.78) 0%,rgba(240,231,216,.44) 46%,transparent 82%),
+    radial-gradient(ellipse 48% 40% at 70% 68%,rgba(244,235,221,.68) 0%,rgba(235,224,207,.30) 48%,transparent 84%),
+    radial-gradient(ellipse 32% 30% at 28% 76%,rgba(249,240,225,.58) 0%,transparent 82%)!important;
+  filter:blur(25px)!important;
+  opacity:.94!important;
+  transform:rotate(-7deg) scale(1.02)!important;
+}
+.archive-section:before{
+  right:-9vw!important;
+  top:0!important;
+  width:58vw!important;
+  height:38vw!important;
+  max-width:860px!important;
+  max-height:560px!important;
+  border-radius:54% 46% 47% 53% / 45% 55% 44% 56%!important;
+  opacity:.58!important;
+  transform:rotate(-7deg) scale(1.02)!important;
+}
