@@ -239,60 +239,9 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
     }
   }
 
-  function installAuthFallback(){
-    const form=document.querySelector("#authForm");
-    if(!form)return;
-
-    form.addEventListener("submit",async e=>{
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      const name=document.querySelector("#authName")?.value.trim()||"";
-      const email=document.querySelector("#authEmail")?.value.trim()||"";
-      const password=document.querySelector("#authPassword")?.value||"";
-      const mode=document.querySelector(".auth-tab.active")?.dataset.auth||"login";
-
-      if(!email||!password||(mode==="register"&&!name)){
-        authError("PLEASE FILL IN ALL FIELDS");
-        return;
-      }
-
-      try{
-        await supabaseReady;
-        if(mode==="register"){
-          const{data,error}=await supabaseClient.auth.signUp({
-            email,
-            password,
-            options:{data:{nickname:name}}
-          });
-          if(error)throw error;
-
-          if(data.session){
-            await ensureProfile(data.session);
-            closeAuth();
-            await updateAuthButton(data.session);
-          }else{
-            closeAuth();
-            alert("ACCOUNT CREATED.");
-          }
-        }else{
-          const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-          if(error)throw error;
-          session=data.session||null;
-          closeAuth();
-          await updateAuthButton(session);
-        }
-      }catch(error){
-        console.error("AUTH LOGIN FAILED",error);
-        authError(error.message||"AUTHENTICATION FAILED");
-      }
-    },true);
-  }
-
   async function initAuthBridge(){
     try{
       await supabaseReady;
-      installAuthFallback();
       await syncHeader();
       supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{
         session=newSession||null;
