@@ -1,5 +1,5 @@
 (()=>{
-  const state={filter:"all",sort:"high",rows:[],session:null,people:[]};
+  const state={filter:"all",sort:"high",rows:[],session:null};
   let modal=null;
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
@@ -71,15 +71,12 @@ document.head.appendChild(style);
   async function openRating(id){try{const session=await currentSession();if(!session){openAuth();return}state.session=session;const film=films.find(x=>Number(x.tmdbId)===Number(id));if(!film)return;const{data,error}=await supabaseClient.from("ratings").select("rating").eq("tmdb_id",Number(id)).eq("user_id",session.user.id).maybeSingle();if(error)throw error;const m=ensureModal();m.dataset.tmdbId=String(id);m.querySelector(".supabase-rating-title").textContent=titleOf(film).toUpperCase();m.querySelector(".supabase-rating-current").textContent=data?`YOUR CURRENT RATING · ${Number(data.rating).toFixed(1)}`:"YOUR RATING · 0 — 10";m.querySelector(".supabase-rating-input").value=data?Number(data.rating):"";m.querySelector(".supabase-rating-save").disabled=false;m.classList.add("active");document.body.style.overflow="hidden";setTimeout(()=>m.querySelector(".supabase-rating-input")?.focus(),50)}catch(e){console.error("RATING OPEN FAILED",e);authError(e.message)}}
   async function saveRating(){const m=ensureModal(),id=Number(m.dataset.tmdbId),input=m.querySelector(".supabase-rating-input"),button=m.querySelector(".supabase-rating-save"),value=Number(input.value);if(!Number.isFinite(value)||value<0||value>10||Math.round(value*2)!==value*2){input.focus();return}try{button.disabled=true;const session=state.session||await currentSession();if(!session){closeModal();openAuth();return}const{error}=await supabaseClient.from("ratings").upsert({tmdb_id:id,user_id:session.user.id,rating:value,updated_at:new Date().toISOString()},{onConflict:"tmdb_id,user_id"});if(error)throw error;closeModal();await loadRatings()}catch(e){console.error("RATING SAVE FAILED",e);alert(`RATING COULD NOT BE SAVED: ${e.message}`)}finally{button.disabled=false}}
   async function deleteMyRating(id){try{const session=state.session||await currentSession();if(!session){openAuth();return}const{error}=await supabaseClient.from("ratings").delete().eq("tmdb_id",Number(id)).eq("user_id",session.user.id);if(error)throw error;await loadRatings()}catch(e){console.error("RATING DELETE FAILED",e);alert(`RATING COULD NOT BE DELETED: ${e.message}`)}}
-  function getPeople(profiles){return profiles.filter(p=>p?.id&&String(p.nickname||"").trim()).sort((a,b)=>String(a.nickname).localeCompare(String(b.nickname),undefined,{sensitivity:"base"}))}
   function render(){
     const list=document.querySelector("#ratingsList");if(!list)return;
     let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
     data.sort((a,b)=>{if(state.sort==="recent")return new Date(b.latest||0)-new Date(a.latest||0);if(state.sort==="oldest")return new Date(a.latest||0)-new Date(b.latest||0);const av=a.average??-1,bv=b.average??-1;return state.sort==="low"?av-bv:bv-av});
     const people=state.people||[];
     list.innerHTML=data.length?data.map((r,i)=>{
-      const byUser=new Map(r.items.map(x=>[x.user_id,x.rating]));
-      const cells=people.map(p=>{const v=byUser.get(p.id);return `<div class="rating-score"><span>${esc(String(p.nickname).toUpperCase())}</span><strong>${v==null?"—":Number(v).toFixed(1)}</strong></div>`}).join("");
       const avg=r.average==null?"—":r.average.toFixed(1);
       return \`<article class="rating-card" data-tmdb-id="\${esc(r.film.tmdb_id)}"><span class="rating-number">\${String(i+1).padStart(2,"0")}</span><div class="rating-poster">\${r.film.poster_path?\`<img src="https://image.tmdb.org/t/p/w342\${esc(r.film.poster_path)}" alt="" loading="lazy">\`:""}</div><div class="rating-main"><h3 class="rating-title">\${esc(titleOf(r.film))}</h3><div class="rating-info"><span>\${esc((r.film.type||"film").toUpperCase())}</span><span>\${esc(yearOf(r.film))}</span></div></div><div class="rating-average"><strong>\${avg}</strong><span>/ 10</span></div>\${r.byUser?\`<button class="rating-delete" type="button" data-rating-id="\${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>\`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>\`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
   }
@@ -88,14 +85,11 @@ document.head.appendChild(style);
     try{
       await supabaseReady;
       const session=state.session||await currentSession();state.session=session;
-      if(!session){state.rows=[];state.people=[];render();return}
+      if(!session){state.rows=[];render();return}
       const filmsRes=await supabaseClient.from("archive").select("tmdb_id,title,name,poster_path,release_date,first_air_date,type,created_at").order("created_at",{ascending:false});
       if(filmsRes.error)throw filmsRes.error;
       const ratingsRes=await supabaseClient.from("ratings").select("tmdb_id,user_id,rating,created_at,updated_at").order("updated_at",{ascending:false});
       if(ratingsRes.error)throw ratingsRes.error;
-      const profilesRes=await supabaseClient.from("profiles").select("id,nickname").order("nickname",{ascending:true});
-      if(profilesRes.error)throw profilesRes.error;
-      state.people=(profilesRes.data||[]).filter(p=>p?.id&&String(p.nickname||"").trim());
       const filmMap=new Map((filmsRes.data||[]).map(f=>[Number(f.tmdb_id),f])),grouped=new Map();
       (ratingsRes.data||[]).forEach(row=>{const film=filmMap.get(Number(row.tmdb_id));if(!film)return;if(!grouped.has(Number(row.tmdb_id)))grouped.set(Number(row.tmdb_id),{film,items:[]});grouped.get(Number(row.tmdb_id)).items.push(row)});
       state.rows=[...grouped.values()].map(g=>{const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");return{...g,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest}});
