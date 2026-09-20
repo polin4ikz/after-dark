@@ -25,7 +25,34 @@
       .ratings-list .rating-score{display:flex!important;flex-direction:column!important;min-width:0!important;visibility:visible!important;opacity:1!important}
       .ratings-list .rating-score strong{display:block!important}
     `;
-    document.head.appendChild(style);
+    
+      #ratings .ratings-controls{display:flex!important;align-items:center!important;justify-content:flex-start!important;margin-bottom:34px!important}
+      #ratings .sort-group{display:none!important}
+      #ratings .rating-filters{display:flex!important;gap:0!important;border:1px solid rgba(23,18,20,.18)!important}
+      #ratings .rating-filter{margin:0!important;padding:11px 16px!important;border:0!important;border-right:1px solid rgba(23,18,20,.14)!important;background:transparent!important;color:rgba(23,18,20,.52)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important;cursor:pointer!important}
+      #ratings .rating-filter:last-child{border-right:0!important}
+      #ratings .rating-filter.active{background:#171214!important;color:#f1ece5!important}
+      #ratings .ratings-list{width:100%!important;display:block!important;border-top:1px solid rgba(23,18,20,.28)!important}
+      #ratingsList .rating-card{position:relative!important;display:grid!important;grid-template-columns:34px 72px minmax(0,1fr) auto!important;align-items:center!important;gap:20px!important;min-height:126px!important;margin:0!important;padding:14px 42px 14px 0!important;border:0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;background:transparent!important;cursor:pointer!important;transition:transform .25s ease,background .25s ease!important}
+      #ratingsList .rating-card:hover{transform:translateX(8px)!important;background:rgba(23,18,20,.025)!important}
+      #ratingsList .rating-number{align-self:start!important;padding-top:5px!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important;color:rgba(145,23,40,.72)!important}
+      #ratingsList .rating-poster{width:72px!important;height:96px!important;overflow:hidden!important;background:rgba(23,18,20,.08)!important}
+      #ratingsList .rating-poster img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;transition:transform .35s ease!important}
+      #ratingsList .rating-card:hover .rating-poster img{transform:scale(1.06)!important}
+      #ratingsList .rating-main{min-width:0!important;align-self:center!important}
+      #ratingsList .rating-title{margin:0!important;font:500 clamp(22px,2.4vw,34px)/.96 "Bricolage Grotesque",sans-serif!important;letter-spacing:-.035em!important;text-transform:uppercase!important;color:#171214!important}
+      #ratingsList .rating-info{display:flex!important;gap:12px!important;margin-top:9px!important;color:rgba(23,18,20,.5)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
+      #ratingsList .rating-info span+span:before{content:"·";margin-right:12px;color:rgba(23,18,20,.25)!important}
+      #ratingsList .rating-average{display:flex!important;align-items:baseline!important;gap:6px!important;min-width:112px!important;justify-content:flex-end!important;color:#171214!important}
+      #ratingsList .rating-average strong{font:400 clamp(30px,3.4vw,52px)/.85 "Instrument Serif",Georgia,serif!important;letter-spacing:-.04em!important}
+      #ratingsList .rating-average span{font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important;color:rgba(23,18,20,.46)!important}
+      #ratingsList .rating-open-file{position:absolute!important;right:4px!important;bottom:15px!important;opacity:0!important;transform:translateX(5px)!important;color:#911728!important;font:500 7px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important;transition:opacity .2s ease,transform .2s ease!important;pointer-events:none!important}
+      #ratingsList .rating-card:hover .rating-open-file{opacity:1!important;transform:translateX(0)!important}
+      #ratingsList .rating-delete{position:absolute!important;right:0!important;top:14px!important;width:20px!important;height:20px!important;padding:0!important;border:0!important;background:transparent!important;color:rgba(23,18,20,.38)!important;font:500 14px/20px "Geist Mono",monospace!important;z-index:3!important;cursor:pointer!important}
+      #ratingsList .rating-delete:hover{color:#911728!important}
+      #ratingsList .rating-scores{display:none!important}
+      #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
+document.head.appendChild(style);
   }
 
   function ensureModal(){
