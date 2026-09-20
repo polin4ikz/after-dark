@@ -1,6 +1,6 @@
 const TMDB_API_KEY="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMTZiYTQ0NDRjYWQ4ODdjZGY0ZDE1Yjk3MGZlNjlhYSIsIm5iZiI6MTc4NjY1NjM4NS43MDcsInN1YiI6IjZhN2UzNjgxMDYxNjdmYTY2ZmM3YWI2MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.WLWycZ1zW98G_x0bs90UHsFljmrwpPKoPvZBrP9ho2o";
 const API="https://api.themoviedb.org/3",IMG="https://image.tmdb.org/t/p/w780";
-const ARCHIVE_KEY="afterDarkArchive",USER_KEY="afterDarkUser",RATINGS_KEY="afterDarkRatings";
+const ARCHIVE_KEY="afterDarkArchive",USER_KEY="afterDarkUser";
 const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
 let supabaseClient=null;
@@ -10,11 +10,8 @@ const body=document.body,cursor=$(".cursor"),archiveTrack=$("#archiveTrack"),sea
 let films=load(ARCHIVE_KEY),currentType="all",searchController=null,searchTimer=null;
 let movieNight={type:"all",genre:"any",year:"any",country:"any",rating:0,exclude:false,result:null,busy:false};
 window.movieNight=movieNight;
-let ratings=load(RATINGS_KEY);
 const GENRES={drama:18,comedy:35,thriller:53,horror:27,crime:80,romance:10749,fantasy:14,"sci-fi":878,mystery:9648,documentary:99};
 const COUNTRIES={US:"USA",GB:"UK",FR:"FRANCE",DE:"GERMANY",IT:"ITALY",ES:"SPAIN",JP:"JAPAN",KR:"SOUTH KOREA",CN:"CHINA",HK:"HONG KONG",TW:"TAIWAN",IN:"INDIA",CA:"CANADA",AU:"AUSTRALIA",RU:"RUSSIA",SE:"SWEDEN",NO:"NORWAY",DK:"DENMARK",FI:"FINLAND",NL:"NETHERLANDS",BE:"BELGIUM",CH:"SWITZERLAND",PL:"POLAND",CZ:"CZECH REPUBLIC",BR:"BRAZIL",MX:"MEXICO",AR:"ARGENTINA",IE:"IRELAND",TR:"TURKEY",TH:"THAILAND",ID:"INDONESIA",IR:"IRAN",IL:"ISRAEL"};
-const DEFAULT_RATINGS=[{id:1,title:"THE GODFATHER",type:"film",year:1972,polina:9.5,nastya:9.2,date:"2026-08-12"},{id:2,title:"BLACK SWAN",type:"film",year:2010,polina:9.1,nastya:9.4,date:"2026-08-09"},{id:3,title:"DARK",type:"series",year:2017,polina:9.4,nastya:8.9,date:"2026-08-04"},{id:4,title:"PERFECT BLUE",type:"animation",year:1997,polina:9.6,nastya:9.3,date:"2026-07-28"},{id:5,title:"HER",type:"film",year:2013,polina:8.9,nastya:9,date:"2026-07-21"}];
-if(!ratings.length){ratings=DEFAULT_RATINGS;save(RATINGS_KEY,ratings)}
 function load(k){try{const v=JSON.parse(localStorage.getItem(k)||"[]");return Array.isArray(v)?v:[]}catch{return[]}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
