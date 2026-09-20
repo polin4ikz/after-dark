@@ -1,5 +1,5 @@
 (()=>{
-  const state={filter:"all",sort:"high",rows:[],session:null};
+  const state={filter:"all",rows:[],session:null};
   let modal=null;
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
@@ -74,8 +74,6 @@ document.head.appendChild(style);
   function render(){
     const list=document.querySelector("#ratingsList");if(!list)return;
     let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
-    data.sort((a,b)=>{if(state.sort==="recent")return new Date(b.latest||0)-new Date(a.latest||0);if(state.sort==="oldest")return new Date(a.latest||0)-new Date(b.latest||0);const av=a.average??-1,bv=b.average??-1;return state.sort==="low"?av-bv:bv-av});
-    const people=state.people||[];
     list.innerHTML=data.length?data.map((r,i)=>{
       const avg=r.average==null?"—":r.average.toFixed(1);
       return \`<article class="rating-card" data-tmdb-id="\${esc(r.film.tmdb_id)}"><span class="rating-number">\${String(i+1).padStart(2,"0")}</span><div class="rating-poster">\${r.film.poster_path?\`<img src="https://image.tmdb.org/t/p/w342\${esc(r.film.poster_path)}" alt="" loading="lazy">\`:""}</div><div class="rating-main"><h3 class="rating-title">\${esc(titleOf(r.film))}</h3><div class="rating-info"><span>\${esc((r.film.type||"film").toUpperCase())}</span><span>\${esc(yearOf(r.film))}</span></div></div><div class="rating-average"><strong>\${avg}</strong><span>/ 10</span></div>\${r.byUser?\`<button class="rating-delete" type="button" data-rating-id="\${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>\`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>\`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
@@ -100,7 +98,7 @@ document.head.appendChild(style);
     }
   }
 
-  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return}const sort=e.target.closest("#ratings .sort-button");if(sort){e.preventDefault();e.stopImmediatePropagation();state.sort=sort.dataset.sort||"high";document.querySelectorAll("#ratings .sort-button").forEach(x=>x.classList.remove("active"));sort.classList.add("active");render()}},true)}
+  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return},true)}
   async function init(){addStyles();intercept();try{await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{state.session=session||null;loadRatings()});await loadRatings()}catch(e){console.error("SUPABASE RATINGS INIT FAILED",e)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
