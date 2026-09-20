@@ -307,38 +307,6 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   else initAuthBridge();
 })();
 
-/* Ratings layout guard — presentation only, existing visual rules remain unchanged */
-(()=>{
-  const forceRatingsColumns=()=>{
-    const list=document.querySelector("#ratingsList");
-    if(!list)return;
-    list.querySelector(".ratings-dynamic-head")?.remove();
-    list.querySelectorAll(".rating-card").forEach(card=>{
-      const scores=card.querySelector(".rating-scores");
-      if(scores){
-        scores.style.display="grid";
-        scores.style.gridTemplateColumns="repeat(auto-fit,minmax(72px,1fr))";
-        scores.style.gap="18px";
-        scores.style.visibility="visible";
-        scores.style.opacity="1";
-      }
-    });
-  };
-
-  const start=()=>{
-    const list=document.querySelector("#ratingsList");
-    if(list){
-      const observer=new MutationObserver(()=>requestAnimationFrame(forceRatingsColumns));
-      observer.observe(list,{childList:true,subtree:true});
-    }
-    window.addEventListener("load",forceRatingsColumns);
-    setTimeout(forceRatingsColumns,500);
-  };
-
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
-  else start();
-})();
-
 /* Load the dedicated ratings renderer after the shared runtime is ready. */
 (()=>{
   const script=document.createElement("script");
