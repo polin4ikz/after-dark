@@ -1529,10 +1529,6 @@ body::-webkit-scrollbar{
   pointer-events:none!important;
   z-index:0!important;
 }
-.archive-section > *{
-  position:relative!important;
-  z-index:1!important;
-}
 
 /* LIBRARY — editorial archive mark */
 .archive-section{position:relative!important}
@@ -1644,13 +1640,6 @@ body::-webkit-scrollbar{
   position:relative!important;
   z-index:3!important;
 }
-.archive-editorial-mark strong{
-  display:block!important;
-  margin-left:7%!important;
-  font:300 clamp(170px,19vw,290px)/.72 Georgia,"Times New Roman",serif!important;
-  letter-spacing:-.09em!important;
-  color:rgba(232,221,200,.28)!important;
-}
 .archive-editorial-mark .archive-editorial-rule{
   display:block!important;
   width:58%!important;
@@ -1677,13 +1666,6 @@ body::-webkit-scrollbar{
 .archive-editorial-mark .archive-stat{
   display:block!important;
   white-space:nowrap!important;
-}
-.archive-editorial-mark .archive-stat strong{
-  display:inline!important;
-  margin:0!important;
-  font:500 10px/1 "Geist Mono",monospace!important;
-  letter-spacing:.05em!important;
-  color:rgba(232,221,200,.92)!important;
 }
 .archive-editorial-mark i{
   display:block!important;
