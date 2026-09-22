@@ -176,7 +176,7 @@
     observer.observe(reveal,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class","style"]});
     const modalObserver=new MutationObserver(()=>setTimeout(check,50));
     modalObserver.observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
-    setInterval(check,200);
+    check();
   }
 
   const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();initMovieNightNoResults()};
