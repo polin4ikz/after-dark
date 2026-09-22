@@ -150,21 +150,6 @@
     });
   }
 
-  function improveMovieNightQuery(){
-    window.buildDiscoverParams=()=>{
-      const p={language:"ru-RU",page:1,sort_by:"popularity.desc",include_adult:"false"};
-      const y=movieNight?.year||"any";
-      const exact=/^(\d{4})-\1$/.test(y);
-      const year=exact?Number(y.slice(0,4)):0;
-      const currentYear=new Date().getFullYear();
-      p["vote_count.gte"]=exact&&year>=currentYear-1?0:20;
-      if(movieNight.genre!=="any")p.with_genres=GENRES[movieNight.genre];
-      if(movieNight.country!=="any")p.with_origin_country=movieNight.country;
-      if(movieNight.rating)p["vote_average.gte"]=movieNight.rating;
-      return p;
-    };
-  }
-
   function initMovieNightNoResults(){
     const reveal=document.querySelector("#movieNightReveal");
     const modal=document.querySelector("#movieNightModal");
@@ -194,6 +179,6 @@
     setInterval(check,200);
   }
 
-  const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();improveMovieNightQuery();initMovieNightNoResults()};
+  const init=()=>{initProfileMenu();keepSearchPosition();fixSearchJump();addExactYears();initMovieNightNoResults()};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
