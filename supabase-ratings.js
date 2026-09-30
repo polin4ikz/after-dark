@@ -15,9 +15,17 @@
       .supabase-rating-close{position:absolute;right:28px;top:28px;border:0;background:transparent;color:inherit;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.1em;cursor:pointer}
       .supabase-rating-label{display:block;margin-bottom:18px;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;opacity:.48}
       .supabase-rating-title{margin:0 40px 28px 0;font:400 34px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.04em;text-transform:uppercase}
-      .supabase-rating-current{margin:0 0 18px;font:500 10px/1.5 "Geist Mono",monospace;letter-spacing:.1em;opacity:.55;text-transform:uppercase}
-      .supabase-rating-input{width:100%;height:52px;padding:0 14px;border:1px solid rgba(23,18,20,.25);background:transparent;color:inherit;outline:none;font:500 18px/1 "Geist Mono",monospace}
-      .supabase-rating-input:focus{border-color:#171214}
+      .supabase-rating-current{margin:0 0 22px;font:500 10px/1.5 "Geist Mono",monospace;letter-spacing:.1em;opacity:.55;text-transform:uppercase}
+      .supabase-rating-hearts{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;margin:4px 0 10px}
+      .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
+      .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
+      .supabase-rating-heart .heart-outline{fill:none;stroke:rgba(145,23,40,.28);stroke-width:1.15;transition:stroke .18s ease}
+      .supabase-rating-heart .heart-fill{fill:#911728;opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .22s ease}
+      .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
+      .supabase-rating-heart:hover .heart-fill{opacity:.42}
+      .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
+      .supabase-rating-value{display:block;margin:0 0 22px;text-align:center;color:#911728;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;text-transform:uppercase;min-height:9px}
+      .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
       .supabase-rating-save{width:100%;margin-top:18px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
       .supabase-rating-save:disabled{opacity:.45;cursor:wait}
       .ratings-list .rating-delete{cursor:pointer}
@@ -57,17 +65,40 @@
     if(modal)return modal;
     modal=document.createElement("div");
     modal.className="supabase-rating-modal";
-    modal.innerHTML=`<div class="supabase-rating-box"><button class="supabase-rating-close" type="button">CLOSE ×</button><span class="supabase-rating-label">PRIVATE RATING</span><h3 class="supabase-rating-title"></h3><p class="supabase-rating-current"></p><input class="supabase-rating-input" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="0.0"><button class="supabase-rating-save" type="button">SAVE RATING ↗</button></div>`;
+    modal.innerHTML=`<div class="supabase-rating-box"><button class="supabase-rating-close" type="button">CLOSE ×</button><span class="supabase-rating-label">PRIVATE RATING</span><h3 class="supabase-rating-title"></h3><p class="supabase-rating-current"></p><div class="supabase-rating-hearts" role="radiogroup" aria-label="Your rating"></div><span class="supabase-rating-value" aria-live="polite">CHOOSE A RATING</span><button class="supabase-rating-save" type="button">SAVE RATING ↗</button></div>`;
     document.body.appendChild(modal);
     modal.querySelector(".supabase-rating-close").addEventListener("click",closeModal);
     modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
     modal.querySelector(".supabase-rating-save").addEventListener("click",saveRating);
+    const hearts=modal.querySelector(".supabase-rating-hearts");
+    for(let i=1;i<=10;i++){
+      const b=document.createElement("button");
+      b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
+      b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path class="heart-outline" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/><path class="heart-fill" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/></svg>`;
+      b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
+      hearts.appendChild(b);
+    }
     return modal;
+  }
+  function setRatingVisual(value){
+    if(!modal)return;
+    value=Number(value)||0;
+    modal.dataset.rating=String(value);
+    modal.querySelectorAll(".supabase-rating-heart").forEach((b,i)=>{
+      const active=i<value;
+      b.classList.toggle("active",active);
+      b.setAttribute("aria-checked",active?"true":"false");
+      const fill=b.querySelector(".heart-fill");
+      if(fill){fill.style.opacity=active?"1":"0";fill.style.transform=active?"translateY(0)":"translateY(24px)"}
+    });
+    const label=modal.querySelector(".supabase-rating-value");
+    if(label)label.textContent=value?`${value} / 10`:"CHOOSE A RATING";
   }
   function closeModal(){modal?.classList.remove("active");document.body.style.overflow=""}
   async function currentSession(){await supabaseReady;const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;return data.session||null}
-  async function openRating(id){try{const session=await currentSession();if(!session){openAuth();return}state.session=session;const film=window.afterDarkGetFilm?.(id);if(!film)return;const{data,error}=await supabaseClient.from("ratings").select("rating").eq("tmdb_id",Number(id)).eq("user_id",session.user.id).maybeSingle();if(error)throw error;const m=ensureModal();m.dataset.tmdbId=String(id);m.querySelector(".supabase-rating-title").textContent=titleOf(film).toUpperCase();m.querySelector(".supabase-rating-current").textContent=data?`YOUR CURRENT RATING · ${Number(data.rating).toFixed(1)}`:"YOUR RATING · 0 — 10";m.querySelector(".supabase-rating-input").value=data?Number(data.rating):"";m.querySelector(".supabase-rating-save").disabled=false;m.classList.add("active");document.body.style.overflow="hidden";setTimeout(()=>m.querySelector(".supabase-rating-input")?.focus(),50)}catch(e){console.error("RATING OPEN FAILED",e);authError(e.message)}}
-  async function saveRating(){const m=ensureModal(),id=Number(m.dataset.tmdbId),input=m.querySelector(".supabase-rating-input"),button=m.querySelector(".supabase-rating-save"),value=Number(input.value);if(!Number.isFinite(value)||value<0||value>10||Math.round(value*2)!==value*2){input.focus();return}try{button.disabled=true;const session=state.session||await currentSession();if(!session){closeModal();openAuth();return}const{error}=await supabaseClient.from("ratings").upsert({tmdb_id:id,user_id:session.user.id,rating:value,updated_at:new Date().toISOString()},{onConflict:"tmdb_id,user_id"});if(error)throw error;closeModal();await loadRatings()}catch(e){console.error("RATING SAVE FAILED",e);alert(`RATING COULD NOT BE SAVED: ${e.message}`)}finally{button.disabled=false}}
+  async function openRating(id){try{const session=await currentSession();if(!session){openAuth();return}state.session=session;const film=window.afterDarkGetFilm?.(id);if(!film)return;const{data,error}=await supabaseClient.from("ratings").select("rating").eq("tmdb_id",Number(id)).eq("user_id",session.user.id).maybeSingle();if(error)throw error;const m=ensureModal();m.dataset.tmdbId=String(id);m.querySelector(".supabase-rating-title").textContent=titleOf(film).toUpperCase();m.querySelector(".supabase-rating-current").textContent=data?`YOUR CURRENT RATING · ${Number(data.rating).toFixed(1)}`:"YOUR RATING · 0 — 10";m.querySelector(".supabase-rating-save").disabled=false;setRatingVisual(Math.round(Number(data?.rating)||0));m.classList.add("active");document.body.style.overflow="hidden";setTimeout(()=>m.querySelector(".supabase-rating-input")?.focus(),50)}catch(e){console.error("RATING OPEN FAILED",e);authError(e.message)}}
+  async function saveRating(){const m=ensureModal(),id=Number(m.dataset.tmdbId),button=m.querySelector(".supabase-rating-save"),value=Number(m.dataset.rating||0);if(!Number.isFinite(value)||value<1||value>10){return}try{button.disabled=true;const session=state.session||await currentSession();if(!session){closeModal();openAuth();return}const{error}=await supabaseClient.from("ratings").upsert({tmdb_id:id,user_id:session.user.id,rating:value,updated_at:new Date().toISOString()},{onConflict:"tmdb_id,user_id"});if(error)throw error;closeModal();await loadRatings()}catch(e){console.error("RATING SAVE FAILED",e);alert(`RATING COULD NOT BE SAVED: ${e.message}`)}finally{button.disabled=false}}
   window.openSupabaseRating=openRating;
   async function deleteMyRating(id){try{const session=state.session||await currentSession();if(!session){openAuth();return}const{error}=await supabaseClient.from("ratings").delete().eq("tmdb_id",Number(id)).eq("user_id",session.user.id);if(error)throw error;await loadRatings()}catch(e){console.error("RATING DELETE FAILED",e);alert(`RATING COULD NOT BE DELETED: ${e.message}`)}}
   function render(){
