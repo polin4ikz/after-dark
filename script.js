@@ -26,6 +26,51 @@ function initIndex(){$(".index-trigger")?.addEventListener("click",()=>$(".index
 function initHeaderAuth(){const meta=$(".header-meta"),old=$("#authButton");if(old)old.style.display="none";if(!meta||$(".header-auth-button"))return;const b=document.createElement("button");b.className="header-auth-button";b.type="button";b.textContent="LOG IN / REGISTER";b.addEventListener("click",handleAuthButton);const index=$(".index-trigger");meta.insertBefore(b,index||null)}
 function updateArchiveCounters(n){const v=$("#visibleCount"),t=$("#totalCount");if(v)v.textContent=String(n).padStart(2,"0");if(t)t.textContent=String(films.length).padStart(2,"0");const f=$("#archiveFilmCount"),s=$("#archiveSeriesCount"),a=$("#archiveAnimationCount");if(f)f.textContent=String(films.filter(x=>x.type==="film").length).padStart(2,"0");if(s)s.textContent=String(films.filter(x=>x.type==="series").length).padStart(2,"0");if(a)a.textContent=String(films.filter(x=>x.type==="animation").length).padStart(2,"0")}
 function archiveList(){return currentType==="all"?films:films.filter(f=>f.type===currentType)}
+window.openFilmCard=async function(id){
+  const film=films.find(x=>Number(x.tmdbId)===Number(id));
+  if(!film)return;
+  let modal=document.querySelector("#afterDarkFilmDetail");
+  if(!modal){
+    modal=document.createElement("div");
+    modal.id="afterDarkFilmDetail";
+    modal.className="ad-film-detail";
+    modal.innerHTML='<div class="ad-film-detail-backdrop"></div><div class="ad-film-detail-window"><button class="ad-film-detail-close" type="button">CLOSE ×</button><div class="ad-film-detail-grid"><div class="ad-film-detail-poster"><img class="ad-film-detail-image" alt=""></div><div class="ad-film-detail-content"><div class="ad-film-detail-kicker">ARCHIVE FILE</div><div class="ad-film-detail-meta"></div><h2 class="ad-film-detail-title"></h2><p class="ad-film-detail-original"></p><p class="ad-film-detail-overview"></p><div class="ad-film-detail-extra"></div><div class="ad-film-detail-actions"><button type="button" data-detail-action="watched">MARK AS WATCHED</button><button type="button" data-detail-action="rate">RATE</button><button type="button" data-detail-action="tmdb">OPEN TMDB ↗</button></div></div></div></div>';
+    document.body.appendChild(modal);
+    const close=()=>{modal.classList.remove("active");document.body.style.overflow=""};
+    modal.querySelector(".ad-film-detail-close").addEventListener("click",close);
+    modal.querySelector(".ad-film-detail-backdrop").addEventListener("click",close);
+    modal.addEventListener("click",async e=>{
+      const b=e.target.closest("[data-detail-action]");
+      if(!b)return;
+      if(b.dataset.detailAction==="tmdb"){window.open("https://www.themoviedb.org/"+(film.type==="series"?"tv":"movie")+"/"+film.tmdbId,"_blank","noopener");return}
+      if(b.dataset.detailAction==="watched"){film.watched=true;save(ARCHIVE_KEY,films);renderArchive();b.textContent="WATCHED ✓";return}
+      if(b.dataset.detailAction==="rate"){close();document.querySelector("#ratings")?.scrollIntoView({behavior:"smooth"});openAuthIfNeeded?.()}
+    });
+  }
+  modal._film=film;
+  modal.querySelector(".ad-film-detail-image").src=posterOf(film);
+  modal.querySelector(".ad-film-detail-image").alt=titleOf(film);
+  modal.querySelector(".ad-film-detail-meta").textContent=typeOf(film).toUpperCase()+" · "+yearOf(film)+" · ★ "+Number(film.vote_average||0).toFixed(1);
+  modal.querySelector(".ad-film-detail-title").textContent=titleOf(film).toUpperCase();
+  modal.querySelector(".ad-film-detail-original").textContent="";
+  modal.querySelector(".ad-film-detail-overview").textContent="LOADING DESCRIPTION…";
+  modal.querySelector(".ad-film-detail-extra").innerHTML="";
+  const watched=modal.querySelector("[data-detail-action='watched']");
+  if(watched)watched.textContent=film.watched?"WATCHED ✓":"MARK AS WATCHED";
+  modal.classList.add("active");
+  document.body.style.overflow="hidden";
+  try{
+    const ep=typeOf(film)==="series"?"/tv/"+id:"/movie/"+id;
+    const d=await tmdb(ep,{language:"ru-RU"});
+    modal.querySelector(".ad-film-detail-original").textContent=d.original_title||d.original_name||"";
+    modal.querySelector(".ad-film-detail-overview").textContent=d.overview||"DESCRIPTION IS NOT AVAILABLE.";
+    const genres=(d.genres||[]).slice(0,5).map(x=>x.name).join(" / ");
+    const countries=(d.production_countries||[]).slice(0,3).map(x=>x.name||x.iso_3166_1).join(" / ");
+    modal.querySelector(".ad-film-detail-extra").innerHTML=(genres?"<div><small>GENRE</small><span>"+esc(genres)+"</span></div>":"")+(countries?"<div><small>COUNTRY</small><span>"+esc(countries)+"</span></div>":"");
+  }catch{
+    modal.querySelector(".ad-film-detail-overview").textContent="DESCRIPTION COULD NOT BE LOADED.";
+  }
+};
 function archiveActions(f){return`<div class="archive-actions"><button class="archive-action" data-action="watch" data-id="${esc(f.tmdbId)}" type="button">${f.watched?"CONTINUE":"START"}</button><button class="archive-action rate" data-action="rate" data-id="${esc(f.tmdbId)}" type="button">RATE</button></div><button class="archive-remove" data-action="remove" data-id="${esc(f.tmdbId)}" type="button">REMOVE ×</button>`}
 function renderArchive(){if(!archiveTrack)return;const list=archiveList();archiveTrack.innerHTML=list.length?list.map((f,i)=>`<article class="archive-card" data-id="${esc(f.tmdbId)}"><div class="archive-card-poster" data-action="detail" onclick="window.openFilmCard(Number(this.closest(\'.archive-card\').dataset.id))">${posterOf(f)?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:"<span>LOADING<br>POSTER</span>"}<span>${String(i+1).padStart(2,"0")}</span></div><div class="archive-card-meta"><span>${esc((f.type||"film").toUpperCase())}</span><span>${esc(yearOf(f))}</span></div><h3>${esc(titleOf(f))}</h3>${archiveActions(f)}</article>`).join(""):`<div class="archive-empty"><span>00</span><p>ARCHIVE IS EMPTY.</p><small>SEARCH FOR A TITLE ABOVE AND KEEP IT FOR LATER.</small></div>`;updateArchiveCounters(list.length);updateCarousel()}
 async function enrichArchivePosters(){const missing=films.filter(f=>!f.poster_path&&f.tmdbId);if(!missing.length)return;await Promise.all(missing.slice(0,12).map(async f=>{try{const d=await tmdb(f.type==="series"?`/tv/${f.tmdbId}`:`/movie/${f.tmdbId}`,{language:"ru-RU"});if(d.poster_path){f.poster_path=d.poster_path;f.backdrop_path=d.backdrop_path||f.backdrop_path;save(ARCHIVE_KEY,films)}}catch{}}));renderArchive()}
