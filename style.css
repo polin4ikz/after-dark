@@ -1904,3 +1904,18 @@ body::-webkit-scrollbar{
   .ad-film-detail-actions{gap:7px!important}
   .ad-film-detail-actions button{padding:10px 9px!important;font-size:8px!important}
 }
+
+/* FILM DETAIL — LIFT OVERVIEW */
+.ad-film-detail-content{
+  grid-template-rows:auto auto auto minmax(0,1fr) auto auto!important;
+}
+.ad-film-detail-overview{
+  align-self:start!important;
+  padding-top:0!important;
+}
+.ad-film-detail-extra{
+  margin-top:8px!important;
+}
+.ad-film-detail-actions{
+  margin-top:10px!important;
+}
