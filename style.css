@@ -1934,3 +1934,12 @@ body::-webkit-scrollbar{
   align-self:end!important;
   margin-top:0!important;
 }
+
+/* FILM DETAIL — VISIBLE CLOSE */
+.ad-film-detail-close{
+  color:#171214!important;
+  background:#eee7dc!important;
+}
+.ad-film-detail-close:hover{
+  color:#911728!important;
+}
