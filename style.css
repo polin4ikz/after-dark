@@ -1780,7 +1780,8 @@ body::-webkit-scrollbar{
 .auth-tab:first-child{padding-left:0}
 .auth-tab.active{border-bottom-color:var(--black);opacity:1}
 #authForm{display:grid;gap:10px}
-#authForm input{width:100%;box-sizing:border-box;border:1px solid rgba(23,18,20,.18);border-radius:0;padding:14px;background:transparent;color:inherit;outline:none;font:500 11px/1.2 var(--mono)}
+#authForm input{width:100%;box-sizing:border-box;border:1px solid rgba(23,18,20,.18);border-radius:0;padding:14px;background:transparent;color:#171214;outline:none;font:500 11px/1.2 var(--mono)}
+#authForm input::placeholder{color:rgba(23,18,20,.45);opacity:1}
 #authForm input:focus{border-color:rgba(23,18,20,.6)}
 #authForm button[type="submit"]{margin-top:8px;border:1px solid var(--black);padding:16px;background:var(--black);color:var(--milk);font:500 10px/1 var(--mono);letter-spacing:.1em;cursor:pointer;transition:.2s ease}
 #authForm button[type="submit"]:hover{background:var(--red);border-color:var(--red)}
