@@ -870,7 +870,7 @@ body::-webkit-scrollbar{
 .archive-track{scrollbar-width:none!important}
 .archive-card{position:relative!important;transition:transform .3s var(--ease)!important}
 .archive-card:hover{transform:translateY(-4px)!important}
-.archive-card-poster{position:relative!important;overflow:hidden!important;background:rgba(0,0,0,.18)!important}
+.archive-card-poster{position:relative!important;overflow:hidden!important;background:rgba(0,0,0,.18)!important;pointer-events:auto!important;cursor:pointer!important;z-index:2!important}
 .archive-card-poster img{transition:transform .55s var(--ease),filter .55s var(--ease)!important}
 .archive-card:hover .archive-card-poster img{transform:scale(1.035)!important;filter:saturate(1.06)!important}
 .archive-card-poster:after{content:"OPEN FILE";position:absolute;right:9px;bottom:9px;padding:5px 6px;background:rgba(23,18,20,.76);color:var(--milk);font:500 7px/1 "Geist Mono",monospace;letter-spacing:.1em;opacity:0;transform:translateY(4px);transition:opacity .25s var(--ease),transform .25s var(--ease)!important;pointer-events:none}
