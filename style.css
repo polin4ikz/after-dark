@@ -1813,7 +1813,7 @@ body::-webkit-scrollbar{
   overflow:hidden!important;
   padding:clamp(24px,3.2vw,48px) clamp(26px,3.6vw,56px) clamp(20px,2.6vw,38px)!important;
   display:grid!important;
-  grid-template-rows:auto auto auto auto minmax(0,1fr) auto auto!important;
+  grid-template-rows:auto auto auto auto auto auto minmax(0,1fr)!important;
   align-content:stretch!important;
   justify-content:stretch!important;
 }
@@ -1918,4 +1918,19 @@ body::-webkit-scrollbar{
 }
 .ad-film-detail-actions{
   margin-top:10px!important;
+}
+
+/* FILM DETAIL — CONTENT PACKED AT TOP */
+.ad-film-detail-content{
+  grid-template-rows:auto auto auto auto auto auto minmax(0,1fr)!important;
+}
+.ad-film-detail-overview{
+  align-self:start!important;
+}
+.ad-film-detail-extra{
+  align-self:start!important;
+}
+.ad-film-detail-actions{
+  align-self:end!important;
+  margin-top:0!important;
 }
