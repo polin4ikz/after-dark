@@ -20,9 +20,9 @@
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
       .supabase-rating-heart .heart-outline{fill:none;stroke:rgba(145,23,40,.28);stroke-width:1.15;transition:stroke .18s ease}
-      .supabase-rating-heart .heart-fill{fill:#911728;opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .22s ease}
+      .supabase-rating-heart .heart-fill{fill:#911728;opacity:0;transform-origin:50% 100%;transform:scaleY(0);clip-path:inset(100% 0 0 0);transition:clip-path .34s cubic-bezier(.2,.8,.2,1),opacity .18s ease}
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
-      .supabase-rating-heart:hover .heart-fill{opacity:.42}
+      .supabase-rating-heart:hover .heart-fill{opacity:.42;clip-path:inset(0 0 0 0)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
       .supabase-rating-value{display:block;margin:0 0 22px;text-align:center;color:#911728;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;text-transform:uppercase;min-height:9px}
       .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
@@ -90,7 +90,7 @@
       b.classList.toggle("active",active);
       b.setAttribute("aria-checked",active?"true":"false");
       const fill=b.querySelector(".heart-fill");
-      if(fill){fill.style.opacity=active?"1":"0";fill.style.transform=active?"translateY(0)":"translateY(24px)"}
+      if(fill){fill.style.opacity=active?"1":"0";fill.style.clipPath=active?"inset(0 0 0 0)":"inset(100% 0 0 0)"}
     });
     const label=modal.querySelector(".supabase-rating-value");
     if(label)label.textContent=value?`${value} / 10`:"CHOOSE A RATING";
