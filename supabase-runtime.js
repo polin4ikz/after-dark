@@ -108,7 +108,7 @@ async function archiveSyncRemove(id){
   return true;
 }
 
-async function archiveSyncWatch(id,watched){
+window.archiveSyncWatch=async function(id,watched){
   const user=await archiveSyncUser();
   if(!user)return false;
   const{error}=await supabaseClient.from("archive").update({
