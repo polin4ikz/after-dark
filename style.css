@@ -1813,7 +1813,7 @@ body::-webkit-scrollbar{
   overflow:hidden!important;
   padding:clamp(24px,3.2vw,48px) clamp(26px,3.6vw,56px) clamp(20px,2.6vw,38px)!important;
   display:grid!important;
-  grid-template-rows:auto auto auto minmax(0,1fr) auto auto!important;
+  grid-template-rows:auto auto auto auto minmax(0,1fr) auto auto!important;
   align-content:stretch!important;
   justify-content:stretch!important;
 }
