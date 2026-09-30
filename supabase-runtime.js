@@ -256,10 +256,4 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   else initAuthBridge();
 })();
 
-/* Load the dedicated ratings renderer after the shared runtime is ready. */
-(()=>{
-  const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20260920-final2";
-  script.async=false;
-  document.body.appendChild(script);
-})();
+
