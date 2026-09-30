@@ -20,7 +20,7 @@
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
       .supabase-rating-heart .heart-outline{fill:none;stroke:rgba(145,23,40,.28);stroke-width:1.15;transition:stroke .18s ease}
-      .supabase-rating-heart .heart-liquid{fill:#911728;transform:translateY(24px);transition:transform .42s cubic-bezier(.22,.75,.2,1)}
+      .supabase-rating-heart .heart-liquid{fill:#911728;transform:translateY(24px);transition:transform .58s cubic-bezier(.16,.82,.22,1)}
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
       .supabase-rating-heart:hover .heart-liquid{transform:translateY(24px)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
