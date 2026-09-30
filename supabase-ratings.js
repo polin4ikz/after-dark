@@ -51,7 +51,8 @@
       #ratingsList .rating-delete:hover{color:#911728!important}
       #ratingsList .rating-scores{display:none!important}
       #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
-document.head.appendChild(style);
+    `;
+    document.head.appendChild(style);
   }
 
   function ensureModal(){
