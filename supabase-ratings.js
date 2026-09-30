@@ -19,9 +19,9 @@
       .supabase-rating-hearts{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;margin:4px 0 10px}
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
-      .supabase-rating-heart .heart-outline{fill:none;stroke:rgba(145,23,40,.28);stroke-width:1.15;transition:stroke .18s ease}
+      .supabase-rating-heart .heart-outline{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:.28;transition:opacity .18s ease}
       .supabase-rating-heart .heart-liquid{fill:#911728;transform:translateY(24px);transition:transform .58s cubic-bezier(.16,.82,.22,1)}
-      .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
+      .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{opacity:1}
       .supabase-rating-heart:hover .heart-liquid{transform:translateY(24px)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
       
@@ -75,7 +75,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="heartClip-${i}"><path d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/></clipPath></defs><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/><g clip-path="url(#heartClip-${i})"><image class="heart-liquid" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/></g></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="heartMask-${i}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><image href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/></mask></defs><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/><rect class="heart-liquid" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
