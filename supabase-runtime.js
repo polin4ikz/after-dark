@@ -261,9 +261,9 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
 window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   if(typeof window.openSupabaseRating==="function"){resolve();return}
   const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20260930-ratings5";
+  script.src="supabase-ratings.js?v=20260930-ratings6";
   script.async=false;
-  script.onload=()=>resolve();
+  script.onload=()=>{if(typeof window.openSupabaseRating==="function")resolve();else reject(new Error("RATINGS MODULE LOADED WITHOUT OPEN FUNCTION"))};
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
   (document.body||document.documentElement).appendChild(script);
 });
