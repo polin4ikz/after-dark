@@ -85,16 +85,26 @@
     if(!modal)return;
     value=Number(value)||0;
     modal.dataset.rating=String(value);
-    modal.querySelectorAll(".supabase-rating-heart").forEach((b,i)=>{
+    const hearts=[...modal.querySelectorAll(".supabase-rating-heart")];
+    hearts.forEach((b,i)=>{
       const active=i<value;
       b.classList.toggle("active",active);
       b.setAttribute("aria-checked",active?"true":"false");
-      const fill=b.querySelector(".heart-fill");
-      if(fill){fill.style.opacity=active?"1":"0";fill.style.clipPath=active?"inset(0 0 0 0)":"inset(100% 0 0 0)"}
+      const fill=b.querySelector(".heart-liquid");
+      if(!fill)return;
+      clearTimeout(fill._ratingTimer);
+      if(!active){fill.style.transitionDelay="0s";fill.style.transform="translateY(24px)"}
+    });
+    hearts.forEach((b,i)=>{
+      if(i>=value)return;
+      const fill=b.querySelector(".heart-liquid");
+      if(!fill)return;
+      fill._ratingTimer=setTimeout(()=>{fill.style.transitionDelay="0s";fill.style.transform="translateY(0)"},i*90);
     });
     const label=modal.querySelector(".supabase-rating-value");
-    if(label)label.textContent=value?`${value} / 10`:"CHOOSE A RATING";
+    if(label)label.textContent=value?(value+" / 10"):"CHOOSE A RATING";
   }
+
   function closeModal(){modal?.classList.remove("active");document.body.style.overflow=""}
   async function currentSession(){await supabaseReady;const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;return data.session||null}
   async function openRating(id){try{const session=await currentSession();if(!session){openAuth();return}state.session=session;const film=window.afterDarkGetFilm?.(id);if(!film)return;const{data,error}=await supabaseClient.from("ratings").select("rating").eq("tmdb_id",Number(id)).eq("user_id",session.user.id).maybeSingle();if(error)throw error;const m=ensureModal();m.dataset.tmdbId=String(id);m.querySelector(".supabase-rating-title").textContent=titleOf(film).toUpperCase();m.querySelector(".supabase-rating-current").textContent=data?`YOUR CURRENT RATING · ${Number(data.rating).toFixed(1)}`:"YOUR RATING · 0 — 10";m.querySelector(".supabase-rating-save").disabled=false;setRatingVisual(Math.round(Number(data?.rating)||0));m.classList.add("active");document.body.style.overflow="hidden";setTimeout(()=>m.querySelector(".supabase-rating-input")?.focus(),50)}catch(e){console.error("RATING OPEN FAILED",e);authError(e.message)}}
