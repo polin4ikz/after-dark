@@ -25,7 +25,7 @@ function initCursor(){if(!cursor)return;let x=innerWidth/2,y=innerHeight/2,cx=x,
 function initIndex(){$(".index-trigger")?.addEventListener("click",()=>$(".index-panel")?.classList.add("active"));$(".index-close")?.addEventListener("click",()=>$(".index-panel")?.classList.remove("active"));$$('.index-nav a').forEach(a=>a.addEventListener("click",()=>$(".index-panel")?.classList.remove("active")))}
 function initHeaderAuth(){const meta=$(".header-meta"),old=$("#authButton");if(old)old.style.display="none";if(!meta||$(".header-auth-button"))return;const b=document.createElement("button");b.className="header-auth-button";b.type="button";b.textContent="LOG IN / REGISTER";b.addEventListener("click",handleAuthButton);const index=$(".index-trigger");meta.insertBefore(b,index||null)}
 function updateArchiveCounters(n){const v=$("#visibleCount"),t=$("#totalCount");if(v)v.textContent=String(n).padStart(2,"0");if(t)t.textContent=String(films.length).padStart(2,"0");const f=$("#archiveFilmCount"),s=$("#archiveSeriesCount"),a=$("#archiveAnimationCount");if(f)f.textContent=String(films.filter(x=>x.type==="film").length).padStart(2,"0");if(s)s.textContent=String(films.filter(x=>x.type==="series").length).padStart(2,"0");if(a)a.textContent=String(films.filter(x=>x.type==="animation").length).padStart(2,"0")}
-function archiveList(){return currentType==="all"?films:films.filter(f=>f.type===currentType)}
+function archiveList(){return currentType==="all"?films:films.filter(f=>f.type===currentType)}window.afterDarkGetFilm=id=>films.find(x=>Number(x.tmdbId)===Number(id));
 window.openFilmCard=async function(id){
   const film=films.find(x=>Number(x.tmdbId)===Number(id));
   if(!film)return;
