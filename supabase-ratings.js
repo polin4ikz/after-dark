@@ -19,10 +19,16 @@
       .supabase-rating-hearts{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;margin:4px 0 10px}
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
-      .supabase-rating-heart .heart-outline{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:.28;transition:opacity .18s ease}
-      .supabase-rating-heart .heart-liquid{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:0;transform-origin:center;transition:opacity .32s ease,transform .58s cubic-bezier(.16,.82,.22,1)}
-      .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{opacity:1}
-      .supabase-rating-heart:hover .heart-liquid{opacity:0!important}
+      .supabase-rating-heart .heart-outline{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:.28;transition:opacity .18s ease,transform .18s ease}
+      .supabase-rating-heart .heart-liquid{display:none}
+      .supabase-rating-heart.active .heart-outline{opacity:1}
+      .supabase-rating-heart.is-animating .heart-outline{animation:heartSelect .58s cubic-bezier(.16,.82,.22,1) both}
+      .supabase-rating-heart:hover .heart-outline{opacity:1}
+      @keyframes heartSelect{
+        0%{transform:scale(1)}
+        38%{transform:scale(1.28)}
+        100%{transform:scale(1)}
+      }
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
       
       .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
@@ -75,7 +81,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/><image class="heart-liquid" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
@@ -88,22 +94,18 @@
     const hearts=[...modal.querySelectorAll(".supabase-rating-heart")];
 
     hearts.forEach((b,i)=>{
-      const liquid=b.querySelector(".heart-liquid");
-      if(!liquid)return;
       if(b._fillTimer)clearTimeout(b._fillTimer);
-      liquid.style.opacity="0";
-      liquid.style.transform="scale(0)";
+      b.classList.remove("is-animating");
       b.classList.toggle("active",i<value);
       b.setAttribute("aria-checked",i<value?"true":"false");
     });
 
     hearts.forEach((b,i)=>{
       if(i>=value)return;
-      const liquid=b.querySelector(".heart-liquid");
-      if(!liquid)return;
       b._fillTimer=setTimeout(()=>{
-        liquid.style.opacity="1";
-        liquid.style.transform="scale(1)";
+        b.classList.remove("is-animating");
+        void b.offsetWidth;
+        b.classList.add("is-animating");
       },i*90);
     });
   }
