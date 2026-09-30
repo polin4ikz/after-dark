@@ -20,9 +20,9 @@
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
       .supabase-rating-heart .heart-outline{fill:none;stroke:rgba(145,23,40,.28);stroke-width:1.15;transition:stroke .18s ease}
-      .supabase-rating-heart .heart-fill{fill:#911728;opacity:0;transform-origin:50% 100%;transform:scaleY(0);clip-path:inset(100% 0 0 0);transition:clip-path .34s cubic-bezier(.2,.8,.2,1),opacity .18s ease}
+      .supabase-rating-heart .heart-liquid{fill:#911728;transform:translateY(24px);transition:transform .42s cubic-bezier(.22,.75,.2,1)}
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
-      .supabase-rating-heart:hover .heart-fill{opacity:.42;clip-path:inset(0 0 0 0)}
+      .supabase-rating-heart:hover .heart-liquid{transform:translateY(0)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
       .supabase-rating-value{display:block;margin:0 0 22px;text-align:center;color:#911728;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;text-transform:uppercase;min-height:9px}
       .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
@@ -75,7 +75,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path class="heart-outline" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/><path class="heart-fill" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="heartClip-${i}"><path d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/></clipPath></defs><path class="heart-outline" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/><g clip-path="url(#heartClip-${i})"><rect class="heart-liquid" x="0" y="0" width="24" height="24"/></g></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
