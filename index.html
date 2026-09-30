@@ -43,7 +43,7 @@
     </section>
     <section class="archive-section" id="archive">
       <div class="archive-header"><div class="section-marker light">02 / LIBRARY</div><div class="archive-title-wrap"><p class="eyebrow">THINGS TO WATCH</p><h2>THE<br><em>LIBRARY</em></h2></div><p class="archive-description">здесь хранится всё, что мы оставили на потом.</p><div class="archive-editorial-mark" aria-hidden="true"><strong>04</strong><span class="archive-editorial-rule"></span><span>PRIVATE ARCHIVE</span><b><span class="archive-stat"><strong id="archiveFilmCount">00</strong> FILMS</span><span class="archive-stat"><strong id="archiveSeriesCount">00</strong> SERIES</span><span class="archive-stat"><strong id="archiveAnimationCount">00</strong> ANIMATION</span></b><i>— 2026</i></div></div>
-      <div class="archive-controls"><div class="filter-group"><button class="filter active" data-type="all">ALL</button><button class="filter" data-type="film">FILMS</button><button class="filter" data-type="series">SERIES</button><button class="filter" data-type="animation">ANIMATION</button></div></div>
+      <div class="archive-controls"><div class="filter-group"><button class="filter active" type="button" data-type="all" onclick="filterArchive('all')">ALL</button><button class="filter" type="button" data-type="film" onclick="filterArchive('film')">FILMS</button><button class="filter" type="button" data-type="series" onclick="filterArchive('series')">SERIES</button><button class="filter" type="button" data-type="animation" onclick="filterArchive('animation')">ANIMATION</button></div></div>
       <div class="archive-track-wrap"><div class="archive-track" id="archiveTrack"></div></div><div class="archive-footer"><span>DRAG TO EXPLORE</span><span>← →</span><span>2026</span></div>
     </section>
     <section class="movie-night" id="movie-night">
@@ -63,7 +63,7 @@
     <footer class="site-footer"><div class="footer-top"><span>AFTER DARK</span><span>05 / 05</span></div><div class="footer-center"><span>END OF ARCHIVE</span><i></i><p>nothing more to watch.<br>until there is.</p></div><div class="footer-bottom"><span>PRIVATE CINEMA</span><span>love × you</span><span>© 2026</span><a href="#top">↑</a></div></footer>
   </main>
   <div class="auth-modal" id="authModal"><div class="auth-box"><button class="modal-close" id="authClose" type="button">CLOSE ×</button><span class="modal-label">PRIVATE ACCESS</span><h3>WHO'S<br><em>WATCHING?</em></h3><div class="auth-tabs"><button class="auth-tab active" data-auth="login">LOG IN</button><button class="auth-tab" data-auth="register">REGISTER</button></div><form id="authForm"><input type="text" id="authName" placeholder="name" required><input type="email" id="authEmail" placeholder="email" autocomplete="email" required><input type="password" id="authPassword" placeholder="password" autocomplete="current-password" required><button type="submit">ENTER ↗</button></form></div></div>
-  <script src="script.js?v=20260930-authfix1"></script>
+  <script src="script.js?v=20260930-authfix2"></script>
   <script src="auth-ui.js"></script>
   <script src="supabase-runtime.js?v=20260930-authfix1"></script>
 </body>
