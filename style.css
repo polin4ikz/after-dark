@@ -1787,3 +1787,120 @@ body::-webkit-scrollbar{
 #authForm button[type="submit"]:hover{background:var(--red);border-color:var(--red)}
 
 @media(max-width:800px){.ad-film-detail{padding:16px!important}.ad-film-detail-window{width:94vw!important;height:88vh!important}.ad-film-detail-grid{grid-template-columns:38% minmax(0,1fr)!important}.ad-film-detail-content{padding:28px 22px 22px!important}.ad-film-detail-overview{-webkit-line-clamp:5!important}.ad-film-detail-extra{max-height:none!important;overflow:visible!important}.ad-film-detail-actions{gap:7px!important}.ad-film-detail-actions button{padding:11px 10px!important;font-size:8px!important}.ad-film-detail-actions button[data-detail-action="tmdb"]{margin-left:0!important}}
+
+
+/* FILM DETAIL — FINAL BALANCED LAYOUT */
+.ad-film-detail-window{
+  width:min(1120px,94vw)!important;
+  height:min(760px,88vh)!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+.ad-film-detail-grid{
+  height:100%!important;
+  min-height:0!important;
+  grid-template-columns:minmax(300px,39%) minmax(0,1fr)!important;
+}
+.ad-film-detail-poster,
+.ad-film-detail-image{
+  height:100%!important;
+  min-height:0!important;
+}
+.ad-film-detail-content{
+  height:100%!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  padding:clamp(24px,3.2vw,48px) clamp(26px,3.6vw,56px) clamp(20px,2.6vw,38px)!important;
+  display:grid!important;
+  grid-template-rows:auto auto auto minmax(0,1fr) auto auto!important;
+  align-content:stretch!important;
+  justify-content:stretch!important;
+}
+.ad-film-detail-kicker{margin-bottom:10px!important}
+.ad-film-detail-number{margin:8px 0 16px!important}
+.ad-film-detail-meta{
+  margin-bottom:10px!important;
+  line-height:1.35!important;
+}
+.ad-film-detail-title{
+  max-width:100%!important;
+  max-height:none!important;
+  overflow:visible!important;
+  font-size:clamp(32px,4.25vw,66px)!important;
+  line-height:.88!important;
+  margin:0!important;
+}
+.ad-film-detail-original{
+  max-height:none!important;
+  overflow:visible!important;
+  font-size:clamp(11px,1.05vw,17px)!important;
+  line-height:1.12!important;
+  margin:10px 0 16px!important;
+}
+.ad-film-detail-overview{
+  max-width:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  font-size:clamp(10px,.95vw,15px)!important;
+  line-height:1.42!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:7!important;
+  overflow:hidden!important;
+}
+.ad-film-detail-extra{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:16px!important;
+  margin-top:14px!important;
+  padding-top:14px!important;
+  max-height:none!important;
+  overflow:visible!important;
+  font-size:clamp(8px,.62vw,10px)!important;
+  line-height:1.4!important;
+}
+.ad-film-detail-extra div{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:6px!important;
+}
+.ad-film-detail-extra small{
+  flex:0 0 auto!important;
+  font-size:8px!important;
+}
+.ad-film-detail-extra span{
+  min-width:0!important;
+  line-height:1.35!important;
+  overflow:visible!important;
+}
+.ad-film-detail-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:10px!important;
+  margin-top:14px!important;
+  padding-top:14px!important;
+  flex:0 0 auto!important;
+}
+.ad-film-detail-actions button{
+  padding:12px 14px!important;
+  font-size:9px!important;
+}
+@media(max-width:900px){
+  .ad-film-detail-window{
+    width:94vw!important;
+    height:88vh!important;
+  }
+  .ad-film-detail-grid{
+    grid-template-columns:38% minmax(0,1fr)!important;
+  }
+  .ad-film-detail-content{
+    padding:24px 22px 20px!important;
+  }
+  .ad-film-detail-title{font-size:clamp(25px,5.5vw,48px)!important}
+  .ad-film-detail-overview{-webkit-line-clamp:6!important}
+  .ad-film-detail-extra{gap:10px!important}
+  .ad-film-detail-actions{gap:7px!important}
+  .ad-film-detail-actions button{padding:10px 9px!important;font-size:8px!important}
+}
