@@ -75,7 +75,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="heartMask-${i}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><image href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/></mask></defs><rect class="heart-outline" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/><rect class="heart-liquid" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="heartMask-${i}" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><image href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/></mask></defs><rect class="heart-outline" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/><rect class="heart-liquid" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
