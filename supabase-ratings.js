@@ -24,8 +24,6 @@
       .ratings-list .rating-scores{display:grid!important;grid-template-columns:repeat(var(--rating-people,1),minmax(72px,1fr))!important;gap:18px!important;min-width:0}
       .ratings-list .rating-score{display:flex!important;flex-direction:column!important;min-width:0!important;visibility:visible!important;opacity:1!important}
       .ratings-list .rating-score strong{display:block!important}
-    `;
-    
       #ratings .ratings-controls{display:flex!important;align-items:center!important;justify-content:flex-start!important;margin-bottom:34px!important}
       #ratings .rating-filters{display:flex!important;gap:0!important;border:1px solid rgba(23,18,20,.18)!important}
       #ratings .rating-filter{margin:0!important;padding:11px 16px!important;border:0!important;border-right:1px solid rgba(23,18,20,.14)!important;background:transparent!important;color:rgba(23,18,20,.52)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important;cursor:pointer!important}
