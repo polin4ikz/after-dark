@@ -1765,3 +1765,22 @@ body::-webkit-scrollbar{
 .movie-night-modal-window .movie-night-reveal-label{
   pointer-events:none!important;
 }
+
+
+/* Auth modal */
+.auth-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(23,18,20,.72);backdrop-filter:blur(12px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
+.auth-modal.active{opacity:1;visibility:visible;pointer-events:auto}
+.auth-box{position:relative;width:min(500px,calc(100vw - 40px));padding:48px;background:var(--milk);color:var(--black);box-shadow:0 30px 100px rgba(0,0,0,.45)}
+.auth-box .modal-close{position:absolute;top:20px;right:22px;border:0;background:transparent;color:inherit;font:500 9px/1 var(--mono);letter-spacing:.1em;cursor:pointer}
+.auth-box .modal-label{display:block;margin-bottom:26px;font:500 9px/1 var(--mono);letter-spacing:.14em;opacity:.5}
+.auth-box h3{margin:0 0 28px;font:500 clamp(38px,5vw,58px)/.82 "Bricolage Grotesque",sans-serif;letter-spacing:-.055em}
+.auth-box h3 em{font-family:"Instrument Serif",serif;font-weight:400}
+.auth-tabs{display:flex;border-bottom:1px solid rgba(23,18,20,.18);margin-bottom:22px}
+.auth-tab{border:0;border-bottom:1px solid transparent;margin-bottom:-1px;padding:10px 14px;background:transparent;color:inherit;font:500 9px/1 var(--mono);letter-spacing:.1em;cursor:pointer;opacity:.45}
+.auth-tab:first-child{padding-left:0}
+.auth-tab.active{border-bottom-color:var(--black);opacity:1}
+#authForm{display:grid;gap:10px}
+#authForm input{width:100%;box-sizing:border-box;border:1px solid rgba(23,18,20,.18);border-radius:0;padding:14px;background:transparent;color:inherit;outline:none;font:500 11px/1.2 var(--mono)}
+#authForm input:focus{border-color:rgba(23,18,20,.6)}
+#authForm button[type="submit"]{margin-top:8px;border:1px solid var(--black);padding:16px;background:var(--black);color:var(--milk);font:500 10px/1 var(--mono);letter-spacing:.1em;cursor:pointer;transition:.2s ease}
+#authForm button[type="submit"]:hover{background:var(--red);border-color:var(--red)}
