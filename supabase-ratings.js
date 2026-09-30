@@ -24,7 +24,7 @@
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{stroke:#911728}
       .supabase-rating-heart:hover .heart-liquid{transform:translateY(24px)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
-      .supabase-rating-value{display:block;margin:0 0 22px;text-align:center;color:#911728;font:500 9px/1 "Geist Mono",monospace;letter-spacing:.14em;text-transform:uppercase;min-height:9px}
+      
       .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
       .supabase-rating-save{width:100%;margin-top:18px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
       .supabase-rating-save:disabled{opacity:.45;cursor:wait}
@@ -65,7 +65,7 @@
     if(modal)return modal;
     modal=document.createElement("div");
     modal.className="supabase-rating-modal";
-    modal.innerHTML=`<div class="supabase-rating-box"><button class="supabase-rating-close" type="button">CLOSE ×</button><span class="supabase-rating-label">PRIVATE RATING</span><h3 class="supabase-rating-title"></h3><p class="supabase-rating-current"></p><div class="supabase-rating-hearts" role="radiogroup" aria-label="Your rating"></div><span class="supabase-rating-value" aria-live="polite">CHOOSE A RATING</span><button class="supabase-rating-save" type="button">SAVE RATING ↗</button></div>`;
+    modal.innerHTML=`<div class="supabase-rating-box"><button class="supabase-rating-close" type="button">CLOSE ×</button><span class="supabase-rating-label">PRIVATE RATING</span><h3 class="supabase-rating-title"></h3><p class="supabase-rating-current"></p><div class="supabase-rating-hearts" role="radiogroup" aria-label="Your rating"></div><button class="supabase-rating-save" type="button">SAVE RATING ↗</button></div>`;
     document.body.appendChild(modal);
     modal.querySelector(".supabase-rating-close").addEventListener("click",closeModal);
     modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
@@ -101,8 +101,7 @@
       if(!fill)return;
       fill._ratingTimer=setTimeout(()=>{fill.style.transitionDelay="0s";fill.style.transform="translateY(0)"},i*90);
     });
-    const label=modal.querySelector(".supabase-rating-value");
-    if(label)label.textContent=value?(value+" / 10"):"CHOOSE A RATING";
+    
   }
 
   function closeModal(){modal?.classList.remove("active");document.body.style.overflow=""}
