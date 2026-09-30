@@ -75,7 +75,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="heartMask-${i}" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><image href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/></mask></defs><rect class="heart-outline" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/><rect class="heart-liquid" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="heartClip-${i}"><path d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/></clipPath></defs><path class="heart-outline" d="M12 21.2 10.35 19.7C5.1 15 2 12.15 2 8.7 2 5.55 4.42 3 7.45 3c1.7 0 3.33.8 4.55 2.1C13.22 3.8 14.85 3 16.55 3 19.58 3 22 5.55 22 8.7c0 3.45-3.1 6.3-8.35 11L12 21.2Z"/><g clip-path="url(#heartClip-${i})"><rect class="heart-liquid" x="0" y="0" width="24" height="24"/></g></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
