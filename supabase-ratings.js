@@ -20,9 +20,9 @@
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
       .supabase-rating-heart .heart-outline{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:.28;transition:opacity .18s ease}
-      .supabase-rating-heart .heart-liquid{fill:#911728;transform:translateY(24px);transition:transform .58s cubic-bezier(.16,.82,.22,1)}
+      .supabase-rating-heart .heart-liquid{fill:#911728;transform:none;clip-path:inset(100% 0 0 0);transition:clip-path .58s cubic-bezier(.16,.82,.22,1)}
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{opacity:1}
-      .supabase-rating-heart:hover .heart-liquid{transform:translateY(24px)}
+      .supabase-rating-heart:hover .heart-liquid{clip-path:inset(100% 0 0 0)}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
       
       .supabase-rating-save{width:100%;margin-top:4px;border:0;background:#171214;color:#f1ece5;height:48px;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.13em;cursor:pointer}
@@ -93,13 +93,13 @@
       const fill=b.querySelector(".heart-liquid");
       if(!fill)return;
       clearTimeout(fill._ratingTimer);
-      if(!active){fill.style.transitionDelay="0s";fill.style.transform="translateY(24px)"}
+      if(!active){fill.style.transitionDelay="0s";fill.style.clipPath="inset(100% 0 0 0)"}
     });
     hearts.forEach((b,i)=>{
       if(i>=value)return;
       const fill=b.querySelector(".heart-liquid");
       if(!fill)return;
-      fill._ratingTimer=setTimeout(()=>{fill.style.transitionDelay="0s";fill.style.transform="translateY(0)"},i*90);
+      fill._ratingTimer=setTimeout(()=>{fill.style.transitionDelay="0s";fill.style.clipPath="inset(0 0 0 0)"},i*90);
     });
     
   }
