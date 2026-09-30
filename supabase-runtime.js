@@ -256,10 +256,14 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   else initAuthBridge();
 })();
 
-/* Load the dedicated ratings renderer after the shared runtime is ready. */
-(()=>{
+/* Load the dedicated ratings renderer and expose a readiness promise.
+   RATE actions can safely wait for this module instead of racing its dynamic load. */
+window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
+  if(typeof window.openSupabaseRating==="function"){resolve();return}
   const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20260930-ratings3";
+  script.src="supabase-ratings.js?v=20260930-ratings4";
   script.async=false;
-  document.body.appendChild(script);
-})();
+  script.onload=()=>resolve();
+  script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
+  (document.body||document.documentElement).appendChild(script);
+});
