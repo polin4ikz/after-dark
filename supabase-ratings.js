@@ -20,7 +20,7 @@
       .supabase-rating-heart{position:relative;display:block;flex:1;max-width:34px;aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer}
       .supabase-rating-heart svg{display:block;width:100%;height:100%;overflow:visible}
       .supabase-rating-heart .heart-outline{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:.28;transition:opacity .18s ease}
-      .supabase-rating-heart .heart-liquid{fill:#911728;opacity:0;transition:opacity .18s ease}
+      .supabase-rating-heart .heart-liquid{filter:brightness(0) saturate(100%) invert(15%) sepia(46%) saturate(3198%) hue-rotate(335deg) brightness(84%) contrast(99%);opacity:1}
       .supabase-rating-heart:hover .heart-outline,.supabase-rating-heart.active .heart-outline{opacity:1}
       .supabase-rating-heart:hover .heart-liquid{opacity:0}
       .supabase-rating-heart:focus-visible{outline:1px solid #911728;outline-offset:5px}
@@ -75,7 +75,7 @@
       const b=document.createElement("button");
       b.type="button";b.className="supabase-rating-heart";b.dataset.value=String(i);
       b.setAttribute("role","radio");b.setAttribute("aria-label",`${i} out of 10`);
-      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="heartMask-${i}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><image href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/></mask></defs><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/><rect class="heart-liquid" x="0" y="0" width="24" height="24" mask="url(#heartMask-${i})"/></svg>`;
+      b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="heartFillClip-${i}" clipPathUnits="userSpaceOnUse"><rect class="heart-fill-rect" x="0" y="24" width="24" height="0"/></clipPath></defs><image class="heart-outline" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none"/><image class="heart-liquid" href="https://cdn-icons-png.flaticon.com/512/12123/12123631.png" x="0" y="0" width="24" height="24" preserveAspectRatio="none" clip-path="url(#heartFillClip-${i})"/></svg>`;
       b.addEventListener("click",()=>setRatingVisual(Number(b.dataset.value)));
       hearts.appendChild(b);
     }
@@ -86,22 +86,41 @@
     value=Number(value)||0;
     modal.dataset.rating=String(value);
     const hearts=[...modal.querySelectorAll(".supabase-rating-heart")];
+
     hearts.forEach((b,i)=>{
       const active=i<value;
       b.classList.toggle("active",active);
       b.setAttribute("aria-checked",active?"true":"false");
-      const fill=b.querySelector(".heart-liquid");
-      if(!fill)return;
-      clearTimeout(fill._ratingTimer);
-      if(!active){fill.style.transitionDelay="0s";fill.style.opacity="0"}
+      const rect=b.querySelector(".heart-fill-rect");
+      if(!rect)return;
+      if(b._fillFrame)cancelAnimationFrame(b._fillFrame);
+      if(!active){
+        rect.setAttribute("y","24");
+        rect.setAttribute("height","0");
+      }
     });
+
     hearts.forEach((b,i)=>{
       if(i>=value)return;
-      const fill=b.querySelector(".heart-liquid");
-      if(!fill)return;
-      fill._ratingTimer=setTimeout(()=>{fill.style.transitionDelay="0s";fill.style.opacity="1"},i*90);
+      const rect=b.querySelector(".heart-fill-rect");
+      if(!rect)return;
+      const startFill=()=>{
+        const from=24;
+        const to=0;
+        const duration=580;
+        const t0=performance.now();
+        const ease=t=>1-Math.pow(1-t,3);
+        const animate=now=>{
+          const p=Math.min(1,(now-t0)/duration);
+          const y=from+(to-from)*ease(p);
+          rect.setAttribute("y",String(y));
+          rect.setAttribute("height",String(24-y));
+          if(p<1)b._fillFrame=requestAnimationFrame(animate);
+        };
+        b._fillFrame=requestAnimationFrame(animate);
+      };
+      setTimeout(startFill,i*90);
     });
-    
   }
 
   function closeModal(){modal?.classList.remove("active");document.body.style.overflow=""}
