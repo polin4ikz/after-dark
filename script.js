@@ -147,16 +147,4 @@ function syncAuthForm(){const name=$("#authName"),email=ensureAuthEmailField(),p
 async function submitAuth(){const form=$("#authForm"),name=$("#authName")?.value.trim()||"",email=$("#authEmail")?.value.trim()||"",password=$("#authPassword")?.value||"";if(!email||!password||(authMode==="register"&&!name)){authError("PLEASE FILL IN ALL FIELDS");return}try{await supabaseReady;if(authMode==="register"){const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{nickname:name}}});if(error)throw error;if(data.session){closeAuth();await updateAuthButton(data.session)}else{closeAuth();alert("ACCOUNT CREATED. CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT.")}}else{const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;closeAuth();await updateAuthButton(data.session)}}catch(e){authError(e.message)}}
 async function initAuth(){try{ensureAuthEmailField();$("#authClose")?.addEventListener("click",closeAuth);$("#authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth()});$$('.auth-tab').forEach(t=>t.addEventListener("click",()=>{authMode=t.dataset.auth||"login";syncAuthForm()}));$("#authForm")?.addEventListener("submit",e=>{e.preventDefault();submitAuth()});syncAuthForm();await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{updateAuthButton(session)});const{data:{session}}=await supabaseClient.auth.getSession();await updateAuthButton(session)}catch(e){console.error(e);authError("SUPABASE AUTH COULD NOT BE INITIALIZED")}}
 function init(){initCursor();initIndex();initHeaderAuth();initAuth();initSearch();initArchive();initCarousel();initMovieNight();/* Ratings are rendered by Supabase. */enrichArchivePosters()}
-function loadAfterDarkFinal(done){
-  const f=document.createElement("script");
-  f.src="after-dark-final.js?v=20260930-filmdetail1";
-  f.async=false;
-  f.onload=done;
-  f.onerror=done;
-  document.body.appendChild(f);
-}
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",()=>loadAfterDarkFinal(init),{once:true});
-}else{
-  loadAfterDarkFinal(init);
-};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();;
