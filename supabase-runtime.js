@@ -140,7 +140,7 @@ archiveTrack?.addEventListener("click",async e=>{
   if(!b)return;
   const id=Number(b.dataset.id);
   if(b.dataset.action==="remove")await archiveSyncRemove(id);
-  else if(b.dataset.action==="watch")return;
+  else if(b.dataset.action==="watch")queueMicrotask(()=>archiveSyncWatch(id,true));
 },{capture:true});
 
 searchResults?.addEventListener("click",async e=>{
