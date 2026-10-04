@@ -256,6 +256,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
         session=newSession||null;
         await updateAuthButton(session);
         if(session)await window.archiveSyncReload?.(session);
+        else{films=[];window.renderArchive?.()}
       });
     }catch(error){
       console.error("SUPABASE AUTH BRIDGE FAILED",error);
