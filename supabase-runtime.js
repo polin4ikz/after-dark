@@ -23,7 +23,7 @@ async function archiveSyncLoadShared(user){
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
       watched:!!row.watched
     }));
-    save(ARCHIVE_KEY,films);
+
     renderArchive();
     return user;
   }catch(e){
@@ -183,7 +183,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!ok){
     console.error("MOVIE NIGHT SUPABASE SAVE FAILED");
     films=films.filter(x=>Number(x.tmdbId)!==id);
-    save(ARCHIVE_KEY,films);
+
     renderArchive();
     alert("COULD NOT SAVE TO ARCHIVE");
     return;
