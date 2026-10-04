@@ -155,12 +155,14 @@ searchResults?.addEventListener("click",async e=>{
     if(f){
       const ok=await archiveSyncUpsert(f);
       if(!ok){
+        window.removeArchiveFilmLocal?.(Number(item.id));
         b.textContent="SAVE FAILED";
         b.classList.add("save-failed");
       }
       return;
     }
   }
+  window.removeArchiveFilmLocal?.(Number(item?.id));
   b.textContent="SAVE FAILED";
   b.classList.add("save-failed");
 },{capture:true});
