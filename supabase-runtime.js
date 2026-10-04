@@ -4,40 +4,52 @@
    Keeps Supabase-specific runtime concerns in one place.
 ========================================================= */
 
+async function archiveSyncLoadShared(user){
+  if(!user)return null;
+  try{
+    const{data,error}=await supabaseClient.from("archive").select("*").order("created_at",{ascending:false});
+    if(error)throw error;
+    films=(data||[]).map(row=>({
+      tmdbId:row.tmdb_id,
+      title:row.title,
+      name:row.name||"",
+      poster_path:row.poster_path||"",
+      backdrop_path:row.backdrop_path||"",
+      release_date:row.release_date||"",
+      first_air_date:row.first_air_date||"",
+      type:row.type||"film",
+      vote_average:Number(row.vote_average||0),
+      genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
+      originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
+      watched:!!row.watched
+    }));
+    save(ARCHIVE_KEY,films);
+    renderArchive();
+    return user;
+  }catch(e){
+    console.error("ARCHIVE LOAD FAILED",e);
+    return null;
+  }
+}
+
 const archiveSyncReady=(async()=>{
   try{
     await supabaseReady;
     const{data:{user},error:authError}=await supabaseClient.auth.getUser();
     if(authError)throw authError;
     if(!user){console.warn("ARCHIVE SYNC: NO AUTH USER");return null}
-    const{data,error}=await supabaseClient.from("archive").select("*").order("created_at",{ascending:false});
-    if(error)throw error;
-    if(data?.length){
-      films=data.map(row=>({
-        tmdbId:row.tmdb_id,
-        title:row.title,
-        name:row.name||"",
-        poster_path:row.poster_path||"",
-        backdrop_path:row.backdrop_path||"",
-        release_date:row.release_date||"",
-        first_air_date:row.first_air_date||"",
-        type:row.type||"film",
-        vote_average:Number(row.vote_average||0),
-        genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
-        originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
-        watched:!!row.watched
-      }));
-      save(ARCHIVE_KEY,films);
-      renderArchive();
-      return user;
-    }
-    if(films.length)await archiveSyncUpsertMany(films,user);
-    return user;
+    return await archiveSyncLoadShared(user);
   }catch(e){
     console.error("ARCHIVE SYNC FAILED",e);
     return null;
   }
 })();
+
+window.archiveSyncReload=async function(s){
+  if(!s?.user)return false;
+  await supabaseReady;
+  return !!(await archiveSyncLoadShared(s.user));
+};
 
 function archiveSyncRow(f,user){
   return{
@@ -128,10 +140,7 @@ archiveTrack?.addEventListener("click",async e=>{
   if(!b)return;
   const id=Number(b.dataset.id);
   if(b.dataset.action==="remove")await archiveSyncRemove(id);
-  else if(b.dataset.action==="watch"){
-    const f=films.find(x=>Number(x.tmdbId)===id);
-    if(f)await archiveSyncWatch(id,f.watched);
-  }
+  else if(b.dataset.action==="watch")return;
 },{capture:true});
 
 searchResults?.addEventListener("click",async e=>{
@@ -246,6 +255,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
       supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{
         session=newSession||null;
         await updateAuthButton(session);
+        if(session)await window.archiveSyncReload?.(session);
       });
     }catch(error){
       console.error("SUPABASE AUTH BRIDGE FAILED",error);
