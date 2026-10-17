@@ -149,7 +149,7 @@
       if(ratingsRes.error)throw ratingsRes.error;
       const profilesRes=await supabaseClient.from("profiles").select("id,nickname");
       if(profilesRes.error)throw profilesRes.error;
-      const profiles=new Map((profilesRes.data||[]).map(p=>[p.id,{id:p.id,nickname:p.nickname||"Участник",label:/^polina$/i.test(p.nickname||"")?"Полина":/^nastya$/i.test(p.nickname||"")?"Настя":p.nickname||"Участник"}]));
+      const profiles=new Map((profilesRes.data||[]).map(p=>[p.id,{id:p.id,nickname:p.nickname||"Участник",label:/^(test)?polina$/i.test(p.nickname||"")?"Полина":/^nastya$/i.test(p.nickname||"")?"Настя":p.nickname||"Участник"}]));
       const people=[...profiles.values()].sort((a,b)=>{const order={"Полина":0,"Настя":1};return (order[a.label]??2)-(order[b.label]??2)||a.label.localeCompare(b.label,"ru")});
       const filmMap=new Map((filmsRes.data||[]).map(f=>[Number(f.tmdb_id),f])),grouped=new Map();
       (ratingsRes.data||[]).forEach(row=>{const film=filmMap.get(Number(row.tmdb_id));if(!film)return;if(!grouped.has(Number(row.tmdb_id)))grouped.set(Number(row.tmdb_id),{film,items:[]});grouped.get(Number(row.tmdb_id)).items.push(row)});
