@@ -5,7 +5,8 @@
 -- Until those UUIDs are added, archive and rating access is denied to everyone (fail-closed).
 
 create table if not exists public.private_members (
-  user_id uuid primary key references auth.users(id) on delete cascade,
+  slot smallint primary key check (slot in (1, 2)),
+  user_id uuid not null unique references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
