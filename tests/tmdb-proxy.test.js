@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const vercelHandler = require("../api/tmdb.js");
-const netlifyHandler = require("../netlify/functions/tmdb.js");
+const netlifyHandler = require("../netlify/functions/tmdb.js").handler;
 
 function mockVercelRequest({ method = "GET", url = "/api/tmdb?path=%2Fsearch%2Fmulti&query=arrival" } = {}) {
   const response = {
