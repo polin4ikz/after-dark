@@ -1,8 +1,9 @@
 (()=>{
   const style=document.createElement("style");
   style.textContent=`
-    .auth-feedback{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(12,7,9,.72);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s ease}
+    .auth-feedback{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(12,7,9,.72);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s ease}
     .auth-feedback.active{opacity:1;pointer-events:auto}
+    .cursor{z-index:2147483647!important}
     .auth-feedback-box{width:min(420px,calc(100vw - 40px));padding:34px 34px 30px;background:#f1ece5;color:#171214;box-shadow:0 24px 80px rgba(0,0,0,.35);position:relative}
     .auth-feedback-label{display:block;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.14em;margin-bottom:28px;opacity:.55}
     .auth-feedback-title{margin:0 0 12px;font:400 34px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.04em;text-transform:uppercase}
@@ -36,7 +37,7 @@
       document.body.appendChild(modal);
       const close=()=>modal.classList.remove("active");
       modal.querySelector(".auth-feedback-close").addEventListener("click",close);
-      modal.addEventListener("click",e=>{if(e.target===modal)close()});
+      modal.addEventListener("click",close);
     }
     const text=String(message||"");
     const title=modal.querySelector(".auth-feedback-title");
