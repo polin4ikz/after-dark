@@ -80,3 +80,23 @@ using (user_id = (select auth.uid()) and exists (select 1 from public.private_me
 create index if not exists ratings_user_id_idx on public.ratings(user_id);
 create index if not exists archive_type_idx on public.archive(type);
 create index if not exists private_members_user_id_idx on public.private_members(user_id);
+
+-- Allow the two private archive members to read only each other's profile nicknames.
+create or replace function public.can_view_private_profile(target_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    exists (select 1 from public.private_members self_member where self_member.user_id = auth.uid())
+    and exists (select 1 from public.private_members target_member where target_member.user_id = target_id);
+$$;
+revoke all on function public.can_view_private_profile(uuid) from public;
+grant execute on function public.can_view_private_profile(uuid) to authenticated;
+
+drop policy if exists profiles_select_private_members on public.profiles;
+create policy profiles_select_private_members
+on public.profiles for select to authenticated
+using (public.can_view_private_profile(id));
