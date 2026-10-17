@@ -156,20 +156,25 @@ searchResults?.addEventListener("click",async e=>{
   const row=b.closest(".search-result");
   const item=window.__searchResults?.find(x=>Number(x.id)===Number(row?.dataset.id));
   if(!item)return;
+  const wasAlreadyInArchive=films.some(x=>Number(x.tmdbId)===Number(item.id));
   for(let i=0;i<20;i++){
     await new Promise(r=>setTimeout(r,i?150:50));
     const f=films.find(x=>Number(x.tmdbId)===Number(item.id));
     if(f){
       const ok=await archiveSyncUpsert(f);
       if(!ok){
-        window.removeArchiveFilmLocal?.(Number(item.id));
+        if(!wasAlreadyInArchive)window.removeArchiveFilmLocal?.(Number(item.id));
+        else{
+          const{data:{session}}=await supabaseClient.auth.getSession();
+          if(session)await window.archiveSyncReload?.(session);
+        }
         b.textContent="SAVE FAILED";
         b.classList.add("save-failed");
       }
       return;
     }
   }
-  window.removeArchiveFilmLocal?.(Number(item?.id));
+  if(!wasAlreadyInArchive)window.removeArchiveFilmLocal?.(Number(item?.id));
   b.textContent="SAVE FAILED";
   b.classList.add("save-failed");
 },{capture:true});
@@ -180,6 +185,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!movieNight.result)return;
   const id=Number(movieNight.result.id);
   let savedFilm=films.find(x=>Number(x.tmdbId)===id);
+  const wasAlreadyInArchive=!!savedFilm;
   if(!savedFilm){
     addFilm(movieNight.result);
     savedFilm=films.find(x=>Number(x.tmdbId)===id);
@@ -191,9 +197,13 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   const ok=await archiveSyncUpsert(savedFilm);
   if(!ok){
     console.error("MOVIE NIGHT SUPABASE SAVE FAILED");
-    films=films.filter(x=>Number(x.tmdbId)!==id);
-
-    renderArchive();
+    if(!wasAlreadyInArchive){
+      films=films.filter(x=>Number(x.tmdbId)!==id);
+      renderArchive();
+    }else{
+      const{data:{session}}=await supabaseClient.auth.getSession();
+      if(session)await window.archiveSyncReload?.(session);
+    }
     alert("COULD NOT SAVE TO ARCHIVE");
     return;
   }
