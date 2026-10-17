@@ -24,16 +24,16 @@ Run `supabase-private-access.sql` in the Supabase SQL Editor after confirming th
 Then create/sign in to the two intended accounts using the site's normal registration flow. In Supabase → Authentication → Users, copy the **User UID** for each account. Run the following in the SQL Editor, replacing both placeholders with the two actual UUIDs:
 
 ```sql
-insert into public.private_members (user_id)
+insert into public.private_members (slot, user_id)
 values
-  ('REPLACE_WITH_FIRST_AUTH_USER_UUID'),
-  ('REPLACE_WITH_SECOND_AUTH_USER_UUID')
+  (1, 'REPLACE_WITH_FIRST_AUTH_USER_UUID'),
+  (2, 'REPLACE_WITH_SECOND_AUTH_USER_UUID')
 on conflict (user_id) do nothing;
 ```
 
 Do not run that example with the placeholder strings unchanged. Until both UUIDs are inserted, even the intended users will not be able to read or change the shared archive/ratings. Once added, both accounts can read/write the shared archive, while each account can only create, update, and delete its own rating. Other authenticated accounts are denied archive and ratings access.
 
-The membership table exposes only a member's own row to authenticated clients and has no client-side insert/update/delete policy. Manage membership only from the Supabase SQL Editor.
+The membership table exposes only a member's own row to authenticated clients and has no client-side insert/update/delete policy. The table has only two allowed slots, so no third membership can be added through the table structure. Manage membership only from the Supabase SQL Editor.
 
 ## 4. Registration and profile rows
 
