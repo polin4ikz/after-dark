@@ -1,7 +1,7 @@
 (()=>{
   const style=document.createElement("style");
   style.textContent=`
-    .auth-feedback{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(12,7,9,.72);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s ease}
+    .auth-feedback{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(12,7,9,.72);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s ease}
     .auth-feedback.active{opacity:1;pointer-events:auto}
     .auth-feedback-box{width:min(420px,calc(100vw - 40px));padding:34px 34px 30px;background:#f1ece5;color:#171214;box-shadow:0 24px 80px rgba(0,0,0,.35);position:relative}
     .auth-feedback-label{display:block;font:500 10px/1 "Geist Mono",monospace;letter-spacing:.14em;margin-bottom:28px;opacity:.55}
