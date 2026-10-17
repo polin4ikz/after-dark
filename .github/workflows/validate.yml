@@ -29,3 +29,4 @@ jobs:
           node --check supabase-ratings.js
           node --check api/tmdb.js
           node --check netlify/functions/tmdb.js
+          node --test tests/tmdb-proxy.test.js
