@@ -77,11 +77,18 @@ async function archiveSyncUser(){
     console.error("ARCHIVE AUTH FAILED",error);
     return null;
   }
-  return user||null;
+  if(!user)return null;
+  const profile=await window.archiveSyncEnsureProfile?.({user});
+  if(!profile){
+    console.error("ARCHIVE SAVE BLOCKED: PROFILE IS NOT READY");
+    return null;
+  }
+  return user;
 }
 
 async function archiveSyncUpsertMany(list,user){
   if(!user||!list?.length)return false;
+  if(!await window.archiveSyncEnsureProfile?.({user}))return false;
   const{data,error}=await supabaseClient.from("archive").upsert(
     list.map(f=>archiveSyncRow(f,user)),
     {onConflict:"tmdb_id"}
@@ -239,6 +246,8 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
     }
     return null;
   }
+
+  window.archiveSyncEnsureProfile=ensureProfile;
 
   async function syncHeader(){
     try{
