@@ -41,10 +41,22 @@ window.openFilmCard=async function(id){
       if(!b)return;
       if(b.dataset.detailAction==="tmdb"){window.open("https://www.themoviedb.org/"+(film.type==="series"?"tv":"movie")+"/"+film.tmdbId,"_blank","noopener");return}
       if(b.dataset.detailAction==="watched"){
+        const previous=!!film.watched;
         film.watched=true;
-        
         b.textContent="WATCHED ✓";
-        try{await window.archiveSyncWatch?.(film.tmdbId,true)}catch(e){console.error("FILM DETAIL WATCH SYNC FAILED",e)}
+        try{
+          const saved=await window.archiveSyncWatch?.(film.tmdbId,true);
+          if(!saved){
+            film.watched=previous;
+            b.textContent=previous?"WATCHED ✓":"MARK AS WATCHED";
+            alert("WATCH STATUS COULD NOT BE SAVED");
+          }
+        }catch(e){
+          film.watched=previous;
+          b.textContent=previous?"WATCHED ✓":"MARK AS WATCHED";
+          console.error("FILM DETAIL WATCH SYNC FAILED",e);
+          alert("WATCH STATUS COULD NOT BE SAVED");
+        }
         renderArchive();
         return
       }
