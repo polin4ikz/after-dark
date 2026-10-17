@@ -61,7 +61,14 @@
       #ratingsList .rating-card:hover .rating-open-file{opacity:1!important;transform:translateX(0)!important}
       #ratingsList .rating-delete{position:absolute!important;right:0!important;top:14px!important;width:20px!important;height:20px!important;padding:0!important;border:0!important;background:transparent!important;color:rgba(23,18,20,.38)!important;font:500 14px/20px "Geist Mono",monospace!important;z-index:3!important;cursor:pointer!important}
       #ratingsList .rating-delete:hover{color:#911728!important}
-      #ratingsList .rating-scores{display:none!important}
+      #ratingsList .rating-scores{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin-top:20px!important;max-width:620px!important}
+      #ratingsList .rating-score{display:flex!important;flex-direction:column!important;gap:7px!important;min-width:0!important}
+      #ratingsList .rating-score-label{font:500 8px/1.2 "Geist Mono",monospace!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:rgba(23,18,20,.52)!important}
+      #ratingsList .rating-score strong{font:400 clamp(23px,2.5vw,34px)/.9 "Instrument Serif",Georgia,serif!important;color:#171214!important;white-space:nowrap!important}
+      #ratingsList .rating-score strong small{font:500 8px/1 "Geist Mono",monospace!important;color:rgba(23,18,20,.4)!important}
+      #ratingsList .rating-score.is-average{border-left:1px solid rgba(145,23,40,.28)!important;padding-left:12px!important}
+      #ratingsList .rating-score.is-average .rating-score-label{color:#911728!important}
+      @media(max-width:600px){#ratingsList .rating-card{grid-template-columns:26px 52px minmax(0,1fr)!important;gap:10px!important;min-height:0!important;padding:14px 28px 14px 0!important}#ratingsList .rating-poster{width:52px!important;height:70px!important}#ratingsList .rating-main{grid-column:3!important}#ratingsList .rating-scores{gap:6px!important;margin-top:14px!important}#ratingsList .rating-score-label{font-size:7px!important;letter-spacing:0!important}#ratingsList .rating-score strong{font-size:23px!important}#ratingsList .rating-score.is-average{padding-left:6px!important}}
       #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
     `;
     document.head.appendChild(style);
@@ -120,8 +127,15 @@
     const list=document.querySelector("#ratingsList");if(!list)return;
     let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
     list.innerHTML=data.length?data.map((r,i)=>{
+      const scores=(r.people||[]).map(person=>{
+        const rating=r.userRatings?.[person.id];
+        const value=rating==null?"—":Number(rating).toFixed(1);
+        const label=person.label||person.nickname||"Участник";
+        return `<div class="rating-score"><span class="rating-score-label">${esc(label)}</span><strong>${value}${rating==null?"":' <small>/ 10</small>'}</strong></div>`;
+      }).join("");
       const avg=r.average==null?"—":r.average.toFixed(1);
-      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-average"><strong>${avg}</strong><span>/ 10</span></div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
+      const averageScore=`<div class="rating-score is-average"><span class="rating-score-label">Общая оценка</span><strong>${avg}${r.average==null?"":' <small>/ 10</small>'}</strong></div>`;
+      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div><div class="rating-scores">${scores}${averageScore}</div></div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
   }
 
   async function loadRatings(){
@@ -133,9 +147,18 @@
       if(filmsRes.error)throw filmsRes.error;
       const ratingsRes=await supabaseClient.from("ratings").select("tmdb_id,user_id,rating,created_at,updated_at").order("updated_at",{ascending:false});
       if(ratingsRes.error)throw ratingsRes.error;
+      const profilesRes=await supabaseClient.from("profiles").select("id,nickname");
+      if(profilesRes.error)throw profilesRes.error;
+      const profiles=new Map((profilesRes.data||[]).map(p=>[p.id,{id:p.id,nickname:p.nickname||"Участник",label:/^polina$/i.test(p.nickname||"")?"Полина":/^nastya$/i.test(p.nickname||"")?"Настя":p.nickname||"Участник"}]));
+      const people=[...profiles.values()].sort((a,b)=>{const order={"Полина":0,"Настя":1};return (order[a.label]??2)-(order[b.label]??2)||a.label.localeCompare(b.label,"ru")});
       const filmMap=new Map((filmsRes.data||[]).map(f=>[Number(f.tmdb_id),f])),grouped=new Map();
       (ratingsRes.data||[]).forEach(row=>{const film=filmMap.get(Number(row.tmdb_id));if(!film)return;if(!grouped.has(Number(row.tmdb_id)))grouped.set(Number(row.tmdb_id),{film,items:[]});grouped.get(Number(row.tmdb_id)).items.push(row)});
-      state.rows=[...grouped.values()].map(g=>{const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");return{...g,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest}});
+      state.rows=[...grouped.values()].map(g=>{
+        const userRatings={};g.items.forEach(x=>{userRatings[x.user_id]=Number(x.rating)});
+        const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);
+        const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");
+        return{...g,people,userRatings,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
+      });
       render();
     }catch(e){
       console.error("RATINGS LOAD FAILED",e);
