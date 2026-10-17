@@ -27,3 +27,5 @@ jobs:
           node --check auth-ui.js
           node --check supabase-runtime.js
           node --check supabase-ratings.js
+          node --check api/tmdb.js
+          node --check netlify/functions/tmdb.js
