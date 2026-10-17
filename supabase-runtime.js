@@ -119,9 +119,13 @@ async function archiveSyncUpsert(f){
 async function archiveSyncRemove(id){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{error}=await supabaseClient.from("archive").delete().eq("tmdb_id",Number(id));
+  const{data,error}=await supabaseClient.from("archive").delete().eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
     console.error("ARCHIVE DELETE FAILED",error);
+    return false;
+  }
+  if(!data){
+    console.warn("ARCHIVE DELETE DID NOT REMOVE A ROW",id);
     return false;
   }
   return true;
@@ -130,12 +134,16 @@ async function archiveSyncRemove(id){
 window.archiveSyncWatch=async function(id,watched){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{error}=await supabaseClient.from("archive").update({
+  const{data,error}=await supabaseClient.from("archive").update({
     watched:!!watched,
     updated_at:new Date().toISOString()
-  }).eq("tmdb_id",Number(id));
+  }).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
     console.error("ARCHIVE WATCH UPDATE FAILED",error);
+    return false;
+  }
+  if(!data){
+    console.warn("ARCHIVE WATCH UPDATE DID NOT MATCH A ROW",id);
     return false;
   }
   return true;
