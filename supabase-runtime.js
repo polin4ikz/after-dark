@@ -35,10 +35,10 @@ async function archiveSyncLoadShared(user){
 const archiveSyncReady=(async()=>{
   try{
     await supabaseReady;
-    const{data:{user},error:authError}=await supabaseClient.auth.getUser();
+    const{data:{session},error:authError}=await supabaseClient.auth.getSession();
     if(authError)throw authError;
-    if(!user){console.warn("ARCHIVE SYNC: NO AUTH USER");return null}
-    return await archiveSyncLoadShared(user);
+    if(!session?.user){console.info("ARCHIVE SYNC: WAITING FOR AUTH");return null}
+    return await archiveSyncLoadShared(session.user);
   }catch(e){
     console.error("ARCHIVE SYNC FAILED",e);
     return null;
@@ -281,11 +281,20 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
     try{
       await supabaseReady;
       await syncHeader();
-      supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{
+      supabaseClient.auth.onAuthStateChange((_event,newSession)=>{
         session=newSession||null;
-        await updateAuthButton(session);
-        if(session)await window.archiveSyncReload?.(session);
-        else{films=[];window.renderArchive?.()}
+        if(!session){films=[];window.renderArchive?.();return}
+        const activeSession=session;
+        setTimeout(async()=>{
+          try{
+            const profile=await ensureProfile(activeSession);
+            if(!profile){console.warn("PROFILE SYNC DELAYED: PROFILE NOT READY");return}
+            await updateAuthButton(activeSession);
+            await window.archiveSyncReload?.(activeSession);
+          }catch(error){
+            console.error("AUTH SESSION SYNC FAILED",error);
+          }
+        },0);
       });
     }catch(error){
       console.error("SUPABASE AUTH BRIDGE FAILED",error);
