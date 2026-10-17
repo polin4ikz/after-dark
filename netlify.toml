@@ -1,0 +1,8 @@
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/tmdb"
+  to = "/.netlify/functions/tmdb"
+  status = 200
+  force = true
