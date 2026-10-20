@@ -162,12 +162,19 @@
       const people=[...profiles.values()].sort((a,b)=>{const order={"Полина":0,"Настя":1};return (order[a.label]??2)-(order[b.label]??2)||a.label.localeCompare(b.label,"ru")});
       const filmMap=new Map((filmsRes.data||[]).map(f=>[Number(f.tmdb_id),f])),grouped=new Map();
       (ratingsRes.data||[]).forEach(row=>{const film=filmMap.get(Number(row.tmdb_id));if(!film)return;if(!grouped.has(Number(row.tmdb_id)))grouped.set(Number(row.tmdb_id),{film,items:[]});grouped.get(Number(row.tmdb_id)).items.push(row)});
-      state.rows=[...grouped.values()].map(g=>{
+      const rows=[...grouped.values()].map(g=>{
         const userRatings={};g.items.forEach(x=>{userRatings[x.user_id]=Number(x.rating)});
         const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);
         const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");
         return{...g,people,userRatings,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
       });
+      const ratedIds=new Set(rows.map(r=>Number(r.film.tmdb_id)));
+      (filmsRes.data||[]).forEach(f=>{
+        const id=Number(f.tmdb_id);
+        if(ratedIds.has(id)||!(f.watched===true||f.in_watchlist===false))return;
+        rows.push({film:f,items:[],people,userRatings:{},byUser:null,average:null,latest:f.created_at||""});
+      });
+      state.rows=rows.sort((a,b)=>(b.latest||"").localeCompare(a.latest||""));
       render();
     }catch(e){
       console.error("RATINGS LOAD FAILED",e);
