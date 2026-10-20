@@ -2632,27 +2632,29 @@ select{
   }
 }
 
-/* RATINGS — shorten the list by about 20%, keep the rest scrollable */
+/* RATINGS — make the list shorter; keep the rest scrollable */
 html,
 body {
   max-width: 100%;
   overflow-x: clip !important;
 }
 
-.ratings-list {
-  max-height: 224px !important;
+.ratings-section .ratings-list,
+#ratingsList {
+  height: 170px !important;
+  max-height: 170px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
 }
 
-.ratings-list .rating-card,
-.ratings-list .rating-card > *,
-.ratings-list .rating-info,
-.ratings-list .rating-title,
-.ratings-list .rating-card p,
-.ratings-list .rating-score,
-.ratings-list .rating-average {
+#ratingsList .rating-card,
+#ratingsList .rating-card > *,
+#ratingsList .rating-info,
+#ratingsList .rating-title,
+#ratingsList .rating-card p,
+#ratingsList .rating-score,
+#ratingsList .rating-average {
   min-width: 0 !important;
   max-width: 100%;
   overflow-wrap: anywhere !important;
@@ -2660,8 +2662,10 @@ body {
 }
 
 @media (max-width: 800px) {
-  .ratings-list {
-    max-height: 280px !important;
+  .ratings-section .ratings-list,
+  #ratingsList {
+    height: 210px !important;
+    max-height: 210px !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
   }
