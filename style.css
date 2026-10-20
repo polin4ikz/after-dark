@@ -2632,7 +2632,7 @@ select{
   }
 }
 
-/* RATINGS — show four rows, scroll for the rest */
+/* RATINGS — shorten the list by about 20%, keep the rest scrollable */
 html,
 body {
   max-width: 100%;
@@ -2640,7 +2640,7 @@ body {
 }
 
 .ratings-list {
-  max-height: 280px !important;
+  max-height: 224px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
@@ -2661,7 +2661,7 @@ body {
 
 @media (max-width: 800px) {
   .ratings-list {
-    max-height: 350px !important;
+    max-height: 280px !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
   }
