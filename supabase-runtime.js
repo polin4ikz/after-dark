@@ -21,7 +21,8 @@ async function archiveSyncLoadShared(user){
       vote_average:Number(row.vote_average||0),
       genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
-      watched:!!row.watched
+      watched:!!row.watched,
+      inWatchlist:row.in_watchlist!==false
     }));
 
     renderArchive();
@@ -65,6 +66,7 @@ function archiveSyncRow(f,user){
     genre_ids:f.genre_ids||[],
     origin_countries:f.originCountries||[],
     watched:!!f.watched,
+    in_watchlist:f.inWatchlist!==false&&!f.watched,
     added_by:user.id,
     updated_at:new Date().toISOString()
   };
@@ -119,9 +121,9 @@ async function archiveSyncUpsert(f){
 async function archiveSyncRemove(id){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{data,error}=await supabaseClient.from("archive").delete().eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
+  const{data,error}=await supabaseClient.from("archive").update({in_watchlist:false,updated_at:new Date().toISOString()}).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
-    console.error("ARCHIVE DELETE FAILED",error);
+    console.error("ARCHIVE REMOVE FAILED",error);
     return false;
   }
   if(!data){
@@ -136,6 +138,7 @@ window.archiveSyncWatch=async function(id,watched){
   if(!user)return false;
   const{data,error}=await supabaseClient.from("archive").update({
     watched:!!watched,
+    in_watchlist:!watched,
     updated_at:new Date().toISOString()
   }).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
@@ -164,7 +167,7 @@ searchResults?.addEventListener("click",async e=>{
   const row=b.closest(".search-result");
   const item=window.__searchResults?.find(x=>Number(x.id)===Number(row?.dataset.id));
   if(!item)return;
-  const wasAlreadyInArchive=films.some(x=>Number(x.tmdbId)===Number(item.id));
+  const wasAlreadyInArchive=films.some(x=>Number(x.tmdbId)===Number(item.id)&&x.inWatchlist!==false&&!x.watched);
   for(let i=0;i<20;i++){
     await new Promise(r=>setTimeout(r,i?150:50));
     const f=films.find(x=>Number(x.tmdbId)===Number(item.id));
@@ -193,8 +196,8 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!movieNight.result)return;
   const id=Number(movieNight.result.id);
   let savedFilm=films.find(x=>Number(x.tmdbId)===id);
-  const wasAlreadyInArchive=!!savedFilm;
-  if(!savedFilm){
+  const wasAlreadyInArchive=!!savedFilm&&savedFilm.inWatchlist!==false&&!savedFilm.watched;
+  if(!savedFilm||!wasAlreadyInArchive){
     addFilm(movieNight.result);
     savedFilm=films.find(x=>Number(x.tmdbId)===id);
   }
@@ -310,7 +313,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
 window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   if(typeof window.openSupabaseRating==="function"){resolve();return}
   const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20261018-type3";
+  script.src="supabase-ratings.js?v=20261020-watchlist1";
   script.async=false;
   script.onload=()=>{if(typeof window.openSupabaseRating==="function")resolve();else reject(new Error("RATINGS MODULE LOADED WITHOUT OPEN FUNCTION"))};
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
