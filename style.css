@@ -2631,3 +2631,38 @@ select{
     grid-template-columns:1fr!important;
   }
 }
+
+/* RATINGS — compact list and prevent accidental page-wide horizontal scrolling */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip !important;
+}
+
+.ratings-list {
+  max-height: 600px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+.ratings-list .rating-card,
+.ratings-list .rating-card > *,
+.ratings-list .rating-info,
+.ratings-list .rating-title,
+.ratings-list .rating-card p,
+.ratings-list .rating-score,
+.ratings-list .rating-average {
+  min-width: 0 !important;
+  max-width: 100%;
+  overflow-wrap: anywhere !important;
+  word-break: normal;
+}
+
+@media (max-width: 800px) {
+  .ratings-list {
+    max-height: 70vh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+}
