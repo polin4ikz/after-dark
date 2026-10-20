@@ -2640,7 +2640,7 @@ body {
 }
 
 .ratings-list {
-  max-height: 600px !important;
+  max-height: 560px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
@@ -2661,7 +2661,7 @@ body {
 
 @media (max-width: 800px) {
   .ratings-list {
-    max-height: 70vh !important;
+    max-height: calc(70vh - 44px) !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
   }
