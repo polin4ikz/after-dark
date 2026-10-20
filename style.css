@@ -2632,7 +2632,7 @@ select{
   }
 }
 
-/* RATINGS — show about four rows, scroll for the rest */
+/* RATINGS — show four rows, scroll for the rest */
 html,
 body {
   max-width: 100%;
@@ -2640,7 +2640,7 @@ body {
 }
 
 .ratings-list {
-  max-height: 360px !important;
+  max-height: 280px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
@@ -2661,7 +2661,7 @@ body {
 
 @media (max-width: 800px) {
   .ratings-list {
-    max-height: 460px !important;
+    max-height: 350px !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
   }
