@@ -66,15 +66,11 @@
 
   document.querySelector("#movieNightModalClose")?.addEventListener("click",()=>window.closeMovieNight?.(),true);
   document.querySelector("#movieNightModalBackdrop")?.addEventListener("click",()=>window.closeMovieNight?.(),true);
-  document.querySelector("#movieNightAdd")?.addEventListener("click",()=>{
-    if(window.movieNight?.result){addFilm(window.movieNight.result);updateMovieNightButtons?.()}
-  },true);
 })();
 
 /* MOVIE NIGHT — direct result button handlers */
 (()=>{
   const open=()=>document.querySelector("#movieNightOpen");
-  const addBtn=()=>document.querySelector("#movieNightAdd");
 
   open()?.addEventListener("click",e=>{
     e.preventDefault();
@@ -87,15 +83,6 @@
         type:typeOf(f),vote_average:f.vote_average||0,
         genre_ids:f.genre_ids||[],originCountries:f.origin_country||[]
       });
-    }
-  },true);
-
-  addBtn()?.addEventListener("click",e=>{
-    e.preventDefault();
-    const f=window.movieNight?.result;
-    if(f){
-      window.addFilm?.(f);
-      window.updateMovieNightButtons?.();
     }
   },true);
 })();
