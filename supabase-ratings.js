@@ -178,6 +178,7 @@
       render();
     }catch(e){
       console.error("RATINGS LOAD FAILED",e);
+      state.rows=[];
       const list=document.querySelector("#ratingsList");if(list)list.innerHTML='<div class="rating-empty">RATINGS CONNECTION FAILED</div>';
     }
   }
