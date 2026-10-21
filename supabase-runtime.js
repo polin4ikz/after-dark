@@ -4,8 +4,11 @@
    Keeps Supabase-specific runtime concerns in one place.
 ========================================================= */
 
+window.archiveSyncStatus="loading";
+
 async function archiveSyncLoadShared(user){
   if(!user)return null;
+  window.archiveSyncStatus="loading";
   try{
     const{data,error}=await supabaseClient.from("archive").select("*").order("created_at",{ascending:false});
     if(error)throw error;
@@ -25,10 +28,13 @@ async function archiveSyncLoadShared(user){
       inWatchlist:row.in_watchlist!==false
     }));
 
+    window.archiveSyncStatus="loaded";
     renderArchive();
     return user;
   }catch(e){
+    window.archiveSyncStatus="error";
     console.error("ARCHIVE LOAD FAILED",e);
+    renderArchive();
     return null;
   }
 }
@@ -38,16 +44,20 @@ const archiveSyncReady=(async()=>{
     await supabaseReady;
     const{data:{session},error:authError}=await supabaseClient.auth.getSession();
     if(authError)throw authError;
-    if(!session?.user){console.info("ARCHIVE SYNC: WAITING FOR AUTH");return null}
+    if(!session?.user){window.archiveSyncStatus="signed-out";console.info("ARCHIVE SYNC: WAITING FOR AUTH");window.renderArchive?.();return null}
     return await archiveSyncLoadShared(session.user);
   }catch(e){
+    window.archiveSyncStatus="error";
     console.error("ARCHIVE SYNC FAILED",e);
+    window.renderArchive?.();
     return null;
   }
 })();
 
 window.archiveSyncReload=async function(s){
-  if(!s?.user)return false;
+  if(!s?.user){window.archiveSyncStatus="signed-out";window.renderArchive?.();return false}
+  window.archiveSyncStatus="loading";
+  window.renderArchive?.();
   await supabaseReady;
   return !!(await archiveSyncLoadShared(s.user));
 };
@@ -286,7 +296,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
       await syncHeader();
       supabaseClient.auth.onAuthStateChange((_event,newSession)=>{
         session=newSession||null;
-        if(!session){films=[];window.renderArchive?.();return}
+        if(!session){films=[];window.archiveSyncStatus="signed-out";window.renderArchive?.();return}
         const activeSession=session;
         setTimeout(async()=>{
           try{
