@@ -4,8 +4,11 @@
    Keeps Supabase-specific runtime concerns in one place.
 ========================================================= */
 
+window.archiveSyncStatus="loading";
+
 async function archiveSyncLoadShared(user){
   if(!user)return null;
+  window.archiveSyncStatus="loading";
   try{
     const{data,error}=await supabaseClient.from("archive").select("*").order("created_at",{ascending:false});
     if(error)throw error;
@@ -21,13 +24,17 @@ async function archiveSyncLoadShared(user){
       vote_average:Number(row.vote_average||0),
       genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
-      watched:!!row.watched
+      watched:!!row.watched,
+      inWatchlist:row.in_watchlist!==false
     }));
 
+    window.archiveSyncStatus="loaded";
     renderArchive();
     return user;
   }catch(e){
+    window.archiveSyncStatus="error";
     console.error("ARCHIVE LOAD FAILED",e);
+    renderArchive();
     return null;
   }
 }
@@ -35,18 +42,22 @@ async function archiveSyncLoadShared(user){
 const archiveSyncReady=(async()=>{
   try{
     await supabaseReady;
-    const{data:{user},error:authError}=await supabaseClient.auth.getUser();
+    const{data:{session},error:authError}=await supabaseClient.auth.getSession();
     if(authError)throw authError;
-    if(!user){console.warn("ARCHIVE SYNC: NO AUTH USER");return null}
-    return await archiveSyncLoadShared(user);
+    if(!session?.user){window.archiveSyncStatus="signed-out";console.info("ARCHIVE SYNC: WAITING FOR AUTH");window.renderArchive?.();return null}
+    return await archiveSyncLoadShared(session.user);
   }catch(e){
+    window.archiveSyncStatus="error";
     console.error("ARCHIVE SYNC FAILED",e);
+    window.renderArchive?.();
     return null;
   }
 })();
 
 window.archiveSyncReload=async function(s){
-  if(!s?.user)return false;
+  if(!s?.user){window.archiveSyncStatus="signed-out";window.renderArchive?.();return false}
+  window.archiveSyncStatus="loading";
+  window.renderArchive?.();
   await supabaseReady;
   return !!(await archiveSyncLoadShared(s.user));
 };
@@ -65,6 +76,7 @@ function archiveSyncRow(f,user){
     genre_ids:f.genre_ids||[],
     origin_countries:f.originCountries||[],
     watched:!!f.watched,
+    in_watchlist:f.inWatchlist!==false&&!f.watched,
     added_by:user.id,
     updated_at:new Date().toISOString()
   };
@@ -77,11 +89,18 @@ async function archiveSyncUser(){
     console.error("ARCHIVE AUTH FAILED",error);
     return null;
   }
-  return user||null;
+  if(!user)return null;
+  const profile=await window.archiveSyncEnsureProfile?.({user});
+  if(!profile){
+    console.error("ARCHIVE SAVE BLOCKED: PROFILE IS NOT READY");
+    return null;
+  }
+  return user;
 }
 
 async function archiveSyncUpsertMany(list,user){
   if(!user||!list?.length)return false;
+  if(!await window.archiveSyncEnsureProfile?.({user}))return false;
   const{data,error}=await supabaseClient.from("archive").upsert(
     list.map(f=>archiveSyncRow(f,user)),
     {onConflict:"tmdb_id"}
@@ -112,9 +131,13 @@ async function archiveSyncUpsert(f){
 async function archiveSyncRemove(id){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{error}=await supabaseClient.from("archive").delete().eq("tmdb_id",Number(id));
+  const{data,error}=await supabaseClient.from("archive").update({in_watchlist:false,updated_at:new Date().toISOString()}).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
-    console.error("ARCHIVE DELETE FAILED",error);
+    console.error("ARCHIVE REMOVE FAILED",error);
+    return false;
+  }
+  if(!data){
+    console.warn("ARCHIVE DELETE DID NOT REMOVE A ROW",id);
     return false;
   }
   return true;
@@ -123,46 +146,61 @@ async function archiveSyncRemove(id){
 window.archiveSyncWatch=async function(id,watched){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{error}=await supabaseClient.from("archive").update({
+  const{data,error}=await supabaseClient.from("archive").update({
     watched:!!watched,
+    in_watchlist:!watched,
     updated_at:new Date().toISOString()
-  }).eq("tmdb_id",Number(id));
+  }).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
     console.error("ARCHIVE WATCH UPDATE FAILED",error);
+    return false;
+  }
+  if(!data){
+    console.warn("ARCHIVE WATCH UPDATE DID NOT MATCH A ROW",id);
     return false;
   }
   return true;
 }
 
-/* Archive/search persistence hooks */
-archiveTrack?.addEventListener("click",async e=>{
-  const b=e.target.closest("[data-action]");
-  if(!b)return;
-  const id=Number(b.dataset.id);
-  if(b.dataset.action==="remove")await archiveSyncRemove(id);
-  else if(b.dataset.action==="watch")queueMicrotask(()=>archiveSyncWatch(id,true));
-},{capture:true});
-
+/* Archive card actions are persisted by after-dark-final.js. Do not attach a second capture handler here: it can save a watch status when START only opens the detail modal, and can issue duplicate remove requests. */
 searchResults?.addEventListener("click",async e=>{
   const b=e.target.closest("[data-action='add']");
   if(!b)return;
   const row=b.closest(".search-result");
   const item=window.__searchResults?.find(x=>Number(x.id)===Number(row?.dataset.id));
   if(!item)return;
+  const previousFilm=films.find(x=>Number(x.tmdbId)===Number(item.id));
+  const previousSnapshot=previousFilm?{...previousFilm,genre_ids:[...(previousFilm.genre_ids||[])],originCountries:[...(previousFilm.originCountries||[])]}:null;
+  const wasAlreadyInArchive=!!previousFilm&&previousFilm.inWatchlist!==false&&!previousFilm.watched;
   for(let i=0;i<20;i++){
     await new Promise(r=>setTimeout(r,i?150:50));
     const f=films.find(x=>Number(x.tmdbId)===Number(item.id));
     if(f){
       const ok=await archiveSyncUpsert(f);
       if(!ok){
-        window.removeArchiveFilmLocal?.(Number(item.id));
+        if(!wasAlreadyInArchive){
+          if(previousSnapshot){
+            films=films.filter(x=>Number(x.tmdbId)!==Number(item.id));
+            films.push(previousSnapshot);
+            renderArchive();
+          }else window.removeArchiveFilmLocal?.(Number(item.id));
+        }else{
+          const{data:{session}}=await supabaseClient.auth.getSession();
+          if(session)await window.archiveSyncReload?.(session);
+        }
         b.textContent="SAVE FAILED";
         b.classList.add("save-failed");
       }
       return;
     }
   }
-  window.removeArchiveFilmLocal?.(Number(item?.id));
+  if(!wasAlreadyInArchive){
+    if(previousSnapshot){
+      films=films.filter(x=>Number(x.tmdbId)!==Number(item.id));
+      films.push(previousSnapshot);
+      renderArchive();
+    }else window.removeArchiveFilmLocal?.(Number(item.id));
+  }
   b.textContent="SAVE FAILED";
   b.classList.add("save-failed");
 },{capture:true});
@@ -173,7 +211,9 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!movieNight.result)return;
   const id=Number(movieNight.result.id);
   let savedFilm=films.find(x=>Number(x.tmdbId)===id);
-  if(!savedFilm){
+  const previousSnapshot=savedFilm?{...savedFilm,genre_ids:[...(savedFilm.genre_ids||[])],originCountries:[...(savedFilm.originCountries||[])]}:null;
+  const wasAlreadyInArchive=!!savedFilm&&savedFilm.inWatchlist!==false&&!savedFilm.watched;
+  if(!savedFilm||!wasAlreadyInArchive){
     addFilm(movieNight.result);
     savedFilm=films.find(x=>Number(x.tmdbId)===id);
   }
@@ -184,9 +224,16 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   const ok=await archiveSyncUpsert(savedFilm);
   if(!ok){
     console.error("MOVIE NIGHT SUPABASE SAVE FAILED");
-    films=films.filter(x=>Number(x.tmdbId)!==id);
-
-    renderArchive();
+    if(!wasAlreadyInArchive){
+      if(previousSnapshot){
+        films=films.filter(x=>Number(x.tmdbId)!==id);
+        films.push(previousSnapshot);
+      }else films=films.filter(x=>Number(x.tmdbId)!==id);
+      renderArchive();
+    }else{
+      const{data:{session}}=await supabaseClient.auth.getSession();
+      if(session)await window.archiveSyncReload?.(session);
+    }
     alert("COULD NOT SAVE TO ARCHIVE");
     return;
   }
@@ -240,6 +287,8 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
     return null;
   }
 
+  window.archiveSyncEnsureProfile=ensureProfile;
+
   async function syncHeader(){
     try{
       session=await getSession();
@@ -254,11 +303,20 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
     try{
       await supabaseReady;
       await syncHeader();
-      supabaseClient.auth.onAuthStateChange(async(_event,newSession)=>{
+      supabaseClient.auth.onAuthStateChange((_event,newSession)=>{
         session=newSession||null;
-        await updateAuthButton(session);
-        if(session)await window.archiveSyncReload?.(session);
-        else{films=[];window.renderArchive?.()}
+        if(!session){films=[];window.archiveSyncStatus="signed-out";window.renderArchive?.();return}
+        const activeSession=session;
+        setTimeout(async()=>{
+          try{
+            const profile=await ensureProfile(activeSession);
+            if(!profile){console.warn("PROFILE SYNC DELAYED: PROFILE NOT READY");return}
+            await updateAuthButton(activeSession);
+            await window.archiveSyncReload?.(activeSession);
+          }catch(error){
+            console.error("AUTH SESSION SYNC FAILED",error);
+          }
+        },0);
       });
     }catch(error){
       console.error("SUPABASE AUTH BRIDGE FAILED",error);
@@ -274,7 +332,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
 window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   if(typeof window.openSupabaseRating==="function"){resolve();return}
   const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20260930-ratings25";
+  script.src="supabase-ratings.js?v=20261021-ratings-fail-state1";
   script.async=false;
   script.onload=()=>{if(typeof window.openSupabaseRating==="function")resolve();else reject(new Error("RATINGS MODULE LOADED WITHOUT OPEN FUNCTION"))};
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
