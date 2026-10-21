@@ -162,15 +162,7 @@ window.archiveSyncWatch=async function(id,watched){
   return true;
 }
 
-/* Archive/search persistence hooks */
-archiveTrack?.addEventListener("click",async e=>{
-  const b=e.target.closest("[data-action]");
-  if(!b)return;
-  const id=Number(b.dataset.id);
-  if(b.dataset.action==="remove")await archiveSyncRemove(id);
-  else if(b.dataset.action==="watch")queueMicrotask(()=>archiveSyncWatch(id,true));
-},{capture:true});
-
+/* Archive card actions are persisted by after-dark-final.js. Do not attach a second capture handler here: it can save a watch status when START only opens the detail modal, and can issue duplicate remove requests. */
 searchResults?.addEventListener("click",async e=>{
   const b=e.target.closest("[data-action='add']");
   if(!b)return;
