@@ -169,15 +169,22 @@ searchResults?.addEventListener("click",async e=>{
   const row=b.closest(".search-result");
   const item=window.__searchResults?.find(x=>Number(x.id)===Number(row?.dataset.id));
   if(!item)return;
-  const wasAlreadyInArchive=films.some(x=>Number(x.tmdbId)===Number(item.id)&&x.inWatchlist!==false&&!x.watched);
+  const previousFilm=films.find(x=>Number(x.tmdbId)===Number(item.id));
+  const previousSnapshot=previousFilm?{...previousFilm,genre_ids:[...(previousFilm.genre_ids||[])],originCountries:[...(previousFilm.originCountries||[])]}:null;
+  const wasAlreadyInArchive=!!previousFilm&&previousFilm.inWatchlist!==false&&!previousFilm.watched;
   for(let i=0;i<20;i++){
     await new Promise(r=>setTimeout(r,i?150:50));
     const f=films.find(x=>Number(x.tmdbId)===Number(item.id));
     if(f){
       const ok=await archiveSyncUpsert(f);
       if(!ok){
-        if(!wasAlreadyInArchive)window.removeArchiveFilmLocal?.(Number(item.id));
-        else{
+        if(!wasAlreadyInArchive){
+          if(previousSnapshot){
+            films=films.filter(x=>Number(x.tmdbId)!==Number(item.id));
+            films.push(previousSnapshot);
+            renderArchive();
+          }else window.removeArchiveFilmLocal?.(Number(item.id));
+        }else{
           const{data:{session}}=await supabaseClient.auth.getSession();
           if(session)await window.archiveSyncReload?.(session);
         }
@@ -187,7 +194,13 @@ searchResults?.addEventListener("click",async e=>{
       return;
     }
   }
-  if(!wasAlreadyInArchive)window.removeArchiveFilmLocal?.(Number(item?.id));
+  if(!wasAlreadyInArchive){
+    if(previousSnapshot){
+      films=films.filter(x=>Number(x.tmdbId)!==Number(item.id));
+      films.push(previousSnapshot);
+      renderArchive();
+    }else window.removeArchiveFilmLocal?.(Number(item.id));
+  }
   b.textContent="SAVE FAILED";
   b.classList.add("save-failed");
 },{capture:true});
@@ -198,6 +211,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!movieNight.result)return;
   const id=Number(movieNight.result.id);
   let savedFilm=films.find(x=>Number(x.tmdbId)===id);
+  const previousSnapshot=savedFilm?{...savedFilm,genre_ids:[...(savedFilm.genre_ids||[])],originCountries:[...(savedFilm.originCountries||[])]}:null;
   const wasAlreadyInArchive=!!savedFilm&&savedFilm.inWatchlist!==false&&!savedFilm.watched;
   if(!savedFilm||!wasAlreadyInArchive){
     addFilm(movieNight.result);
@@ -211,7 +225,10 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
   if(!ok){
     console.error("MOVIE NIGHT SUPABASE SAVE FAILED");
     if(!wasAlreadyInArchive){
-      films=films.filter(x=>Number(x.tmdbId)!==id);
+      if(previousSnapshot){
+        films=films.filter(x=>Number(x.tmdbId)!==id);
+        films.push(previousSnapshot);
+      }else films=films.filter(x=>Number(x.tmdbId)!==id);
       renderArchive();
     }else{
       const{data:{session}}=await supabaseClient.auth.getSession();
