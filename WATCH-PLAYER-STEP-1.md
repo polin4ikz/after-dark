@@ -13,7 +13,7 @@ This is a deliberately small, additive step on top of `fix/internal-stability`.
 ## Deliberate limits
 - Source discovery is not connected yet: a viewer must paste a link to a video they are authorized to watch and embed.
 - A supported domain does not guarantee that a specific video allows embedding; the provider may refuse it or require sign-in.
-- This step does not save playback progress and does not write to Supabase. Source links are local to the browser/device and are not shared with the other account. Cross-origin iframe providers expose different playback APIs; progress tracking needs a provider-specific adapter in the next step.
+- This step does not save playback progress and does not write to Supabase. Source links are local to the browser/device and are not shared with the other account. Archive.org catalog search uses a narrow read-only proxy and does not download or mirror video files. Cross-origin iframe providers expose different playback APIs; progress tracking needs a provider-specific adapter in the next step.
 - Only use sources whose rights and embed settings permit this use. This is not a mechanism for bypassing paywalls, DRM, or provider restrictions.
 
 ## Validation
