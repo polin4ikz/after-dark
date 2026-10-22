@@ -1,6 +1,6 @@
 // Narrow public catalog search for Internet Archive items.
 const MAX_QUERY_LENGTH = 120;
-const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,:!?()&-]+$/u;
+const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&-]+$/u;
 
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
