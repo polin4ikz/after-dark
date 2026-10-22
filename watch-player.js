@@ -1,5 +1,5 @@
 /* AFTER DARK — safe third-party embed player foundation.
-   Official HTTPS embed URLs only. Source URLs stay in memory; Supabase is untouched. */
+   Official HTTPS embed URLs only. Source URLs stay on this device; Supabase is untouched. */
 (function () {
   "use strict";
   const SOURCE_STORAGE_KEY = "after-dark:watch-source:v1";
@@ -221,7 +221,7 @@
     new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
     window.afterDarkWatchPlayer = { open: openPlayer, close: closePlayer, normalizeEmbedUrl };
   }
-  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeEmbedUrl, filmKey };
+  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeEmbedUrl, filmKey, restoreSourceCache, persistSourceCache, SOURCE_CACHE, SOURCE_STORAGE_KEY };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
     else init();
