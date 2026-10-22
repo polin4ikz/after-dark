@@ -88,8 +88,8 @@
       '<section class="ad-watch-player__window" role="dialog" aria-modal="true" aria-labelledby="adWatchTitle">',
       '<div class="ad-watch-player__topline"><span>PRIVATE CINEMA / PLAYER</span><button type="button" data-ad-watch-close>ЗАКРЫТЬ ×</button></div>',
       '<h2 id="adWatchTitle" class="ad-watch-player__title"></h2>',
-      '<p class="ad-watch-player__hint">Найди фильм в доступном каталоге Internet Archive или вставь официальную embed-ссылку. Источник запомнится в этом браузере.</p>',
-      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>НАЙТИ В INTERNET ARCHIVE ↗</button>',
+      '<p class="ad-watch-player__hint">Сначала проверь легальные варианты просмотра. Internet Archive — каталог, а совпадение названия не гарантирует наличие полного фильма.</p>',
+      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
       '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://archive.org/embed/…" autocomplete="url"><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
@@ -133,22 +133,13 @@
             const titleMatch = normalized === wanted || normalized.startsWith(wanted + " ") || wanted.startsWith(normalized + " ");
             return { ...item, titleMatch, blocked: blockedTitle.test(item.title) || blockedTitle.test(item.description || "") };
           });
-        const suitable = candidates.filter(item => item.titleMatch && !item.blocked);
-        if (suitable.length === 1) {
-          // Auto-open only a single clear title match; never guess from a loose catalog hit.
-          const input = $("#adWatchSource", modal);
-          input.value = "https://archive.org/embed/" + suitable[0].identifier;
-          const form = $(".ad-watch-player__form", modal);
-          results.textContent = "НАШЛА СОВПАДЕНИЕ ПО НАЗВАНИЮ. ОТКРЫВАЮ ИСТОЧНИК…";
-          if (form?.requestSubmit) form.requestSubmit();
-          return;
-        }
+        // Catalog title matches are never auto-opened: they may be podcasts, books, ads, or unrelated media.
         const visible = candidates.filter(item => !item.blocked);
         if (!visible.length) {
-          results.textContent = "НЕ НАШЛА ПОДХОДЯЩЕГО СОВПАДЕНИЯ. Каталог содержит неподходящие записи или трейлеры. Попробуй оригинальное название либо укажи официальный источник.";
+          results.innerHTML = '<p class="ad-watch-player__result-description">В Internet Archive не нашлось подходящих записей. Совпадение в каталоге в любом случае не подтверждает, что доступен полный фильм.</p>';
           return;
         }
-        results.innerHTML = visible.map(item =>
+        results.innerHTML = '<p class="ad-watch-player__result-description">Ниже — записи каталога, а не проверенные видеопотоки. Не открывай результат как фильм, если в нём не подтверждено наличие полного видео.</p>' + visible.map(item =>
           '<button type="button" class="ad-watch-player__result" data-ad-archive-identifier="' + esc(item.identifier) + '">' +
           '<span class="ad-watch-player__result-title">' + esc(item.title) + '</span>' +
           '<span class="ad-watch-player__result-meta">' + esc(item.year || "ГОД НЕ УКАЗАН") + '</span>' +
@@ -218,11 +209,8 @@
       status.textContent = "ИСТОЧНИК ПОДКЛЮЧЁН · " + cached.provider.toUpperCase();
       stage.innerHTML = '<iframe src="' + esc(cached.url) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
     } else {
-      // Start discovery immediately so WATCH opens on useful content rather than an empty form.
-      // Internet Archive only returns catalog items; availability and playback rights vary by item.
-      const searchButton = $("[data-ad-archive-search]", modal);
-      if (searchButton) searchButton.click();
-      input.focus({ preventScroll: true });
+      const searchUrl = "https://www.justwatch.com/de/suche?q=" + encodeURIComponent(titleOf(film));
+      results.innerHTML = '<p class="ad-watch-player__result-description">Плеер не нашёл сохранённый источник. Проверь, где фильм доступен легально, или отдельно выполни поиск по Internet Archive.</p><a class="ad-watch-player__result" href="' + esc(searchUrl) + '" target="_blank" rel="noopener noreferrer">ПРОВЕРИТЬ СЕРВИСЫ ПРОСМОТРА ↗</a>';
     }
   }
   function closePlayer() {
