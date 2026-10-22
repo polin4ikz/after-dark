@@ -88,14 +88,59 @@
       '<section class="ad-watch-player__window" role="dialog" aria-modal="true" aria-labelledby="adWatchTitle">',
       '<div class="ad-watch-player__topline"><span>PRIVATE CINEMA / PLAYER</span><button type="button" data-ad-watch-close>ЗАКРЫТЬ ×</button></div>',
       '<h2 id="adWatchTitle" class="ad-watch-player__title"></h2>',
-      '<p class="ad-watch-player__hint">Подключи официальный embed-источник. Ссылка сохранится на этом устройстве для этого фильма. Используй видео, которое разрешено встраивать и смотреть.</p>',
-      '<form class="ad-watch-player__form"><label for="adWatchSource">ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
-      '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://www.youtube.com/embed/…" autocomplete="url" required><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
+      '<p class="ad-watch-player__hint">Найди фильм в доступном каталоге Internet Archive или вставь официальную embed-ссылку. Источник запомнится в этом браузере.</p>',
+      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>НАЙТИ В INTERNET ARCHIVE ↗</button>',
+      '<div class="ad-watch-player__results" aria-live="polite"></div>',
+      '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
+      '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://archive.org/embed/…" autocomplete="url"><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
       '<p class="ad-watch-player__status" aria-live="polite"></p><div class="ad-watch-player__stage"></div>',
       '<p class="ad-watch-player__footnote">YouTube · Vimeo · Archive.org / полноэкранный режим зависит от источника</p>',
       '</section>'
     ].join("");
     document.body.appendChild(modal);
+    modal.addEventListener("click", async event => {
+      const searchButton = event.target.closest("[data-ad-archive-search]");
+      const resultButton = event.target.closest("[data-ad-archive-identifier]");
+      if (resultButton) {
+        const identifier = resultButton.dataset.adArchiveIdentifier || "";
+        if (!/^[A-Za-z0-9._-]{1,120}$/.test(identifier)) return;
+        const input = $("#adWatchSource", modal);
+        input.value = "https://archive.org/embed/" + identifier;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        const form = $(".ad-watch-player__form", modal);
+        if (form?.requestSubmit) form.requestSubmit();
+        return;
+      }
+      if (!searchButton) return;
+      const film = modal._film;
+      const query = titleOf(film).trim();
+      const results = $(".ad-watch-player__results", modal);
+      if (!query || !results) return;
+      searchButton.disabled = true;
+      results.textContent = "ИЩУ В КАТАЛОГЕ…";
+      try {
+        const response = await fetch("/api/archive-search?q=" + encodeURIComponent(query), {
+          headers: { accept: "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "ARCHIVE_SEARCH_UNAVAILABLE");
+        if (!Array.isArray(data.results) || !data.results.length) {
+          results.textContent = "В INTERNET ARCHIVE НИЧЕГО НЕ НАШЛОСЬ. Попробуй оригинальное название или вставь ссылку вручную.";
+          return;
+        }
+        results.innerHTML = data.results.map(item =>
+          '<button type="button" class="ad-watch-player__result" data-ad-archive-identifier="' + esc(item.identifier) + '">' +
+          '<span class="ad-watch-player__result-title">' + esc(item.title) + '</span>' +
+          '<span class="ad-watch-player__result-meta">' + esc(item.year || "ГОД НЕ УКАЗАН") + '</span>' +
+          (item.description ? '<span class="ad-watch-player__result-description">' + esc(item.description) + '</span>' : '') +
+          '</button>'
+        ).join("");
+      } catch (error) {
+        results.textContent = "НЕ УДАЛОСЬ ПОИСКАТЬ В INTERNET ARCHIVE. Попробуй позже или вставь ссылку вручную.";
+      } finally {
+        searchButton.disabled = false;
+      }
+    });
     modal.addEventListener("submit", event => {
       const form = event.target.closest(".ad-watch-player__form");
       if (!form) return;
@@ -140,6 +185,10 @@
     stage.replaceChildren();
     status.textContent = "";
     status.classList.remove("is-error");
+    const results = $(".ad-watch-player__results", modal);
+    if (results) results.replaceChildren();
+    const searchButton = $("[data-ad-archive-search]", modal);
+    if (searchButton) searchButton.disabled = false;
     const cached = SOURCE_CACHE.get(filmKey(film));
     input.value = cached ? cached.url : "";
     modal.classList.add("is-open");
