@@ -124,11 +124,31 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "ARCHIVE_SEARCH_UNAVAILABLE");
-        if (!Array.isArray(data.results) || !data.results.length) {
-          results.textContent = "В INTERNET ARCHIVE НИЧЕГО НЕ НАШЛОСЬ. Попробуй оригинальное название или вставь ссылку вручную.";
+        const blockedTitle = /\b(trailer|teaser|gameplay|walkthrough|playthrough|let'?s play|review|reaction|fan.?film|soundtrack|ost|game|игр[аыуеы]?|прохождени[ея]|трейлер|тизер|обзор|реакци[яи]|саундтрек)\b/i;
+        const wanted = query.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+        const candidates = (Array.isArray(data.results) ? data.results : [])
+          .filter(item => item && typeof item.identifier === "string" && typeof item.title === "string")
+          .map(item => {
+            const normalized = item.title.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+            const titleMatch = normalized === wanted || normalized.startsWith(wanted + " ") || wanted.startsWith(normalized + " ");
+            return { ...item, titleMatch, blocked: blockedTitle.test(item.title) || blockedTitle.test(item.description || "") };
+          });
+        const suitable = candidates.filter(item => item.titleMatch && !item.blocked);
+        if (suitable.length === 1) {
+          // Auto-open only a single clear title match; never guess from a loose catalog hit.
+          const input = $("#adWatchSource", modal);
+          input.value = "https://archive.org/embed/" + suitable[0].identifier;
+          const form = $(".ad-watch-player__form", modal);
+          results.textContent = "НАШЛА СОВПАДЕНИЕ ПО НАЗВАНИЮ. ОТКРЫВАЮ ИСТОЧНИК…";
+          if (form?.requestSubmit) form.requestSubmit();
           return;
         }
-        results.innerHTML = data.results.map(item =>
+        const visible = candidates.filter(item => !item.blocked);
+        if (!visible.length) {
+          results.textContent = "НЕ НАШЛА ПОДХОДЯЩЕГО СОВПАДЕНИЯ. Каталог содержит неподходящие записи или трейлеры. Попробуй оригинальное название либо укажи официальный источник.";
+          return;
+        }
+        results.innerHTML = visible.map(item =>
           '<button type="button" class="ad-watch-player__result" data-ad-archive-identifier="' + esc(item.identifier) + '">' +
           '<span class="ad-watch-player__result-title">' + esc(item.title) + '</span>' +
           '<span class="ad-watch-player__result-meta">' + esc(item.year || "ГОД НЕ УКАЗАН") + '</span>' +
