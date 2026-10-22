@@ -46,8 +46,8 @@
   }
 
   function restoreSourceCache() {
-    if (typeof localStorage === "undefined") return;
     try {
+      if (typeof localStorage === "undefined") return;
       const saved = JSON.parse(localStorage.getItem(SOURCE_STORAGE_KEY) || "{}");
       if (!saved || typeof saved !== "object" || Array.isArray(saved)) return;
       for (const [key, value] of Object.entries(saved)) {
@@ -61,8 +61,8 @@
   }
 
   function persistSourceCache() {
-    if (typeof localStorage === "undefined") return;
     try {
+      if (typeof localStorage === "undefined") return;
       const saved = Object.fromEntries(SOURCE_CACHE.entries());
       localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(saved));
     } catch { /* Playback should still work if browser storage is full or disabled. */ }
@@ -88,7 +88,7 @@
       '<section class="ad-watch-player__window" role="dialog" aria-modal="true" aria-labelledby="adWatchTitle">',
       '<div class="ad-watch-player__topline"><span>PRIVATE CINEMA / PLAYER</span><button type="button" data-ad-watch-close>ЗАКРЫТЬ ×</button></div>',
       '<h2 id="adWatchTitle" class="ad-watch-player__title"></h2>',
-      '<p class="ad-watch-player__hint">Первый этап: подключи официальный embed-источник. Используй видео, которое разрешено встраивать и смотреть.</p>',
+      '<p class="ad-watch-player__hint">Подключи официальный embed-источник. Ссылка сохранится на этом устройстве для этого фильма. Используй видео, которое разрешено встраивать и смотреть.</p>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
       '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://www.youtube.com/embed/…" autocomplete="url" required><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
       '<p class="ad-watch-player__status" aria-live="polite"></p><div class="ad-watch-player__stage"></div>',
