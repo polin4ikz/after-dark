@@ -1,6 +1,6 @@
 // Narrow public catalog search for Internet Archive items.
 const MAX_QUERY_LENGTH = 120;
-const SAFE_QUERY = /^[\\p{L}\\p{N}\\s'’.,:!?()&-]+$/u;
+const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,:!?()&-]+$/u;
 
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
   }
   const requestUrl = new URL(req.url, "https://after-dark.invalid");
-  const query = (requestUrl.searchParams.get("q") || "").trim().replace(/\\s+/g, " ");
+  const query = (requestUrl.searchParams.get("q") || "").trim().replace(/\s+/g, " ");
   if (!query || query.length > MAX_QUERY_LENGTH || !SAFE_QUERY.test(query)) {
     return res.status(400).json({ error: "INVALID_SEARCH_QUERY" });
   }
