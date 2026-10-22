@@ -1,6 +1,6 @@
 // Narrow public catalog search for Internet Archive items (Netlify).
 const MAX_QUERY_LENGTH = 120;
-const SAFE_QUERY = /^[\\p{L}\\p{N}\\s'’.,:!?()&-]+$/u;
+const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,:!?()&-]+$/u;
 
 exports.handler = async (event) => {
   const headers = {
@@ -12,7 +12,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: { ...headers, Allow: "GET" }, body: JSON.stringify({ error: "METHOD_NOT_ALLOWED" }) };
   }
   const requestUrl = new URL(event.rawUrl || "https://after-dark.invalid/api/archive-search");
-  const query = (requestUrl.searchParams.get("q") || "").trim().replace(/\\s+/g, " ");
+  const query = (requestUrl.searchParams.get("q") || "").trim().replace(/\s+/g, " ");
   if (!query || query.length > MAX_QUERY_LENGTH || !SAFE_QUERY.test(query)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "INVALID_SEARCH_QUERY" }) };
   }
