@@ -38,3 +38,59 @@ test("builds distinct source keys for movies and series", () => {
   assert.equal(filmKey({ id: 456, media_type: "tv" }), "tv:456");
   assert.equal(filmKey({}), "");
 });
+
+test("restores only valid supported sources from local storage", () => {
+  const { SOURCE_CACHE, SOURCE_STORAGE_KEY, restoreSourceCache } = require("../watch-player.js");
+  const originalStorage = global.localStorage;
+  const values = new Map();
+  global.localStorage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value)
+  };
+  try {
+    SOURCE_CACHE.clear();
+    values.set(SOURCE_STORAGE_KEY, JSON.stringify({
+      "movie:123": { provider: "youtube", url: "https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1" },
+      "tv:456": { provider: "evil", url: "https://evil.example/embed/abcdefghijk" },
+      "not-an-id": { provider: "youtube", url: "https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1" }
+    }));
+    restoreSourceCache();
+    assert.deepEqual(SOURCE_CACHE.get("movie:123"), {
+      provider: "youtube",
+      url: "https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1"
+    });
+    assert.equal(SOURCE_CACHE.has("tv:456"), false);
+    assert.equal(SOURCE_CACHE.has("not-an-id"), false);
+  } finally {
+    SOURCE_CACHE.clear();
+    if (originalStorage === undefined) delete global.localStorage;
+    else global.localStorage = originalStorage;
+  }
+});
+
+test("persists the normalized source map without failing when storage is unavailable", () => {
+  const { SOURCE_CACHE, SOURCE_STORAGE_KEY, persistSourceCache } = require("../watch-player.js");
+  const originalStorage = global.localStorage;
+  const values = new Map();
+  global.localStorage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value)
+  };
+  try {
+    SOURCE_CACHE.clear();
+    SOURCE_CACHE.set("movie:123", {
+      provider: "vimeo",
+      url: "https://player.vimeo.com/video/123456"
+    });
+    persistSourceCache();
+    assert.deepEqual(JSON.parse(values.get(SOURCE_STORAGE_KEY)), {
+      "movie:123": { provider: "vimeo", url: "https://player.vimeo.com/video/123456" }
+    });
+    global.localStorage = { getItem: () => null, setItem: () => { throw new Error("storage disabled"); } };
+    assert.doesNotThrow(persistSourceCache);
+  } finally {
+    SOURCE_CACHE.clear();
+    if (originalStorage === undefined) delete global.localStorage;
+    else global.localStorage = originalStorage;
+  }
+});
