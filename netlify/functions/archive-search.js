@@ -1,6 +1,6 @@
 // Narrow public catalog search for Internet Archive items (Netlify).
 const MAX_QUERY_LENGTH = 120;
-const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,:!?()&-]+$/u;
+const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&-]+$/u;
 
 exports.handler = async (event) => {
   const headers = {
