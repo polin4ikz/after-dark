@@ -1,4 +1,5 @@
-const API="/api/tmdb",IMG="https://image.tmdb.org/t/p/w780";
+const TMDB_API_KEY="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMTZiYTQ0NDRjYWQ4ODdjZGY0ZDE1Yjk3MGZlNjlhYSIsIm5iZiI6MTc4NjY1NjM4NS43MDcsInN1YiI6IjZhN2UzNjgxMDYxNjdmYTY2ZmM3YWI2MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.WLWycZ1zW98G_x0bs90UHsFljmrwpPKoPvZBrP9ho2o";
+const API="https://api.themoviedb.org/3",IMG="https://image.tmdb.org/t/p/w780";
 
 const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
@@ -17,7 +18,7 @@ function yearOf(x){return(x.release_date||x.first_air_date||"").slice(0,4)||"—
 function typeOf(x){if((x.genre_ids||[]).map(Number).includes(16))return"animation";return x.media_type==="tv"||x.first_air_date?"series":"film"}
 function posterOf(x){return x.poster_path?IMG+x.poster_path:""}
 function tmdbUrl(x){const isSeries=x.media_type==="tv"||!!x.first_air_date;return`https://www.themoviedb.org/${isSeries?"tv":"movie"}/${x.tmdbId||x.id}`}
-async function tmdb(path,params={},signal){const u=new URL(API,location.origin);u.searchParams.set("path",path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=="")u.searchParams.set(k,v)});const r=await fetch(u,{signal,headers:{accept:"application/json"}});if(!r.ok)throw Error(`TMDB ${r.status}`);return r.json()}
+async function tmdb(path,params={},signal){const u=new URL(API+path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=="")u.searchParams.set(k,v)});const r=await fetch(u,{signal,headers:{Authorization:`Bearer ${TMDB_API_KEY}`,accept:"application/json"}});if(!r.ok)throw Error(`TMDB ${r.status}`);return r.json()}
 function initCursor(){if(!cursor)return;let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y;document.addEventListener("pointermove",e=>{x=e.clientX;y=e.clientY;cursor.classList.remove("is-hidden")},{passive:true});function tick(){cx+=(x-cx)*.18;cy+=(y-cy)*.18;cursor.style.setProperty("--cursor-x",cx+"px");cursor.style.setProperty("--cursor-y",cy+"px");const hit=document.elementFromPoint(x,y);cursor.classList.toggle("is-hover",!!hit?.closest("button,a,input,select,.archive-card,.search-result,.rating-card"));requestAnimationFrame(tick)}tick()}
 function initIndex(){$(".index-trigger")?.addEventListener("click",()=>$(".index-panel")?.classList.add("active"));$(".index-close")?.addEventListener("click",()=>$(".index-panel")?.classList.remove("active"));$$('.index-nav a').forEach(a=>a.addEventListener("click",()=>$(".index-panel")?.classList.remove("active")))}
 function initHeaderAuth(){const meta=$(".header-meta"),old=$("#authButton");if(old)old.style.display="none";if(!meta||$(".header-auth-button"))return;const b=document.createElement("button");b.className="header-auth-button";b.type="button";b.textContent="LOG IN / REGISTER";b.addEventListener("click",handleAuthButton);const index=$(".index-trigger");meta.insertBefore(b,index||null)}
