@@ -31,5 +31,7 @@ jobs:
           node --check supabase-ratings.js
           node --check api/tmdb.js
           node --check netlify/functions/tmdb.js
+          node --check api/tmdb-image.js
+          node --check netlify/functions/tmdb-image.js
           node --check watch-player.js
-          node --test tests/tmdb-proxy.test.js tests/watch-player.test.js
+          node --test tests/tmdb-proxy.test.js tests/tmdb-image-proxy.test.js tests/watch-player.test.js
