@@ -5,9 +5,11 @@ on:
     branches:
       - main
       - "fix/**"
+      - "feature/**"
   pull_request:
     branches:
       - main
+      - "fix/**"
 
 jobs:
   syntax:
@@ -29,4 +31,7 @@ jobs:
           node --check supabase-ratings.js
           node --check api/tmdb.js
           node --check netlify/functions/tmdb.js
-          node --test tests/tmdb-proxy.test.js
+          node --check watch-player.js
+          node --check api/archive-search.js
+          node --check netlify/functions/archive-search.js
+          node --test tests/tmdb-proxy.test.js tests/watch-player.test.js tests/archive-search.test.js

@@ -6,3 +6,9 @@
   to = "/.netlify/functions/tmdb"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/archive-search"
+  to = "/.netlify/functions/archive-search"
+  status = 200
+  force = true
