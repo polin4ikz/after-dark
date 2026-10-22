@@ -104,11 +104,8 @@
       if (resultButton) {
         const identifier = resultButton.dataset.adArchiveIdentifier || "";
         if (!/^[A-Za-z0-9._-]{1,120}$/.test(identifier)) return;
-        const input = $("#adWatchSource", modal);
-        input.value = "https://archive.org/embed/" + identifier;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        const form = $(".ad-watch-player__form", modal);
-        if (form?.requestSubmit) form.requestSubmit();
+        // Open the catalog record for inspection; never assume it contains a playable feature film.
+        window.open("https://archive.org/details/" + encodeURIComponent(identifier), "_blank", "noopener,noreferrer");
         return;
       }
       if (!searchButton) return;
