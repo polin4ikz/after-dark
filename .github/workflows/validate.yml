@@ -32,4 +32,6 @@ jobs:
           node --check api/tmdb.js
           node --check netlify/functions/tmdb.js
           node --check watch-player.js
-          node --test tests/tmdb-proxy.test.js tests/watch-player.test.js
+          node --check api/archive-search.js
+          node --check netlify/functions/archive-search.js
+          node --test tests/tmdb-proxy.test.js tests/watch-player.test.js tests/archive-search.test.js
