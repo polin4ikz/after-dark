@@ -6,3 +6,9 @@
   to = "/.netlify/functions/tmdb"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/tmdb-image"
+  to = "/.netlify/functions/tmdb-image"
+  status = 200
+  force = true
