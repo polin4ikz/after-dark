@@ -2,6 +2,7 @@
    Official HTTPS embed URLs only. Source URLs stay in memory; Supabase is untouched. */
 (function () {
   "use strict";
+  const SOURCE_STORAGE_KEY = "after-dark:watch-source:v1";
   const SOURCE_CACHE = new Map();
   const $ = (selector, root = document) => root.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -44,6 +45,29 @@
     throw new Error("Этот сайт пока не поддерживается. Доступны YouTube, Vimeo и Archive.org.");
   }
 
+  function restoreSourceCache() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(SOURCE_STORAGE_KEY) || "{}");
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) return;
+      for (const [key, value] of Object.entries(saved)) {
+        if (!/^(movie|tv):[0-9]+$/.test(key) || !value || typeof value.url !== "string") continue;
+        try {
+          // Revalidate persisted values before ever using them as iframe URLs.
+          SOURCE_CACHE.set(key, normalizeEmbedUrl(value.url));
+        } catch { /* Ignore stale or malformed saved entries. */ }
+      }
+    } catch { /* Storage may be unavailable or contain invalid JSON. */ }
+  }
+
+  function persistSourceCache() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const saved = Object.fromEntries(SOURCE_CACHE.entries());
+      localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(saved));
+    } catch { /* Playback should still work if browser storage is full or disabled. */ }
+  }
+
   function filmKey(film) {
     const id = film && (film.tmdbId ?? film.id);
     if (id == null || !String(id).trim()) return "";
@@ -82,7 +106,10 @@
       const status = $(".ad-watch-player__status", modal);
       try {
         const source = normalizeEmbedUrl(input.value);
-        if (key) SOURCE_CACHE.set(key, source);
+        if (key) {
+          SOURCE_CACHE.set(key, source);
+          persistSourceCache();
+        }
         status.textContent = "ИСТОЧНИК ПОДКЛЮЧЁН · " + source.provider.toUpperCase();
         status.classList.remove("is-error");
         $(".ad-watch-player__stage", modal).innerHTML =
@@ -188,6 +215,7 @@
     if (film) openPlayer(film);
   }
   function init() {
+    restoreSourceCache();
     document.addEventListener("click", onWatchClick, true);
     injectButtons();
     new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
