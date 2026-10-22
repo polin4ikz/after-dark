@@ -197,7 +197,13 @@
     if (cached) {
       status.textContent = "ИСТОЧНИК ПОДКЛЮЧЁН · " + cached.provider.toUpperCase();
       stage.innerHTML = '<iframe src="' + esc(cached.url) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
-    } else input.focus();
+    } else {
+      // Start discovery immediately so WATCH opens on useful content rather than an empty form.
+      // Internet Archive only returns catalog items; availability and playback rights vary by item.
+      const searchButton = $("[data-ad-archive-search]", modal);
+      if (searchButton) searchButton.click();
+      input.focus({ preventScroll: true });
+    }
   }
   function closePlayer() {
     const modal = $("#adWatchPlayer");
