@@ -83,3 +83,12 @@ This is a code/configuration audit based on files accessible through GitHub's fi
 - Added the missing `/api/tmdb` Netlify rewrite so the same browser endpoint works on both the Vercel and Netlify function implementations.
 - Removed a duplicate Netlify rewrite block after checking the resulting config.
 - Current release remains blocked pending the latest deployment/check result, server environment configuration confirmation, credential rotation, and full functional regression.
+
+## Automated verification — 2026-10-25
+
+- GitHub Actions run `40197319776` completed successfully on the draft release candidate.
+- JavaScript syntax checks passed for every script listed by the workflow.
+- All 17 automated tests passed (0 failed), including the TMDB server-token checks, Vercel/Netlify proxy behavior, credits-route support, Netlify rewrite, Internet Archive search validation, and player URL/source-cache checks.
+- Vercel reported a successful deployment check for the branch commit. This confirms the deployment pipeline accepted the commit, not that the live authenticated experience or secret-dependent TMDB calls have been end-to-end verified.
+- Production URL inspection from the current external fetch context returned `login_required`; this does not distinguish deployment protection from a user-facing availability problem. Do not change production settings based on that signal alone.
+- The draft pull request is open as PR #9 for review/CI visibility. It has not been merged.
