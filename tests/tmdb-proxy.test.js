@@ -202,17 +202,19 @@ test("Vercel proxy supports movie and TV detail routes plus credits", async () =
     };
   };
   try {
-    for (const path of ["/movie/123", "/tv/456", "/movie/123/credits", "/tv/456/credits"]) {
+    for (const path of ["/movie/123", "/tv/456", "/movie/123/credits", "/tv/456/credits", "/movie/123/watch/providers", "/tv/456/watch/providers"]) {
       const encoded = encodeURIComponent(path);
       const { req, res } = mockVercelRequest({ url: "/api/tmdb?path=" + encoded + "&language=en-US" });
       await vercelHandler(req, res);
       assert.equal(res.statusCode, 200, path);
     }
-    assert.equal(requested.length, 4);
+    assert.equal(requested.length, 6);
     assert.ok(requested.some(url => url.includes("/movie/123?")));
     assert.ok(requested.some(url => url.includes("/tv/456?")));
     assert.ok(requested.some(url => url.includes("/movie/123/credits?")));
     assert.ok(requested.some(url => url.includes("/tv/456/credits?")));
+    assert.ok(requested.some(url => url.includes("/movie/123/watch/providers?")));
+    assert.ok(requested.some(url => url.includes("/tv/456/watch/providers?")));
   } finally {
     if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
     else process.env.TMDB_BEARER_TOKEN = oldToken;
