@@ -74,3 +74,19 @@ Date: 2026-10-25
 
 ## Audit limitations
 This is a GitHub-file-API source/configuration audit, not a full local clone, live end-to-end test, review of hosting secrets, or production security audit. No production or Supabase changes have been made.
+
+
+## Final pass — 2026-10-25
+
+### Step results
+1. **CI / Movie Night handlers — PASS (automated).** Latest candidate commit `d8fb14eaf76d041800230e242a267d0ef94ce313`: GitHub Actions run `40221413961` completed successfully, including syntax checks and Node tests; Vercel preview status is success. Removed the redundant `#decideButton` and `#movieNightAdd` listeners from `script.js`; Movie Night save is owned by the Supabase capture handler, and DECIDE by the HTML handler. Added regression assertions to `tests/movie-night-controls.test.js`.
+2. **Movie Night save / duplicate behavior — PARTIAL.** Source review confirms `addFilm` deduplicates by numeric TMDB id in the local `films` array, and Supabase upsert uses `onConflict: "tmdb_id"`, so repeated saves should update rather than create a second row. The capture handler restores local state on a failed save. This is source-level evidence only; live refresh and second-account visibility were not exercised in a browser in this pass.
+3. **WATCHED / REMOVED / history — BLOCKED by schema compatibility.** Runtime and ratings renderer read/write `in_watchlist`, but the base `supabase-schema.sql` archive table does not define that column. It is added only by `supabase/migrations/20261020_watchlist_history.sql`, which has not been run on live Supabase. Until the live schema is independently confirmed compatible, WATCHED/REMOVED and history cannot be declared release-ready. No SQL was run.
+4. **Auth / two-account regression — NOT VERIFIED LIVE.** Source review shows Supabase session/profile bridge, shared archive upserts, and per-user rating upserts. Earlier manual two-account tests had passed for archive/rating/watch/delete flows, but they do not substitute for a current-commit test. Current browser automation was unavailable; do not claim end-to-end success for this candidate.
+5. **Mobile / player / feature regression — PARTIAL / KNOWN GAPS.** CI player tests pass for source URL normalization and local source-cache validation. The player injects a WATCH button and supports fullscreen only where the embedded provider allows it. It does not save playback position, resume time, season/episode position, or offer provider-independent quality/audio selection. iPhone 14 and the live Movie Night flow have not been visually tested on this candidate.
+6. **Release readiness — BLOCKED.** Candidate is now 135 commits ahead of `main`, 0 behind, with 25 changed files in the comparison; this is too large for blind merging. The old TMDB bearer token appeared in Git history and rotation is deferred, so treat the credential as exposed. The candidate depends on server-side `TMDB_BEARER_TOKEN`; hosting environment values were not inspected. The `in_watchlist` migration is not confirmed live. No production, main, secrets, or Supabase data were changed.
+
+### Overall assessment
+- **Code/CI confidence:** moderate for syntax, proxy unit tests, player URL validation, and the targeted Movie Night handler regression.
+- **Live functional confidence:** low-to-moderate because current candidate was not exercised end-to-end in authenticated browsers.
+- **Release recommendation:** **DO NOT MERGE / DO NOT RELEASE YET.** Release blockers: (a) verify live schema without running an unreviewed migration, (b) rotate the exposed TMDB token and configure the replacement as a server-side host secret, (c) run authenticated two-account and mobile browser checks, (d) decide whether playback resume and audio/quality selection are required for the first release.
