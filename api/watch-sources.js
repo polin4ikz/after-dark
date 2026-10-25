@@ -2,7 +2,7 @@
 // A catalog hit alone is never considered playable: metadata must expose an explicit
 // public-domain/Creative Commons license and a video file with a plausible feature runtime.
 const MAX_QUERY_LENGTH = 120;
-const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&-]+$/u;
+const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&:;!?+()/_\-–—]+$/u;
 const VIDEO_FORMATS = /\b(mpeg4|h\.264|divx|matroska|webm|ogg video|quicktime|mpeg2|mpeg1|mpeg movie|avi)\b/i;
 const MIN_DURATION_SECONDS = 40 * 60;
 
