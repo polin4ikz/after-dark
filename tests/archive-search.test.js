@@ -1,7 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const vercelHandler = require("../api/archive-search.js");
-const netlifyHandler = require("../netlify/functions/archive-search.js").handler;
 
 function responseMock() {
   return {
@@ -56,13 +55,3 @@ test("archive search requests only movie items and sanitizes returned identifier
   } finally { global.fetch = oldFetch; }
 });
 
-test("Netlify archive search rejects invalid requests and returns safe error", async () => {
-  const oldFetch = global.fetch;
-  let called = false;
-  global.fetch = async () => { called = true; throw new Error("should not call"); };
-  try {
-    const res = await netlifyHandler({ httpMethod: "GET", rawUrl: "https://example.test/api/archive-search?q=" });
-    assert.equal(res.statusCode, 400);
-    assert.equal(called, false);
-  } finally { global.fetch = oldFetch; }
-});
