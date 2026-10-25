@@ -125,9 +125,23 @@
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
+  function extractSubmittedUrl(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) throw new Error("Вставь ссылку или полный код iframe.");
+    // Accept a provider's iframe snippet, but extract only its src URL; never inject user HTML.
+    if (/<iframe\\b/i.test(value) || /\\bsrc\\s*=/.test(value)) {
+      const match = value.match(/\\bsrc\\s*=\\s*(["'])(https:\\/\\/[^"'\\s<>]+)\\1/i);
+      if (!match) throw new Error("Не удалось найти HTTPS-адрес src внутри кода iframe.");
+      return match[2].replace(/&amp;/gi, "&");
+    }
+    return value;
+  }
   function openDirectStream(rawUrl) {
     let url;
-    try { url = new URL(rawUrl.trim()); } catch (_) { throw new Error("Проверь ссылку: она должна быть полным URL."); }
+    try { url = new URL(extractSubmittedUrl(rawUrl)); } catch (error) {
+      if (error && error.message && /iframe|HTTPS|ссылку/i.test(error.message)) throw error;
+      throw new Error("Проверь ссылку: вставь полный HTTPS-адрес или код iframe.");
+    }
     if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) {
       throw new Error("Поддерживаются только безопасные HTTPS-ссылки.");
     }
@@ -147,14 +161,15 @@
     } else if (["rutube.ru", "rutube.com"].includes(host)) {
       const match = path.match(/^\/(?:video|play\/embed)\/([a-f0-9]{20,40})\/?$/i);
       if (match) { embedUrl = "https://rutube.ru/play/embed/" + match[1]; embedProvider = "RUTUBE"; }
-    } else if (["vk.com", "m.vk.com"].includes(host)) {
+    } else if (["vk.com", "m.vk.com", "vkvideo.ru"].includes(host)) {
       const videoMatch = path.match(/^\/video(-?\d+)_([0-9]+)/);
       const ext = path === "/video_ext.php" ? { oid: url.searchParams.get("oid"), id: url.searchParams.get("id"), hash: url.searchParams.get("hash") } : null;
       if (videoMatch) {
         embedUrl = "https://vk.com/video_ext.php?oid=" + encodeURIComponent(videoMatch[1]) + "&id=" + encodeURIComponent(videoMatch[2]);
         embedProvider = "VK VIDEO";
       } else if (ext && /^-?\d+$/.test(ext.oid || "") && /^\d+$/.test(ext.id || "") && /^[A-Za-z0-9_-]{0,128}$/.test(ext.hash || "")) {
-        embedUrl = "https://vk.com/video_ext.php?oid=" + encodeURIComponent(ext.oid) + "&id=" + encodeURIComponent(ext.id) + (ext.hash ? "&hash=" + encodeURIComponent(ext.hash) : "");
+        const embedHost = host === "vkvideo.ru" ? "https://vkvideo.ru" : "https://vk.com";
+        embedUrl = embedHost + "/video_ext.php?oid=" + encodeURIComponent(ext.oid) + "&id=" + encodeURIComponent(ext.id) + (ext.hash ? "&hash=" + encodeURIComponent(ext.hash) : "") + (url.searchParams.get("hd") ? "&hd=" + encodeURIComponent(url.searchParams.get("hd")) : "");
         embedProvider = "VK VIDEO";
       }
     }
