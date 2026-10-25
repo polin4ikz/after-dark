@@ -362,6 +362,7 @@
     let film = null;
     const demo = new URLSearchParams(window.location.search).get("demo");
     if (demo === "nosferatu") film = { tmdbId: 653, type: "film", title: "Nosferatu", original_title: "Nosferatu", release_date: "1922-01-01" };
+    else if (demo === "devil-wears-prada") film = { tmdbId: 350, type: "film", title: "Дьявол носит Prada", original_title: "The Devil Wears Prada", release_date: "2006-06-30" };
     else { try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {} }
     if (!film || typeof film !== "object") {
       $("#mediaTitle").textContent = "Фильм не выбран";
