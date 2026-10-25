@@ -110,9 +110,4 @@
     movieNight.exclude=e.target.checked;
   },true);
 
-  root.querySelector("#decideButton")?.addEventListener("click",e=>{
-    e.preventDefault();
-    e.stopPropagation();
-    window.decideMovie?.();
-  },true);
 })();
