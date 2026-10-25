@@ -13,7 +13,8 @@ test("Movie Night has one JavaScript path for DECIDE; reveal safety does not tri
   assert.ok(safetyStart >= 0 && safetyEnd > safetyStart);
   const safetyBlock = source.slice(safetyStart, safetyEnd);
   assert.doesNotMatch(safetyBlock, /decideMovie/);
-  assert.match(html, /id="decideButton"[^>]*onclick="decideMovie\(\)"/);\n  assert.doesNotMatch(source, /querySelector\("#decideButton"\)\?\.addEventListener/);
+  assert.match(html, /id="decideButton"[^>]*onclick="decideMovie\(\)"/);
+  assert.doesNotMatch(source, /querySelector\("#decideButton"\)\?\.addEventListener/);
   assert.doesNotMatch(source, /MOVIE NIGHT — pointer-level controls/);
   assert.doesNotMatch(source, /addEventListener\(["']pointerdown["']/);
 });
