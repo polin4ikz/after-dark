@@ -23,7 +23,7 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .source-result:hover,.source-result:focus-visible{border-color:rgba(232,221,200,.62);background:rgba(232,221,200,.07);outline:none}
 .source-result__title{font-size:15px;line-height:1.35}.source-result__meta{color:var(--muted);font:9px "Geist Mono",monospace;letter-spacing:.06em}
 .source-result--external{display:inline-flex;width:auto;max-width:100%;margin-top:10px;color:var(--milk);background:var(--red);font:10px "Geist Mono",monospace;letter-spacing:.08em}
-.source-note{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.55}
+.source-note{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.55}.source-attribution{margin:18px 0 0;color:rgba(232,221,200,.42);font-size:10px;line-height:1.5}.source-attribution a{text-decoration:underline;text-underline-offset:3px}
 .player-footer{margin-top:auto;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:rgba(232,221,200,.36);font:9px "Geist Mono",monospace;letter-spacing:.1em}
 @media(max-width:650px){.player-page{padding:18px}.player-header{grid-template-columns:1fr auto}.player-header>span{display:none}.player-stage{aspect-ratio:16/10;max-height:none}.player-footer{font-size:8px;flex-wrap:wrap}.source-result{padding:16px}.source-result__title{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
