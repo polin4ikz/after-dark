@@ -1,4 +1,4 @@
-/* AFTER DARK — automatic, conservative source discovery for the dedicated player page. */
+/* AFTER DARK — Russia-first source discovery for the dedicated player page. */
 (function () {
   "use strict";
   const FILM_KEY = "after-dark:venom-current-film:v1";
@@ -15,15 +15,32 @@
     note.textContent = text;
     $("#sourceResults").appendChild(note);
   }
-  function addExternalFallback(title) {
+  function filmSearchTerms(filmOrTitle) {
+    const film = typeof filmOrTitle === "object" && filmOrTitle !== null
+      ? filmOrTitle
+      : { title: String(filmOrTitle || "") };
+    const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
+    const titles = [...new Set([
+      film.title, film.name, film.original_title, film.original_name
+    ].map(value => String(value || "").trim()).filter(Boolean))];
+    return { titles, year, primary: titles[0] || "фильм" };
+  }
+  function addExternalFallback(filmOrTitle) {
     const area = $("#sourceResults");
-    const query = String(title || "").trim();
+    const { titles, year, primary } = filmSearchTerms(filmOrTitle);
+    const titleQuery = titles.join(" ");
+    const query = [primary, year, "смотреть онлайн"].filter(Boolean).join(" ");
+    const fullQuery = [titleQuery, year, "смотреть фильм"].filter(Boolean).join(" ");
     const searches = [
-      { label: "ПОИСКАТЬ В YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent(query + " full movie") },
-      { label: "ПОИСКАТЬ НА LORDFILM", url: "https://www.google.com/search?q=" + encodeURIComponent('site:lordfilm ' + query + " смотреть онлайн") },
-      { label: "ПОИСКАТЬ НА HDREZKA", url: "https://www.google.com/search?q=" + encodeURIComponent('site:hdrezka ' + query + " смотреть онлайн") },
-      { label: "ПОИСК ПО ВСЕМУ ИНТЕРНЕТУ", url: "https://www.google.com/search?q=" + encodeURIComponent(query + " смотреть онлайн фильм плеер") },
-      { label: "ПРОВЕРИТЬ ЛЕГАЛЬНЫЕ СЕРВИСЫ", url: "https://www.justwatch.com/de/search?q=" + encodeURIComponent(query) }
+      { label: "ПОИСК В ЯНДЕКСЕ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(query) },
+      { label: "ПОИСК ВИДЕО В ЯНДЕКСЕ", url: "https://yandex.ru/video/search?text=" + encodeURIComponent(fullQuery) },
+      { label: "ПОИСК В VK ВИДЕО", url: "https://vk.com/video?q=" + encodeURIComponent(fullQuery) },
+      { label: "ПОИСК НА RUTUBE", url: "https://rutube.ru/search/?query=" + encodeURIComponent(fullQuery) },
+      { label: "ПОИСК В YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent(fullQuery) },
+      { label: "ПОИСК НА LORDFILM", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:lordfilm ' + fullQuery) },
+      { label: "ПОИСК НА HDREZKA", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:hdrezka ' + fullQuery) },
+      { label: "ПОИСК ПО ВСЕМУ ИНТЕРНЕТУ", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent(fullQuery) },
+      { label: "ПРОВЕРИТЬ СЕРВИСЫ В РОССИИ", url: "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(primary + (year ? " " + year : "")) }
     ];
     for (const item of searches) {
       const link = document.createElement("a");
@@ -71,70 +88,68 @@
   }
   async function showOfficialProviders(film) {
     const id = Number(film.tmdbId ?? film.id);
-    if (!Number.isSafeInteger(id) || id <= 0) {
-      addExternalFallback(String(film.title || film.name || ""));
-      return;
-    }
+    if (!Number.isSafeInteger(id) || id <= 0) return;
     const mediaType = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
     try {
       const path = "/" + mediaType + "/" + id + "/watch/providers";
       const response = await fetch("/api/tmdb?path=" + encodeURIComponent(path), {
         headers: { accept: "application/json" }
       });
-      if (!response.ok) throw new Error("PROVIDERS_UNAVAILABLE");
+      if (!response.ok) return;
       const payload = await response.json();
-      const regions = payload && payload.results || {};
-      let count = 0;
-      for (const [code, label] of [["RU", "РОССИЯ"], ["DE", "ГЕРМАНИЯ"], ["US", "США"]]) {
-        const region = regions[code];
-        if (!region) continue;
-        const names = providerNames(region);
-        if (!names.length || typeof region.link !== "string" || !/^https:\/\//i.test(region.link)) continue;
-        const link = document.createElement("a");
-        link.className = "source-result source-result--external";
-        link.href = region.link;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = label + " · " + names.join(" · ") + " ↗";
-        $("#sourceResults").appendChild(link);
-        count++;
-      }
-      if (!count) addExternalFallback(String(film.title || film.name || ""));
+      const region = payload && payload.results && payload.results.RU;
+      if (!region) return;
+      const names = providerNames(region);
+      if (!names.length || typeof region.link !== "string" || !/^https:\/\//i.test(region.link)) return;
+      const link = document.createElement("a");
+      link.className = "source-result source-result--external";
+      link.href = region.link;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "РОССИЯ · " + names.join(" · ") + " ↗";
+      $("#sourceResults").appendChild(link);
       const attribution = document.createElement("p");
       attribution.className = "source-attribution";
-      attribution.append("Доступность сервисов: ");
+      attribution.append("Доступность сервисов в России: ");
       const justwatch = document.createElement("a");
-      justwatch.href = "https://www.justwatch.com/";
+      justwatch.href = "https://www.justwatch.com/ru/";
       justwatch.target = "_blank";
       justwatch.rel = "noopener noreferrer";
-      justwatch.textContent = "JustWatch";
-      attribution.append(justwatch, " · данные через ");
-      const tmdb = document.createElement("a");
-      tmdb.href = "https://www.themoviedb.org/";
-      tmdb.target = "_blank";
-      tmdb.rel = "noopener noreferrer";
-      tmdb.textContent = "TMDB API";
-      attribution.append(tmdb, ". After Dark не связан с TMDB.");
+      justwatch.textContent = "JustWatch Россия";
+      attribution.append(justwatch, " · данные через TMDB API. Доступность может меняться.");
       $("#sourceResults").appendChild(attribution);
     } catch (_) {
-      addExternalFallback(String(film.title || film.name || ""));
+      // External Russian search links remain available when provider metadata is offline.
     }
   }
+  async function searchOpenArchive(film) {
+    const { titles, year } = filmSearchTerms(film);
+    const found = new Map();
+    for (const title of titles) {
+      const params = new URLSearchParams({ q: title });
+      if (year) params.set("year", year);
+      try {
+        const response = await fetch("/api/watch-sources?" + params.toString(), {
+          headers: { accept: "application/json" }
+        });
+        if (!response.ok) continue;
+        const data = await response.json();
+        for (const item of Array.isArray(data.results) ? data.results : []) {
+          if (item && item.identifier) found.set(item.identifier, item);
+        }
+      } catch (_) {
+        // Try the next title variant.
+      }
+      if (found.size) break;
+    }
+    return [...found.values()];
+  }
   async function findSources(film) {
-    const title = String(film.title || film.name || "").trim();
-    const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     const area = $("#sourceResults");
     area.replaceChildren();
-    status("ИЩУ ДОСТУПНЫЕ ИСТОЧНИКИ…");
-    const params = new URLSearchParams({ q: title });
-    if (year) params.set("year", year);
+    status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
     try {
-      const response = await fetch("/api/watch-sources?" + params.toString(), {
-        headers: { accept: "application/json" }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "SEARCH_UNAVAILABLE");
-      const results = Array.isArray(data.results) ? data.results : [];
+      const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
       if (exact.length === 1) {
         playArchiveSource(exact[0], true);
@@ -143,19 +158,17 @@
       }
       if (results.length) {
         status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
-        addNote("Найденные записи проверены на открытую лицензию и наличие видео длительностью от 40 минут. Сверь название перед просмотром.");
+        addNote("Это записи Internet Archive с открытой лицензией. Для современных коммерческих фильмов источник может не найтись — ниже есть поиск по российским площадкам.");
         results.forEach(renderCandidate);
       } else {
-        status("В ОТКРЫТОМ АРХИВЕ НЕ НАШЁЛСЯ ПРОВЕРЕННЫЙ ИСТОЧНИК");
-        addNote("Это не значит, что фильм недоступен: просто мы не нашли подтверждённый открытый видеопоток в этом источнике.");
+        status("В ОТКРЫТОМ АРХИВЕ ИСТОЧНИК НЕ НАЙДЕН");
+        addNote("Открытый архив содержит не все фильмы. Ищу дальше по русскоязычным площадкам и сервисам для России.");
       }
-      addExternalFallback(title);
-      await showOfficialProviders(film);
     } catch (_) {
-      status("АВТОМАТИЧЕСКИЙ ПОТОК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ИСТОЧНИКИ");
-      addExternalFallback(title);
-      await showOfficialProviders(film);
+      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПРОБУЮ ДРУГИЕ ПОИСКИ");
     }
+    addExternalFallback(film);
+    await showOfficialProviders(film);
   }
   function init() {
     let film = null;
