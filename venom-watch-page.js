@@ -9,14 +9,20 @@
     el.textContent = message;
     el.classList.toggle("is-error", Boolean(error));
   }
-  function makeExternalFallback(title) {
+  function addNote(text) {
+    const note = document.createElement("p");
+    note.className = "source-note";
+    note.textContent = text;
+    $("#sourceResults").appendChild(note);
+  }
+  function addExternalFallback(title) {
     const area = $("#sourceResults");
     const link = document.createElement("a");
     link.className = "source-result source-result--external";
-    link.href = "https://www.justwatch.com/de/suche?q=" + encodeURIComponent(title);
+    link.href = "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(title);
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "ПРОВЕРИТЬ ЛЕГАЛЬНЫЕ СЕРВИСЫ ↗";
+    link.textContent = "ПОИСКАТЬ НА JUSTWATCH ↗";
     area.appendChild(link);
   }
   function playArchiveSource(source, auto = false) {
@@ -48,6 +54,62 @@
     button.addEventListener("click", () => playArchiveSource(source, true));
     $("#sourceResults").appendChild(button);
   }
+  function providerNames(region) {
+    const offers = ["flatrate", "free", "ads", "rent", "buy"]
+      .flatMap(key => Array.isArray(region[key]) ? region[key] : []);
+    return [...new Set(offers.map(item => item && item.provider_name).filter(Boolean))];
+  }
+  async function showOfficialProviders(film) {
+    const id = Number(film.tmdbId ?? film.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      addExternalFallback(String(film.title || film.name || ""));
+      return;
+    }
+    const mediaType = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
+    try {
+      const path = "/" + mediaType + "/" + id + "/watch/providers";
+      const response = await fetch("/api/tmdb?path=" + encodeURIComponent(path), {
+        headers: { accept: "application/json" }
+      });
+      if (!response.ok) throw new Error("PROVIDERS_UNAVAILABLE");
+      const payload = await response.json();
+      const regions = payload && payload.results || {};
+      let count = 0;
+      for (const [code, label] of [["RU", "РОССИЯ"], ["DE", "ГЕРМАНИЯ"], ["US", "США"]]) {
+        const region = regions[code];
+        if (!region) continue;
+        const names = providerNames(region);
+        if (!names.length || typeof region.link !== "string" || !/^https:\/\//i.test(region.link)) continue;
+        const link = document.createElement("a");
+        link.className = "source-result source-result--external";
+        link.href = region.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label + " · " + names.join(" · ") + " ↗";
+        $("#sourceResults").appendChild(link);
+        count++;
+      }
+      if (!count) addExternalFallback(String(film.title || film.name || ""));
+      const attribution = document.createElement("p");
+      attribution.className = "source-attribution";
+      attribution.append("Доступность сервисов: ");
+      const justwatch = document.createElement("a");
+      justwatch.href = "https://www.justwatch.com/";
+      justwatch.target = "_blank";
+      justwatch.rel = "noopener noreferrer";
+      justwatch.textContent = "JustWatch";
+      attribution.append(justwatch, " · данные через ");
+      const tmdb = document.createElement("a");
+      tmdb.href = "https://www.themoviedb.org/";
+      tmdb.target = "_blank";
+      tmdb.rel = "noopener noreferrer";
+      tmdb.textContent = "TMDB API";
+      attribution.append(tmdb, ". After Dark не связан с TMDB.");
+      $("#sourceResults").appendChild(attribution);
+    } catch (_) {
+      addExternalFallback(String(film.title || film.name || ""));
+    }
+  }
   async function findSources(film) {
     const title = String(film.title || film.name || "").trim();
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
@@ -66,30 +128,21 @@
       const exact = results.filter(item => item && item.confidence === "high");
       if (exact.length === 1) {
         playArchiveSource(exact[0], true);
-        const note = document.createElement("p");
-        note.className = "source-note";
-        note.textContent = "Найдено точное совпадение с открытой лицензией и полным видео. Если воспроизведение не началось автоматически, нажми Play.";
-        area.appendChild(note);
+        addNote("Найдено точное совпадение с открытой лицензией и полным видео. Если воспроизведение не началось автоматически, нажми Play.");
         return;
       }
       if (results.length) {
         status("НАШЛИСЬ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
-        const note = document.createElement("p");
-        note.className = "source-note";
-        note.textContent = "Найденные записи проверены на открытую лицензию и наличие видео длительностью от 40 минут. Сверь название перед просмотром.";
-        area.appendChild(note);
+        addNote("Найденные записи проверены на открытую лицензию и наличие видео длительностью от 40 минут. Сверь название перед просмотром.");
         results.forEach(renderCandidate);
       } else {
         status("В ОТКРЫТОМ АРХИВЕ НЕ НАШЁЛСЯ ПРОВЕРЕННЫЙ ИСТОЧНИК");
-        const note = document.createElement("p");
-        note.className = "source-note";
-        note.textContent = "Это не значит, что фильм недоступен: просто мы не нашли подтверждённый открытый видеопоток в этом источнике.";
-        area.appendChild(note);
+        addNote("Это не значит, что фильм недоступен: просто мы не нашли подтверждённый открытый видеопоток в этом источнике.");
       }
-      makeExternalFallback(title);
+      await showOfficialProviders(film);
     } catch (_) {
-      status("НЕ УДАЛОСЬ ПРОВЕРИТЬ ИСТОЧНИКИ · ПОПРОБУЙ ПОЗЖЕ", true);
-      makeExternalFallback(title);
+      status("НЕ УДАЛОСЬ ПРОВЕРИТЬ ОТКРЫТЫЙ АРХИВ · ПРОВЕРЯЮ СЕРВИСЫ", true);
+      await showOfficialProviders(film);
     }
   }
   function init() {
@@ -99,7 +152,6 @@
       $("#mediaTitle").textContent = "Фильм не выбран";
       $("#mediaMeta").textContent = "Вернись в архив и нажми WATCH на выбранной карточке.";
       status("НЕ ПОЛУЧЕНЫ ДАННЫЕ ФИЛЬМА", true);
-      makeExternalFallback("");
       return;
     }
     const title = String(film.title || film.name || "Без названия");
