@@ -99,7 +99,7 @@
   function refreshDashTracks() {
     if (!dash) return;
     const audios = (dash.getTracksFor("audio") || []).map((track, index) => ({
-      id: track,
+      id: index,
       label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", "), track.codec].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
     }));
     const subtitles = (dash.getTracksFor("text") || []).map((track, index) => ({
