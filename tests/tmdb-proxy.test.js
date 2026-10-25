@@ -155,3 +155,67 @@ test("browser bundle does not contain a TMDB bearer token", async () => {
   assert.doesNotMatch(script, /api\.themoviedb\.org\/3/);
   assert.match(script, /const API="\/api\/tmdb"/);
 });
+
+
+test("TMDB proxy rejects malformed query parameters before upstream fetch", async () => {
+  const oldToken = process.env.TMDB_BEARER_TOKEN;
+  const oldFetch = global.fetch;
+  process.env.TMDB_BEARER_TOKEN = "test-token";
+  let called = false;
+  global.fetch = async () => {
+    called = true;
+    throw new Error("upstream must not be called");
+  };
+  try {
+    const invalidKey = mockVercelRequest({
+      url: "/api/tmdb?path=%2Fsearch%2Fmulti&bad%20key=value"
+    });
+    await vercelHandler(invalidKey.req, invalidKey.res);
+    assert.equal(invalidKey.res.statusCode, 400);
+    assert.match(invalidKey.res.body, /INVALID_QUERY_PARAMETER/);
+
+    const longValue = mockVercelRequest({
+      url: "/api/tmdb?path=%2Fsearch%2Fmulti&query=" + "x".repeat(501)
+    });
+    await vercelHandler(longValue.req, longValue.res);
+    assert.equal(longValue.res.statusCode, 400);
+    assert.match(longValue.res.body, /INVALID_QUERY_PARAMETER/);
+    assert.equal(called, false);
+  } finally {
+    if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
+    else process.env.TMDB_BEARER_TOKEN = oldToken;
+    global.fetch = oldFetch;
+  }
+});
+
+test("Vercel proxy supports movie and TV detail routes plus credits", async () => {
+  const oldToken = process.env.TMDB_BEARER_TOKEN;
+  const oldFetch = global.fetch;
+  process.env.TMDB_BEARER_TOKEN = "test-token";
+  const requested = [];
+  global.fetch = async url => {
+    requested.push(String(url));
+    return {
+      status: 200,
+      headers: { get: () => "application/json" },
+      text: async () => "{}"
+    };
+  };
+  try {
+    for (const path of ["/movie/123", "/tv/456", "/movie/123/credits", "/tv/456/credits"]) {
+      const encoded = encodeURIComponent(path);
+      const { req, res } = mockVercelRequest({ url: "/api/tmdb?path=" + encoded });
+      await vercelHandler(req, res);
+      assert.equal(res.statusCode, 200, path);
+    }
+    assert.equal(requested.length, 4);
+    assert.ok(requested.some(url => url.includes("/movie/123?")));
+    assert.ok(requested.some(url => url.includes("/tv/456?")));
+    assert.ok(requested.some(url => url.includes("/movie/123/credits?")));
+    assert.ok(requested.some(url => url.includes("/tv/456/credits?")));
+  } finally {
+    if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
+    else process.env.TMDB_BEARER_TOKEN = oldToken;
+    global.fetch = oldFetch;
+  }
+});
