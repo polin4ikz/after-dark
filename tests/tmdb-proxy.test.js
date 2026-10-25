@@ -204,7 +204,7 @@ test("Vercel proxy supports movie and TV detail routes plus credits", async () =
   try {
     for (const path of ["/movie/123", "/tv/456", "/movie/123/credits", "/tv/456/credits"]) {
       const encoded = encodeURIComponent(path);
-      const { req, res } = mockVercelRequest({ url: "/api/tmdb?path=" + encoded });
+      const { req, res } = mockVercelRequest({ url: "/api/tmdb?path=" + encoded + "&language=en-US" });
       await vercelHandler(req, res);
       assert.equal(res.statusCode, 200, path);
     }
