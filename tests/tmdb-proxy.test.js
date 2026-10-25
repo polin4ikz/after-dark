@@ -113,6 +113,41 @@ test("Netlify proxy rejects unsupported paths", async () => {
   }
 });
 
+test("Netlify proxy forwards the series credits route using the server token", async () => {
+  const oldToken = process.env.TMDB_BEARER_TOKEN;
+  const oldFetch = global.fetch;
+  process.env.TMDB_BEARER_TOKEN = "netlify-server-test-token";
+  let captured;
+  global.fetch = async (url, options) => {
+    captured = { url: String(url), options };
+    return {
+      status: 200,
+      headers: { get: () => "application/json" },
+      text: async () => '{"cast":[]}'
+    };
+  };
+  try {
+    const response = await netlifyHandler({
+      httpMethod: "GET",
+      rawUrl: "https://example.test/.netlify/functions/tmdb?path=%2Ftv%2F123%2Fcredits&language=en-US"
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body, '{"cast":[]}');
+    assert.match(captured.url, /\/tv\/123\/credits\?/);
+    assert.equal(captured.options.headers.Authorization, "Bearer netlify-server-test-token");
+  } finally {
+    if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
+    else process.env.TMDB_BEARER_TOKEN = oldToken;
+    global.fetch = oldFetch;
+  }
+});
+
+test("Netlify routes the browser TMDB endpoint to its function", async () => {
+  const fs = require("node:fs");
+  const config = fs.readFileSync(require.resolve("../netlify.toml"), "utf8");
+  assert.match(config, /from = "\/api\/tmdb"[\s\S]*?to = "\/\.netlify\/functions\/tmdb"/);
+});
+
 test("browser bundle does not contain a TMDB bearer token", async () => {
   const fs = require("node:fs");
   const script = fs.readFileSync(require.resolve("../script.js"), "utf8");
