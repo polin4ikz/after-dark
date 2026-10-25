@@ -75,3 +75,11 @@ This is a code/configuration audit based on files accessible through GitHub's fi
 - Rechecked the current browser script: exactly one API declaration remains; no `TMDB_API_KEY` reference or direct `api.themoviedb.org/3` base URL remains.
 - Confirmed the validation workflow includes the proxy test suite and that the latest Vercel check for the branch commit reports success.
 - These checks do not replace a full interactive regression run, and the server-side `TMDB_BEARER_TOKEN` still must be configured and the old exposed credential rotated before release.
+
+## Proxy route compatibility fix — 2026-10-25
+
+- Extended the server allowlist for the exact detail subroute `/movie/:id/credits` and `/tv/:id/credits`. The existing detail modal requests credits for director information; without this route, those metadata requests were rejected by the proxy.
+- Added a deterministic mocked-fetch regression test for the credits route and strengthened the browser-bundle test to reject a direct TMDB API base URL.
+- Added the missing `/api/tmdb` Netlify rewrite so the same browser endpoint works on both the Vercel and Netlify function implementations.
+- Removed a duplicate Netlify rewrite block after checking the resulting config.
+- Current release remains blocked pending the latest deployment/check result, server environment configuration confirmation, credential rotation, and full functional regression.
