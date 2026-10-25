@@ -147,7 +147,13 @@
   }
   function init() {
     let film = null;
-    try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {}
+    const demo = new URLSearchParams(window.location.search).get("demo");
+    if (demo === "nosferatu") {
+      // Isolated playback smoke test; does not touch the shared archive or Supabase.
+      film = { tmdbId: 653, type: "film", title: "Nosferatu", original_title: "Nosferatu", release_date: "1922-01-01" };
+    } else {
+      try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {}
+    }
     if (!film || typeof film !== "object") {
       $("#mediaTitle").textContent = "Фильм не выбран";
       $("#mediaMeta").textContent = "Вернись в архив и нажми WATCH на выбранной карточке.";
