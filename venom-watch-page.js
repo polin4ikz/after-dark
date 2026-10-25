@@ -293,14 +293,27 @@
     const terms = filmSearchTerms(film);
     const isDevilWearsPrada = terms.year === "2006" && terms.titles.some(title => /devil wears prada|дьявол носит\s*[«"]?prada/i.test(title));
     if (!isDevilWearsPrada) return;
-    const link = document.createElement("a");
-    link.className = "source-result source-result--external";
-    link.href = "https://hd.kinopoisk.ru/film/4f39d7763a829bc3a003fa801a781ca1";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "СМОТРЕТЬ НА КИНОПОИСКЕ · ОФИЦИАЛЬНЫЙ ИСТОЧНИК ↗";
-    $("#sourceResults").prepend(link);
-    addNote("Для этого фильма найден официальный просмотр на Кинопоиске. Лицензионный плеер может запрещать встраивание в сторонние сайты, поэтому ссылка откроется отдельно.");
+    const area = $("#sourceResults");
+    const sources = [
+      {
+        label: "ОТКРЫТЬ СТРАНИЦУ ФИЛЬМА · LORD FILM ↗",
+        url: "https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/"
+      },
+      {
+        label: "ОТКРЫТЬ КИНОПОИСК · ОФИЦИАЛЬНЫЙ ИСТОЧНИК ↗",
+        url: "https://hd.kinopoisk.ru/film/4f39d7763a829bc3a003fa801a781ca1"
+      }
+    ];
+    for (const source of sources) {
+      const link = document.createElement("a");
+      link.className = "source-result source-result--external";
+      link.href = source.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = source.label;
+      area.prepend(link);
+    }
+    addNote("Эти ссылки ведут на страницы фильма у внешних сервисов. After Dark пока не извлекает видеопоток из таких страниц автоматически; встроенный просмотр работает только для поддерживаемых встраиваемых плееров или прямых видеофайлов.");
   }
   async function findSources(film) {
     const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
@@ -318,8 +331,8 @@
         addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
         results.forEach(renderCandidate);
       } else {
-        status("В ОТКРЫТОМ АРХИВЕ ИСТОЧНИК НЕ НАЙДЕН");
-        addNote("Поисковые ссылки ниже открывают результаты поиска, а не готовое воспроизведение. Для просмотра внутри After Dark нужен поддерживаемый поток или встраиваемый плеер.");
+        status("В ОТКРЫТОМ АРХИВЕ НЕТ ПОДХОДЯЩЕГО ВИДЕОФАЙЛА");
+        addNote("Сейчас автоматический поиск проверяет только Internet Archive и принимает лишь файлы с открытой лицензией и подходящей длительностью. Он не сканирует страницы Lord Film и других сайтов, поэтому наличие фильма на сторонней странице само по себе не появится как найденный поток.");
       }
     } catch (_) {
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
