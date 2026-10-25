@@ -47,17 +47,17 @@ test("returns only exact-title full-length videos with an explicit open license"
     const url = new URL(String(input));
     if (url.hostname === "archive.org" && url.pathname === "/advancedsearch.php") {
       return { ok: true, json: async () => ({ response: { docs: [
-        { identifier: "licensed-feature", title: "Nosferatu", year: "1922" },
+        { identifier: "licensed-feature", title: "Nosferatu (1922)", year: "1922" },
         { identifier: "no-rights", title: "Nosferatu", year: "1922" },
         { identifier: "short-video", title: "Nosferatu", year: "1922" },
         { identifier: "../unsafe", title: "Nosferatu", year: "1922" }
       ] } }) };
     }
     const id = url.pathname.split("/").pop();
-    const common = { title: "Nosferatu", year: "1922" };
+    const common = { title: "Nosferatu (1922)", year: "1922" };
     const files = id === "short-video"
       ? [{ name: "movie.mp4", format: "MPEG4", length: "00:02:00" }]
-      : [{ name: "movie.mp4", format: "MPEG4", length: "1:34:00" }];
+      : [{ name: "movie.mp4", format: "512Kb MPEG4", length: "1:34:00" }];
     const metadata = id === "licensed-feature"
       ? { ...common, licenseurl: "https://creativecommons.org/licenses/by/4.0/" }
       : id === "no-rights" ? common : { ...common, rights: "Public Domain" };
