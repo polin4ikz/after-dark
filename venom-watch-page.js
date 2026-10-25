@@ -232,7 +232,9 @@
     if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
     // Prefer a browser-playable direct file from the open-licensed archive record.
     // Keep Archive's own player as a fallback if the direct file is blocked or unsupported.
-    if (typeof source.directUrl === "string" && /^https:\/\/archive\.org\/download\/[A-Za-z0-9._%\/-]+$/i.test(source.directUrl)) {
+    let safeDirectUrl = false;
+    try { const direct = new URL(source.directUrl); safeDirectUrl = direct.protocol === "https:" && direct.hostname === "archive.org" && /^\/download\/[A-Za-z0-9._-]+\/.+$/i.test(direct.pathname); } catch (_) {}
+    if (safeDirectUrl) {
       try {
         openDirectStream(source.directUrl);
         status("ОТКРЫТЫЙ ИСТОЧНИК · ПРЯМОЙ ВИДЕОФАЙЛ");
