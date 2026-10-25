@@ -54,7 +54,11 @@ test("Vercel proxy rejects unsupported methods and paths", async () => {
     const path = mockVercelRequest({ url: "/api/tmdb?path=%2Fconfiguration" });
     await vercelHandler(path.req, path.res);
     assert.equal(path.res.statusCode, 400);
-    assert.match(path.res.body, /TMDB_PATH_NOT_ALLOWED/);\n\n    const credits = mockVercelRequest({ url: "/api/tmdb?path=%2Fmovie%2F123%2Fcredits" });\n    await vercelHandler(credits.req, credits.res);\n    assert.equal(credits.res.statusCode, 200);
+    assert.match(path.res.body, /TMDB_PATH_NOT_ALLOWED/);
+
+    const credits = mockVercelRequest({ url: "/api/tmdb?path=%2Fmovie%2F123%2Fcredits" });
+    await vercelHandler(credits.req, credits.res);
+    assert.equal(credits.res.statusCode, 200);
   } finally {
     if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
     else process.env.TMDB_BEARER_TOKEN = oldToken;
@@ -110,5 +114,6 @@ test("browser bundle does not contain a TMDB bearer token", async () => {
   const fs = require("node:fs");
   const script = fs.readFileSync(require.resolve("../script.js"), "utf8");
   assert.doesNotMatch(script, /TMDB_API_KEY\s*=/);
+  assert.doesNotMatch(script, /api\.themoviedb\.org\/3/);
   assert.match(script, /const API="\/api\/tmdb"/);
 });
