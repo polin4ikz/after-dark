@@ -1,5 +1,4 @@
 const API="/api/tmdb",IMG="https://image.tmdb.org/t/p/w780";
-const API="/api/tmdb",IMG="https://image.tmdb.org/t/p/w780";
 
 const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
