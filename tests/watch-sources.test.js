@@ -75,3 +75,14 @@ test("returns only exact-title full-length videos with an explicit open license"
     assert.equal(body.results[0].durationSeconds, 5640);
   } finally { global.fetch = originalFetch; }
 });
+
+test("accepts common punctuation in movie titles", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, json: async () => ({ response: { docs: [] } }) });
+  try {
+    const res = responseMock();
+    await handler({ method: "GET", url: "/api/watch-sources?q=Spider-Man%3A%20Across%20the%20Spider-Verse" }, res);
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body).results, []);
+  } finally { global.fetch = originalFetch; }
+});
