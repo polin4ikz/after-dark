@@ -7,6 +7,7 @@ on:
       - "fix/**"
       - "feature/**"
       - "compat/**"
+      - "clean-rebuild"
   pull_request:
     branches:
       - main
@@ -35,5 +36,4 @@ jobs:
           node --check watch-player.js
           node --check api/archive-search.js
           node --check netlify/functions/archive-search.js
-          # The TMDB proxy tests belong to the server-token variant; this branch deliberately preserves client-side TMDB.
-          node --test tests/watch-player.test.js tests/archive-search.test.js
+          node --test tests/watch-player.test.js tests/archive-search.test.js tests/tmdb-proxy.test.js
