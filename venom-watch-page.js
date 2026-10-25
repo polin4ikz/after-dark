@@ -48,6 +48,20 @@
       { label: "ВСЕ РЕЗУЛЬТАТЫ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(queryFor(ruTitle)) },
       { label: "СЕРВИСЫ В РОССИИ", url: "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(ruTitle + (year ? " " + year : "")) }
     ];
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "source-search-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = "ДРУГИЕ ИСТОЧНИКИ И ПОИСК +";
+    const panel = document.createElement("div");
+    panel.className = "source-search-panel";
+    panel.hidden = true;
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!expanded));
+      panel.hidden = expanded;
+      toggle.textContent = expanded ? "ДРУГИЕ ИСТОЧНИКИ И ПОИСК +" : "СКРЫТЬ ДОПОЛНИТЕЛЬНЫЙ ПОИСК −";
+    });
     for (const item of searchLinks) {
       const link = document.createElement("a");
       link.className = "source-result source-result--external";
@@ -55,8 +69,9 @@
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = item.label + " ↗";
-      area.appendChild(link);
+      panel.appendChild(link);
     }
+    area.append(toggle, panel);
   }
   function resetStreamEngines() {
     if (hls) { hls.destroy(); hls = null; }
@@ -296,11 +311,11 @@
     const area = $("#sourceResults");
     const sources = [
       {
-        label: "ОТКРЫТЬ СТРАНИЦУ ФИЛЬМА · LORD FILM ↗",
+        label: "LORD FILM · СТРАНИЦА ФИЛЬМА ↗",
         url: "https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/"
       },
       {
-        label: "ОТКРЫТЬ КИНОПОИСК · ОФИЦИАЛЬНЫЙ ИСТОЧНИК ↗",
+        label: "КИНОПОИСК · ОФИЦИАЛЬНАЯ СТРАНИЦА ↗",
         url: "https://hd.kinopoisk.ru/film/4f39d7763a829bc3a003fa801a781ca1"
       }
     ];
@@ -313,7 +328,7 @@
       link.textContent = source.label;
       area.prepend(link);
     }
-    addNote("Эти ссылки ведут на страницы фильма у внешних сервисов. After Dark пока не извлекает видеопоток из таких страниц автоматически; встроенный просмотр работает только для поддерживаемых встраиваемых плееров или прямых видеофайлов.");
+    addNote("Прямое воспроизведение доступно, только если источник предоставляет совместимый встроенный плеер или прямой видеофайл. Страница фильма не равна видеопотоку.");
   }
   async function findSources(film) {
     const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
@@ -332,7 +347,7 @@
         results.forEach(renderCandidate);
       } else {
         status("В ОТКРЫТОМ АРХИВЕ НЕТ ПОДХОДЯЩЕГО ВИДЕОФАЙЛА");
-        addNote("Сейчас автоматический поиск проверяет только Internet Archive и принимает лишь файлы с открытой лицензией и подходящей длительностью. Он не сканирует страницы Lord Film и других сайтов, поэтому наличие фильма на сторонней странице само по себе не появится как найденный поток.");
+        addNote("Автопоиск пока проверяет только Internet Archive и видео с открытой лицензией. Ссылки на другие сайты находятся в карточках выше; дополнительные поисковики скрыты в разделе ниже.");
       }
     } catch (_) {
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
