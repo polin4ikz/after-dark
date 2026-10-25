@@ -272,7 +272,15 @@
       const card = button.closest(".archive-card");
       film = card ? getArchiveFilm(card.dataset.id) : null;
     }
-    if (film) openPlayer(film);
+    if (film) {
+      try {
+        // The dedicated page owns playback; keep the current modal implementation out of this flow.
+        localStorage.setItem("after-dark:venom-current-film:v1", JSON.stringify(film));
+        window.location.href = "venom-watch.html";
+      } catch (_) {
+        window.location.href = "venom-watch.html";
+      }
+    }
   }
   function init() {
     restoreSourceCache();
