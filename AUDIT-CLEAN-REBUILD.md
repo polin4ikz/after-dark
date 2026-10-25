@@ -3,108 +3,74 @@
 Date: 2026-10-25
 
 ## Safety boundary
-- This audit was performed against `compat/current-player-client-tmdb`.
-- The `clean-rebuild` branch was created from that branch for isolated work.
-- No changes were made to `main`, production deployments, Supabase data, or existing branches.
-- Do not merge or deploy this branch until the compatibility checklist is completed.
+- Audit target: `clean-rebuild`, forked from the compatible player branch for isolated work.
+- Production branch `main`, live deployments, Supabase data, and host environment settings have not been changed.
+- PR #9 is still draft and unmerged. Do not merge or deploy this candidate until release blockers are resolved.
 
-## Baseline
-- Baseline branch: `compat/current-player-client-tmdb`
-- Baseline commit for the working player UI: `54b85b97cb5dcb2e85cc5a236ce4d62b6276f3ae` (previously verified deployment; branch HEAD may have advanced).
-- `main` is 102 commits behind this branch in the GitHub comparison performed on 2026-10-25.
-- `rewrite-after-dark` is divergent (2 commits ahead, 417 behind main in the comparison performed on 2026-10-25); do not use it as a replacement baseline.
+## Baseline and branch state
+- Baseline player UI commit: `54b85b97cb5dcb2e85cc5a236ce4d62b6276f3ae` (previously verified deployment; source branch may have advanced).
+- Current comparison: `clean-rebuild` is 125 commits ahead of `main`, 0 behind. This is too large to merge blindly.
+- `rewrite-after-dark` is divergent (historical comparison: 2 ahead / 417 behind main); do not use it as a replacement baseline.
+- The repository currently has 15 branches, including three named backups. No branches have been deleted.
+- The separate public repository `polin4kz/cinema` still exists and is not archived. It should not be deleted until its unique content has been compared and preserved.
 
-## Functional inventory (to preserve)
+## Functional inventory to preserve
 - Supabase email/password authentication and profile/nickname flow.
 - Shared archive/list synchronization for the two authorized users.
-- Ratings/history, including WATCHED and REMOVED states and user ratings.
-- Catalog search and metadata/posters from TMDB.
+- Ratings/history, including WATCHED and REMOVED states and individual user ratings.
+- TMDB catalog search, metadata, posters, detail cards and Movie Night.
 - Movie Night selection, details, archive status and add-to-archive action.
-- Embedded WATCH player, supported source normalization, progress/source persistence and mobile/fullscreen behavior where supported by the existing implementation.
-- Internet Archive search proxy; search results are catalog records and must not be treated as playable video URLs by default.
-- Existing dark bordeaux/black/milk visual identity, grain texture, responsive layout and readable mobile typography.
+- WATCH overlay, supported source URL normalization, browser-local source cache, and fullscreen where supported by the provider.
+- Internet Archive search proxy; catalog search results are not guaranteed to be playable video streams.
+- Existing dark bordeaux/black/milk identity, grain texture, responsive layout and readable mobile typography.
 - Existing Supabase RLS and private-member access model.
 
 ## Dependency and deployment map
 - Static HTML entry: `index.html`.
-- Main theme: `style.css` (about 90 KB in the audited branch).
-- Main catalog/search logic: `script.js`.
-- Movie cards / Movie Night logic: `after-dark-final.js`.
+- Main theme: `style.css`.
+- Catalog/search logic: `script.js`.
+- Cards and Movie Night: `after-dark-final.js`.
 - Auth UI: `auth-ui.js`.
-- Supabase/auth/shared archive runtime: `supabase-runtime.js`.
+- Supabase auth/shared archive runtime: `supabase-runtime.js`.
 - Ratings UI/data behavior: `supabase-ratings.js`.
 - Player: `watch-player.js` and `watch-player.css`.
-- Server-side TMDB proxy exists in both `api/tmdb.js` (Vercel-style) and `netlify/functions/tmdb.js`.
-- Internet Archive search proxy exists in both `api/archive-search.js` and `netlify/functions/archive-search.js`.
-- Netlify routing is defined in `netlify.toml`.
-- Node built-in test suite files: `tests/watch-player.test.js`, `tests/archive-search.test.js`, `tests/tmdb-proxy.test.js`.
-- GitHub Actions validation workflow: `.github/workflows/validate.yml`.
-- Supabase schema/RLS documentation: `supabase-schema.sql`; history migration: `supabase/migrations/20261020_watchlist_history.sql`.
+- Vercel-style server functions: `api/tmdb.js`, `api/archive-search.js`.
+- Netlify-style server functions: `netlify/functions/tmdb.js`, `netlify/functions/archive-search.js`; routes in `netlify.toml`.
+- Tests: `tests/watch-player.test.js`, `tests/archive-search.test.js`, `tests/tmdb-proxy.test.js`.
+- Validation workflow: `.github/workflows/validate.yml`.
+- Supabase schema/RLS documentation: `supabase-schema.sql`; watchlist-history migration: `supabase/migrations/20261020_watchlist_history.sql`.
 
-## Security / migration risks
-1. The audited `script.js` in `main` contains a TMDB bearer-token pattern. Do not copy it into a new client bundle. The compatible branch includes server-side proxy implementations and a test intended to catch client-bundled tokens. Verify actual deployment secrets are configured in the host environment before relying on the proxy.
-2. Supabase schema/RLS and private-member rules are production data contracts. Do not run SQL migrations against the live project during this rebuild without explicit review and approval.
-3. Do not replace Supabase project credentials or create a new Supabase project. Existing users and shared data must remain in place.
-4. Both Vercel-style and Netlify-style API implementations exist. Choose the deployment target deliberately and test its routes; do not remove one merely to reduce file count until deployment hosting is confirmed.
-5. The existing repository appears to use browser-loaded scripts rather than a conventional package build in the files checked. Confirm complete file inventory and CI commands before restructuring.
+## Confirmed code findings
+1. Browser requests in the inspected `script.js` use the `/api/tmdb` helper. The browser bundle no longer contains the TMDB bearer-token variable or a direct `api.themoviedb.org/3` base URL.
+2. The proxy allowlist covers search, discover, movie/TV detail, and movie/TV credits routes. Tests exercise Vercel and Netlify handler behavior with mocked upstream responses.
+3. `watch-player.js` currently stores normalized source URLs in browser local storage. The code inspected does **not** implement playback-position resume, season/episode progress, or provider-independent quality/audio selection. These remain feature work, not completed functionality.
+4. The player requires a user-supplied supported source URL when no source is cached; a JustWatch search link is shown as an alternative. Supporting a provider domain does not guarantee that a specific video can be embedded.
+5. The `in_watchlist` migration exists in the repository but has not been applied to the live Supabase database. Code that writes this field may fail against a database schema that lacks the column. Confirm schema compatibility before any release; do not run a live migration as part of this audit.
+6. `index.html` loads the player before `script.js` and the Supabase runtime. The player injects WATCH actions into archive cards and Movie Night actions through a mutation observer. Live behavior still needs browser verification.
+7. `after-dark-final.js` contains several additive Movie Night interaction handlers. They may overlap in responsibilities (filter options and the DECIDE action). This is a code-review target; do not remove handlers without a focused regression test because the controls have been patched repeatedly to address earlier interaction bugs.
 
-## Rebuild strategy
-- Preserve behavior first; reduce complexity second.
-- Keep the existing database and visual theme.
-- Consolidate duplicated server functions only after selecting the target hosting platform.
-- Keep a single canonical player implementation and one canonical source of truth for ratings/archive behavior.
-- Keep automated tests and add regression coverage for authentication-independent UI, archive state transitions, Movie Night and player controls.
-- Do not merge or deploy until all checks pass on `clean-rebuild`.
+## Security and migration risks
+1. The current browser bundle no longer includes the old TMDB bearer token, but that credential appeared in Git history. Credential rotation remains deferred by the user. Treat this as a release blocker; do not expose, copy, or rotate credentials from code.
+2. The TMDB proxy requires server-side `TMDB_BEARER_TOKEN`. Hosting environment settings have not been inspected or edited, so working TMDB calls on the candidate are not confirmed.
+3. Supabase schema/RLS/private-member rules are production data contracts. Do not run SQL against the live project without explicit review.
+4. Vercel and Netlify implementations duplicate the server proxy functions. Select the actual release host before consolidating these files.
+5. The project uses browser-loaded scripts and Node's built-in test runner in the inspected files; no package-manager-based build was established from this audit.
+
+## Latest automated checks
+- Latest recorded GitHub Actions run: `40198504691`, conclusion `success`.
+- Its job `Check JavaScript syntax` completed successfully, including the workflow's JavaScript syntax and Node test commands.
+- Latest recorded Vercel status for candidate commit `c4f0366391b052efd3fe3824e22f9cbcf061cfff`: `success`.
+- This verifies the candidate's CI/deployment check only. Tests mock upstream calls and do not prove live TMDB credentials, login, shared archive, ratings, Movie Night, or player behavior end-to-end.
+- Browser automation was not completed because the available browser tool could not start due to its negative wallet balance. Do not infer that the site is broken from this tooling failure.
+- No review threads were present on PR #9 at the time checked.
+
+## Release plan
+1. Keep `main` and the production URL untouched.
+2. Complete source review and build targeted regression tests for Movie Night handlers and archive state transitions.
+3. Verify the live schema requirement for `in_watchlist` before any release. Do not apply the migration automatically.
+4. Confirm the release host and server-side TMDB secret configuration; credential rotation remains a separately deferred security blocker.
+5. Perform authenticated two-account regression: login/logout, shared archive add/remove/watch, ratings ownership, Movie Night add-to-archive, and mobile layout.
+6. Only after selecting and validating a release candidate, compare the old `cinema` repo and every candidate branch for unique commits before any deletion. Preserve `main`, `clean-rebuild`, and the known player baseline until that comparison is complete.
 
 ## Audit limitations
-This is a code/configuration audit based on files accessible through GitHub's file API. It is not a full live end-to-end test, a full repository clone, or a production security audit. Hosting secrets and live Supabase policies were not inspected or changed.
-
-## Update — 2026-10-25
-
-- Removed the TMDB bearer credential from the browser bundle in `script.js`; browser requests now target `/api/tmdb` and send the requested API path as a query parameter.
-- Enabled `tests/tmdb-proxy.test.js` in the validation workflow and added the `clean-rebuild` branch to the workflow's push triggers.
-- Verified the current `script.js` no longer contains the TMDB bearer-token variable or a direct TMDB API base URL.
-- The commit's reported Vercel check is successful. This is a deployment check only; it does not prove the full application works end-to-end or that the TMDB server environment variable is configured.
-- **Security follow-up required:** the credential was present in Git history. Revoke/rotate it in TMDB; changing the current file does not erase historical exposure.
-- **Do not merge this branch into `main` yet.** It is 105 commits ahead of `main` and contains a broad accumulated feature set. Run the complete CI and functional regression checks, confirm server environment configuration, then review the diff before any production cutover.
-- Branch cleanup is intentionally postponed until one tested release candidate is selected. Deleting preview branches now would remove useful rollback/reference points without fixing deployment drift.
-
-## Follow-up verification — 2026-10-25
-
-- A duplicate `const API` declaration introduced during the proxy conversion was caught during source inspection and removed in a separate commit before release.
-- Rechecked the current browser script: exactly one API declaration remains; no `TMDB_API_KEY` reference or direct `api.themoviedb.org/3` base URL remains.
-- Confirmed the validation workflow includes the proxy test suite and that the latest Vercel check for the branch commit reports success.
-- These checks do not replace a full interactive regression run, and the server-side `TMDB_BEARER_TOKEN` still must be configured and the old exposed credential rotated before release.
-
-## Proxy route compatibility fix — 2026-10-25
-
-- Extended the server allowlist for the exact detail subroute `/movie/:id/credits` and `/tv/:id/credits`. The existing detail modal requests credits for director information; without this route, those metadata requests were rejected by the proxy.
-- Added a deterministic mocked-fetch regression test for the credits route and strengthened the browser-bundle test to reject a direct TMDB API base URL.
-- Added the missing `/api/tmdb` Netlify rewrite so the same browser endpoint works on both the Vercel and Netlify function implementations.
-- Removed a duplicate Netlify rewrite block after checking the resulting config.
-- Current release remains blocked pending the latest deployment/check result, server environment configuration confirmation, credential rotation, and full functional regression.
-
-## Automated verification — 2026-10-25
-
-- GitHub Actions run `40197319776` completed successfully on the draft release candidate.
-- JavaScript syntax checks passed for every script listed by the workflow.
-- All 17 automated tests passed (0 failed), including the TMDB server-token checks, Vercel/Netlify proxy behavior, credits-route support, Netlify rewrite, Internet Archive search validation, and player URL/source-cache checks.
-- Vercel reported a successful deployment check for the branch commit. This confirms the deployment pipeline accepted the commit, not that the live authenticated experience or secret-dependent TMDB calls have been end-to-end verified.
-- Production URL inspection from the current external fetch context returned `login_required`; this does not distinguish deployment protection from a user-facing availability problem. Do not change production settings based on that signal alone.
-- The draft pull request is open as PR #9 for review/CI visibility. It has not been merged.
-
-
-## Follow-up route compatibility audit — 2026-10-25
-
-- Inspected every TMDB request call site in `script.js` and the Movie Night flow. Current browser requests use the single `/api/tmdb` proxy helper; the route families used by the UI are `/search/multi`, `/discover/movie`, `/discover/tv`, `/movie/:id`, `/tv/:id`, and the credits subroutes.
-- Compared those call sites with the server allowlist. The currently observed request families are covered by the allowlist, including movie/TV credits. No client call to the TMDB host was found in the inspected script.
-- The proxy test suite uses mocked upstream responses, so it proves route mapping and request construction, not that TMDB accepts a real credential or that the production environment is configured.
-- Per the user's current decision, token rotation is deferred. No token was changed, no environment settings were edited, and no production or Supabase changes were made.
-- Release remains on hold until the secret-dependent runtime is verifiable and the authenticated two-account regression is completed. This is a safety hold, not a reason to stop code review and automated validation.
-
-
-## Additional proxy regression coverage — 2026-10-25
-
-- Added automated cases for malformed and overlong query parameters, verifying the proxy rejects them before any upstream request.
-- Added a route matrix for movie detail, TV detail, movie credits, and TV credits so future allowlist edits cannot silently break the detail modal.
-- These tests use mocked upstream responses and are intended to catch regressions in routing and validation. They do not validate a real TMDB credential or replace browser-level testing.
+This is a GitHub-file-API source/configuration audit, not a full local clone, live end-to-end test, review of hosting secrets, or production security audit. No production or Supabase changes have been made.
