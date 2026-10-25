@@ -11,7 +11,6 @@ The old TMDB bearer token was embedded in public client-side JavaScript and ther
 Set an environment variable named `TMDB_BEARER_TOKEN` to the newly rotated TMDB API Read Access Token:
 
 - **Vercel:** Project → Settings → Environment Variables. Add it for Preview and Production environments that you intend to use, then redeploy.
-- **Netlify:** Site configuration → Environment variables. Add it to the site and redeploy.
 
 The repo contains a Vercel function at `api/tmdb.js` and a Netlify function at `netlify/functions/tmdb.js`. The Netlify route is configured in `netlify.toml`. Do not put the token in `script.js`, HTML, or any `NEXT_PUBLIC_*` / client-exposed variable.
 
@@ -56,5 +55,5 @@ Use two separate browser profiles (or one normal and one private window) so the 
 
 - Source changes are in a review branch/PR, not merged to `main`.
 - SQL migrations are files only; they have not been executed against your live Supabase project.
-- No TMDB secret has been added to Vercel or Netlify from this repository. You must add the rotated token in the host dashboard.
+- This repository has not verified whether `TMDB_BEARER_TOKEN` is configured in Vercel. Check the Vercel project environment variables and add the rotated token there after rotation. Never share the token in chat or commit it to Git.
 - Run the two-account test checklist after those setup steps. Syntax checks are automated in GitHub Actions, but this is not a substitute for browser end-to-end testing.
