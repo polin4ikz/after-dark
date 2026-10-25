@@ -33,3 +33,16 @@ body.ad-watch-player-open{overflow:hidden}
 .ad-watch-player__result-title{font-weight:600;overflow-wrap:anywhere}
 .ad-watch-player__result-meta{opacity:.65;font-size:.72rem}
 .ad-watch-player__result-description{grid-column:1/-1;opacity:.68;line-height:1.45}
+
+/* Venom Player experiment */
+.ad-venom-panel{margin-top:24px;padding-top:20px;border-top:1px solid rgba(232,221,200,.14)}
+.ad-venom-note{margin:0 0 10px;color:rgba(232,221,200,.58);font-size:12px;line-height:1.45}
+.ad-venom-controls{display:grid;grid-template-columns:145px minmax(0,1fr) auto;gap:8px}
+.ad-venom-controls select,.ad-venom-controls input{min-width:0;padding:12px;background:rgba(232,221,200,.035);border:1px solid rgba(232,221,200,.22);border-radius:0;color:#e8ddc8;font-size:13px;outline:none}
+.ad-venom-controls select option{background:#100e0d;color:#e8ddc8}
+.ad-venom-controls input:focus,.ad-venom-controls select:focus{border-color:#e8ddc8}
+.ad-venom-controls button{padding:0 16px;background:#791522;border:1px solid rgba(232,221,200,.3);color:#e8ddc8;font:9px "Geist Mono",monospace;letter-spacing:.08em;white-space:nowrap;cursor:pointer}
+.ad-venom-controls button:hover{background:#a32938}
+.ad-venom-mount{position:absolute;inset:0;width:100%;height:100%;min-height:240px}
+.ad-venom-mount>*{width:100%;height:100%}
+@media(max-width:650px){.ad-venom-controls{grid-template-columns:1fr}.ad-venom-controls button{min-height:44px}.ad-venom-controls select{min-height:44px}}
