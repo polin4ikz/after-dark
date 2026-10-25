@@ -28,21 +28,23 @@
   function addExternalFallback(filmOrTitle) {
     const area = $("#sourceResults");
     const { titles, year, primary } = filmSearchTerms(filmOrTitle);
-    const titleQuery = titles.join(" ");
-    const query = [primary, year, "смотреть онлайн"].filter(Boolean).join(" ");
-    const fullQuery = [titleQuery, year, "смотреть фильм"].filter(Boolean).join(" ");
-    const searches = [
-      { label: "ПОИСК В ЯНДЕКСЕ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(query) },
-      { label: "ПОИСК ВИДЕО В ЯНДЕКСЕ", url: "https://yandex.ru/video/search?text=" + encodeURIComponent(fullQuery) },
-      { label: "ПОИСК В VK ВИДЕО", url: "https://vk.com/video?q=" + encodeURIComponent(fullQuery) },
-      { label: "ПОИСК НА RUTUBE", url: "https://rutube.ru/search/?query=" + encodeURIComponent(fullQuery) },
-      { label: "ПОИСК В YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent(fullQuery) },
-      { label: "ПОИСК НА LORDFILM", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:lordfilm ' + fullQuery) },
-      { label: "ПОИСК НА HDREZKA", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:hdrezka ' + fullQuery) },
-      { label: "ПОИСК ПО ВСЕМУ ИНТЕРНЕТУ", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent(fullQuery) },
-      { label: "ПРОВЕРИТЬ СЕРВИСЫ В РОССИИ", url: "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(primary + (year ? " " + year : "")) }
+    const ruTitle = titles.find(value => /[а-яё]/i.test(value)) || primary;
+    const enTitle = titles.find(value => /[a-z]/i.test(value) && value !== ruTitle) || primary;
+    const queryFor = title => [title, year, "смотреть онлайн"].filter(Boolean).join(" ");
+    const searchLinks = [
+      { label: "ЯНДЕКС · РУССКОЕ НАЗВАНИЕ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(queryFor(ruTitle)) },
+      { label: "ЯНДЕКС · ОРИГИНАЛЬНОЕ НАЗВАНИЕ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(queryFor(enTitle)) },
+      { label: "ЯНДЕКС ВИДЕО", url: "https://yandex.ru/video/search?text=" + encodeURIComponent(queryFor(ruTitle)) },
+      { label: "VK ВИДЕО", url: "https://vk.com/video?q=" + encodeURIComponent(queryFor(ruTitle)) },
+      { label: "RUTUBE", url: "https://rutube.ru/search/?query=" + encodeURIComponent(queryFor(ruTitle)) },
+      { label: "YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent([enTitle, year, "full movie"].filter(Boolean).join(" ")) },
+      { label: "LORDFILM · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:lordfilm ' + queryFor(ruTitle)) },
+      { label: "HDREZKA · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:hdrezka ' + queryFor(ruTitle)) },
+      { label: "КИНОПОИСК · ПОИСК", url: "https://yandex.ru/search/?text=" + encodeURIComponent('site:kinopoisk.ru ' + ruTitle + (year ? " " + year : "")) },
+      { label: "ВСЕ РЕЗУЛЬТАТЫ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(queryFor(ruTitle)) },
+      { label: "СЕРВИСЫ В РОССИИ", url: "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(ruTitle + (year ? " " + year : "")) }
     ];
-    for (const item of searches) {
+    for (const item of searchLinks) {
       const link = document.createElement("a");
       link.className = "source-result source-result--external";
       link.href = item.url;
