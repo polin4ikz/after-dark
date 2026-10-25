@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="venom-watch.css?v=20261025-audiotracks">
+  <link rel="stylesheet" href="venom-watch.css?v=20261025-embeds">
 </head>
 <body>
   <main class="player-page">
@@ -24,11 +24,11 @@
       <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
       <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
       <section id="nativePlayerTools" class="native-player-tools" aria-label="Подключение видео">
-        <p class="source-note">Если у тебя есть прямая ссылка на видео или поток, подключи её здесь. Поддерживаются MP4/WebM, HLS (.m3u8) и DASH (.mpd). Поисковая страница сама по себе не является видеопотоком.</p>
+        <p class="source-note">Вставь прямую ссылку на видео/поток или ссылку на конкретное видео YouTube, Rutube или VK Видео. Ссылки на страницы поиска Яндекса не встраиваются. Условия доступа и доступность встраивания зависят от источника.</p>
         <form id="streamForm" class="stream-form">
-          <label for="streamUrl">ССЫЛКА НА ВИДЕО / ПОТОК</label>
+          <label for="streamUrl">ССЫЛКА НА ВИДЕО / ПОТОК / ПЛЕЕР</label>
           <div class="stream-form__row">
-            <input id="streamUrl" name="streamUrl" type="url" inputmode="url" placeholder="https://…/video.m3u8" autocomplete="url" required>
+            <input id="streamUrl" name="streamUrl" type="url" inputmode="url" placeholder="https://rutube.ru/video/… или https://youtu.be/…" autocomplete="url" required>
             <button type="submit">ОТКРЫТЬ</button>
           </div>
         </form>
@@ -49,6 +49,6 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
   <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
-  <script src="venom-watch-page.js?v=20261025-audiotracks"></script>
+  <script src="venom-watch-page.js?v=20261025-embeds"></script>
 </body>
 </html>
