@@ -68,3 +68,10 @@ This is a code/configuration audit based on files accessible through GitHub's fi
 - **Security follow-up required:** the credential was present in Git history. Revoke/rotate it in TMDB; changing the current file does not erase historical exposure.
 - **Do not merge this branch into `main` yet.** It is 105 commits ahead of `main` and contains a broad accumulated feature set. Run the complete CI and functional regression checks, confirm server environment configuration, then review the diff before any production cutover.
 - Branch cleanup is intentionally postponed until one tested release candidate is selected. Deleting preview branches now would remove useful rollback/reference points without fixing deployment drift.
+
+## Follow-up verification — 2026-10-25
+
+- A duplicate `const API` declaration introduced during the proxy conversion was caught during source inspection and removed in a separate commit before release.
+- Rechecked the current browser script: exactly one API declaration remains; no `TMDB_API_KEY` reference or direct `api.themoviedb.org/3` base URL remains.
+- Confirmed the validation workflow includes the proxy test suite and that the latest Vercel check for the branch commit reports success.
+- These checks do not replace a full interactive regression run, and the server-side `TMDB_BEARER_TOKEN` still must be configured and the old exposed credential rotated before release.
