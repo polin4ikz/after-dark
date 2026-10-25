@@ -117,8 +117,50 @@
       throw new Error("Поддерживаются только безопасные HTTPS-ссылки.");
     }
     const path = url.pathname.toLowerCase();
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    let embedUrl = null;
+    let embedProvider = "";
+    let youtubeId = null;
+    if (host === "youtu.be") youtubeId = path.split("/").filter(Boolean)[0] || null;
+    else if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
+      youtubeId = path.startsWith("/embed/") || path.startsWith("/shorts/") || path.startsWith("/live/")
+        ? path.split("/")[2] : url.searchParams.get("v");
+    }
+    if (youtubeId && /^[A-Za-z0-9_-]{11}$/.test(youtubeId) && ["youtube.com", "m.youtube.com", "youtube-nocookie.com", "youtu.be"].includes(host)) {
+      embedUrl = "https://www.youtube-nocookie.com/embed/" + youtubeId + "?autoplay=1&rel=0";
+      embedProvider = "YOUTUBE";
+    } else if (["rutube.ru", "rutube.com"].includes(host)) {
+      const match = path.match(/^\/(?:video|play\/embed)\/([a-f0-9]{20,40})\/?$/i);
+      if (match) { embedUrl = "https://rutube.ru/play/embed/" + match[1]; embedProvider = "RUTUBE"; }
+    } else if (["vk.com", "m.vk.com"].includes(host)) {
+      const videoMatch = path.match(/^\/video(-?\d+)_([0-9]+)/);
+      const ext = path === "/video_ext.php" ? { oid: url.searchParams.get("oid"), id: url.searchParams.get("id"), hash: url.searchParams.get("hash") } : null;
+      if (videoMatch) {
+        embedUrl = "https://vk.com/video_ext.php?oid=" + encodeURIComponent(videoMatch[1]) + "&id=" + encodeURIComponent(videoMatch[2]);
+        embedProvider = "VK VIDEO";
+      } else if (ext && /^-?\d+$/.test(ext.oid || "") && /^\d+$/.test(ext.id || "") && /^[A-Za-z0-9_-]{0,128}$/.test(ext.hash || "")) {
+        embedUrl = "https://vk.com/video_ext.php?oid=" + encodeURIComponent(ext.oid) + "&id=" + encodeURIComponent(ext.id) + (ext.hash ? "&hash=" + encodeURIComponent(ext.hash) : "");
+        embedProvider = "VK VIDEO";
+      }
+    }
+    if (embedUrl) {
+      resetStreamEngines();
+      const embedStage = $("#playerStage");
+      embedStage.replaceChildren();
+      const frame = document.createElement("iframe");
+      frame.src = embedUrl;
+      frame.title = "AFTER DARK — " + embedProvider;
+      frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.loading = "eager";
+      embedStage.appendChild(frame);
+      status("ВСТРОЕННЫЙ ПЛЕЕР · " + embedProvider);
+      streamStatus("Озвучка и субтитры для встроенного источника настраиваются внутри его плеера, если он предоставляет такие параметры.");
+      return;
+    }
     const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
-    if (kind === "unknown") throw new Error("Не распознан формат. Укажи прямую ссылку на .m3u8, .mpd, .mp4 или .webm.");
+    if (kind === "unknown") throw new Error("Это не прямая ссылка на поток и не распознанная ссылка YouTube, Rutube или VK Видео. Для встраивания поддерживаются страницы конкретного видео, а не поисковая выдача.");
     resetStreamEngines();
     const stage = $("#playerStage");
     stage.replaceChildren();
