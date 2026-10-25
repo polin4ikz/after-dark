@@ -129,8 +129,8 @@
     const value = String(rawValue || "").trim();
     if (!value) throw new Error("Вставь ссылку или полный код iframe.");
     // Accept a provider's iframe snippet, but extract only its src URL; never inject user HTML.
-    if (/<iframe\\b/i.test(value) || /\\bsrc\\s*=/.test(value)) {
-      const match = value.match(/\\bsrc\\s*=\\s*(["'])(https:\\/\\/[^"'\\s<>]+)\\1/i);
+    if (/<iframe\b/i.test(value) || /\bsrc\s*=/.test(value)) {
+      const match = value.match(/\bsrc\s*=\s*(["'])(https:\/\/[^"'\s<>]+)\1/i);
       if (!match) throw new Error("Не удалось найти HTTPS-адрес src внутри кода iframe.");
       return match[2].replace(/&amp;/gi, "&");
     }
