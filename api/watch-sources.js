@@ -46,13 +46,13 @@ async function resolveCandidate(item) {
     // Prefer browser-friendly files so the site can use its own video controls.
     const browserPlayable = /\.(mp4|m4v|webm)$/i.test(file.name);
     if (!browserPlayable) return false;
-    const duration = parseDuration(file.runtime || file.duration || metadata.runtime);
+    const duration = parseDuration(file.length || file.runtime || file.duration || metadata.runtime);
     return duration >= MIN_DURATION_SECONDS && !/sample|preview|trailer|teaser|thumb/i.test(file.name);
   });
   if (!playable) return null;
   const title = String(metadata.title || item.title || "").slice(0, 300);
   const year = String(metadata.year || item.year || "").slice(0, 4);
-  const duration = parseDuration(playable.runtime || playable.duration || metadata.runtime);
+  const duration = parseDuration(playable.length || playable.runtime || playable.duration || metadata.runtime);
   const wanted = normalizeTitle(item._wantedTitle);
   const actual = normalizeTitle(title);
   const requestedYear = String(item._wantedYear || "").slice(0, 4);
@@ -90,9 +90,12 @@ module.exports = async function handler(req, res) {
   }
   try {
     const search = new URL("https://archive.org/advancedsearch.php");
-    search.searchParams.set("q", 'mediatype:movies AND title:("' + query + '") AND (licenseurl:"https://creativecommons.org/publicdomain/mark/1.0/" OR licenseurl:"https://creativecommons.org/publicdomain/zero/1.0/" OR licenseurl:"https://creativecommons.org/licenses/by/4.0/" OR licenseurl:"https://creativecommons.org/licenses/by-sa/4.0/")');
+    // Search broadly by title, then verify rights against each item's full metadata.
+    // Archive records often store rights as "publicdomain" rather than a licenseurl,
+    // so filtering by licenseurl in the search query can hide valid public-domain films.
+    search.searchParams.set("q", 'mediatype:movies AND title:("' + query + '")');
     for (const field of ["identifier", "title", "year"]) search.searchParams.append("fl[]", field);
-    search.searchParams.set("rows", "8");
+    search.searchParams.set("rows", "20");
     search.searchParams.set("page", "1");
     search.searchParams.set("output", "json");
     search.searchParams.set("sort[]", "downloads desc");
