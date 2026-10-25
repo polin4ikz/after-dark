@@ -1,5 +1,5 @@
 (()=>{
-  const state={filter:"all",rows:[],session:null};
+  const state={filter:"all",status:"all",rows:[],session:null};
   let modal=null;
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
@@ -38,13 +38,20 @@
       .ratings-list .rating-scores{display:grid!important;grid-template-columns:repeat(var(--rating-people,1),minmax(72px,1fr))!important;gap:18px!important;min-width:0}
       .ratings-list .rating-score{display:flex!important;flex-direction:column!important;min-width:0!important;visibility:visible!important;opacity:1!important}
       .ratings-list .rating-score strong{display:block!important}
-      #ratings .ratings-controls{display:flex!important;align-items:center!important;justify-content:flex-start!important;margin-bottom:34px!important}
+      #ratings .ratings-controls{display:flex!important;align-items:center!important;justify-content:flex-start!important;margin-bottom:18px!important;flex-wrap:wrap!important;gap:12px!important}
+      #ratings .rating-status-filters{display:flex!important;gap:0!important;border:1px solid rgba(23,18,20,.18)!important}
+      #ratings .rating-status-filter{margin:0!important;padding:11px 14px!important;border:0!important;border-right:1px solid rgba(23,18,20,.14)!important;background:transparent!important;color:rgba(23,18,20,.52)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important;cursor:pointer!important}
+      #ratings .rating-status-filter:last-child{border-right:0!important}
+      #ratings .rating-status-filter.active{background:#791526!important;color:#f1ece5!important}
       #ratings .rating-filters{display:flex!important;gap:0!important;border:1px solid rgba(23,18,20,.18)!important}
       #ratings .rating-filter{margin:0!important;padding:11px 16px!important;border:0!important;border-right:1px solid rgba(23,18,20,.14)!important;background:transparent!important;color:rgba(23,18,20,.52)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important;cursor:pointer!important}
       #ratings .rating-filter:last-child{border-right:0!important}
       #ratings .rating-filter.active{background:#171214!important;color:#f1ece5!important}
-      #ratings .ratings-list{width:100%!important;display:block!important;border-top:1px solid rgba(23,18,20,.28)!important}
-      #ratingsList .rating-card{position:relative!important;display:grid!important;grid-template-columns:34px 72px minmax(0,1fr) auto!important;align-items:center!important;gap:20px!important;min-height:126px!important;margin:0!important;padding:14px 42px 14px 0!important;border:0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;background:transparent!important;cursor:pointer!important;transition:transform .25s ease,background .25s ease!important}
+      #ratings .ratings-list{width:100%!important;display:block!important;border-top:1px solid rgba(23,18,20,.28)!important;max-height:640px!important;overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-width:thin!important;scrollbar-color:rgba(121,21,38,.55) rgba(23,18,20,.06)!important}
+      #ratings .ratings-list::-webkit-scrollbar{width:7px!important}
+      #ratings .ratings-list::-webkit-scrollbar-thumb{background:rgba(121,21,38,.55)!important}
+      #ratings .ratings-list::-webkit-scrollbar-track{background:rgba(23,18,20,.06)!important}
+      #ratingsList .rating-card{position:relative!important;display:grid!important;grid-template-columns:34px 72px minmax(0,1fr) 76px 76px 112px!important;align-items:center!important;gap:16px!important;min-height:126px!important;margin:0!important;padding:14px 42px 14px 0!important;border:0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;background:transparent!important;cursor:pointer!important;transition:transform .25s ease,background .25s ease!important}
       #ratingsList .rating-card:hover{transform:translateX(8px)!important;background:rgba(23,18,20,.025)!important}
       #ratingsList .rating-number{align-self:start!important;padding-top:5px!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important;color:rgba(145,23,40,.72)!important}
       #ratingsList .rating-poster{width:72px!important;height:96px!important;overflow:hidden!important;background:rgba(23,18,20,.08)!important}
@@ -61,7 +68,16 @@
       #ratingsList .rating-card:hover .rating-open-file{opacity:1!important;transform:translateX(0)!important}
       #ratingsList .rating-delete{position:absolute!important;right:0!important;top:14px!important;width:20px!important;height:20px!important;padding:0!important;border:0!important;background:transparent!important;color:rgba(23,18,20,.38)!important;font:500 14px/20px "Geist Mono",monospace!important;z-index:3!important;cursor:pointer!important}
       #ratingsList .rating-delete:hover{color:#911728!important}
-      #ratingsList .rating-scores{display:none!important}
+      #ratingsList .rating-scores{display:contents!important}
+      #ratingsList .rating-score{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:9px!important;min-width:0!important}
+      #ratingsList .rating-score-label{font:500 10px/1 "Geist Mono",monospace!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:rgba(23,18,20,.46)!important;white-space:nowrap!important}
+      #ratingsList .rating-score strong{font:400 clamp(30px,2.8vw,38px)/.9 "Instrument Serif",Georgia,serif!important;letter-spacing:-.04em!important;color:#171214!important;white-space:nowrap!important}
+      #ratingsList .rating-score strong small{font:500 8px/1 "Geist Mono",monospace!important;color:rgba(23,18,20,.4)!important}
+      #ratingsList .rating-score.is-average{border:0!important;padding-left:0!important}
+      #ratingsList .rating-score.is-average .rating-score-label{color:#911728!important}
+      #ratingsList .rating-score.is-average strong{font:400 clamp(30px,2.8vw,38px)/.9 "Instrument Serif",Georgia,serif!important}
+      #ratingsList .rating-average{display:none!important}
+      @media(max-width:600px){#ratings .ratings-list{max-height:70vh!important}#ratingsList .rating-card{grid-template-columns:26px 52px minmax(0,1fr)!important;gap:10px!important;min-height:0!important;padding:14px 28px 14px 0!important}#ratingsList .rating-poster{width:52px!important;height:70px!important}#ratingsList .rating-main{grid-column:3!important}#ratingsList .rating-scores{gap:6px!important;margin-top:14px!important}#ratingsList .rating-score-label{font-size:8px!important;letter-spacing:0!important}#ratingsList .rating-score strong{font-size:23px!important}#ratingsList .rating-score.is-average strong{font-size:23px!important}#ratingsList .rating-score.is-average{padding-left:6px!important}#ratings .rating-status-filter{padding:10px 9px!important;font-size:7px!important}}
       #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
     `;
     document.head.appendChild(style);
@@ -118,10 +134,17 @@
   async function deleteMyRating(id){try{const session=state.session||await currentSession();if(!session){openAuth();return}const{error}=await supabaseClient.from("ratings").delete().eq("tmdb_id",Number(id)).eq("user_id",session.user.id);if(error)throw error;await loadRatings()}catch(e){console.error("RATING DELETE FAILED",e);alert(`RATING COULD NOT BE DELETED: ${e.message}`)}}
   function render(){
     const list=document.querySelector("#ratingsList");if(!list)return;
-    let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
+    let data=state.rows.filter(r=>(state.filter==="all"||r.film.type===state.filter)&&(state.status==="all"||(state.status==="upcoming"&&r.film.in_watchlist!==false&&!r.film.watched)||(state.status==="watched"&&(r.film.in_watchlist===false||r.film.watched))));
     list.innerHTML=data.length?data.map((r,i)=>{
+      const scores=(r.people||[]).map(person=>{
+        const rating=r.userRatings?.[person.id];
+        const value=rating==null?"—":Number(rating).toFixed(1);
+        const label=person.label||person.nickname||"Участник";
+        return `<div class="rating-score"><span class="rating-score-label">${esc(label)}</span><strong>${value}${rating==null?"":' <small>/10</small>'}</strong></div>`;
+      }).join("");
       const avg=r.average==null?"—":r.average.toFixed(1);
-      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-average"><strong>${avg}</strong><span>/ 10</span></div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
+      const averageScore=`<div class="rating-score is-average"><span class="rating-score-label">Общая</span><strong>${avg}${r.average==null?"":' <small>/10</small>'}</strong></div>`;
+      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-scores">${scores}${averageScore}</div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
   }
 
   async function loadRatings(){
@@ -129,21 +152,39 @@
       await supabaseReady;
       const session=state.session||await currentSession();state.session=session;
       if(!session){state.rows=[];render();return}
-      const filmsRes=await supabaseClient.from("archive").select("tmdb_id,title,name,poster_path,release_date,first_air_date,type,created_at").order("created_at",{ascending:false});
+      const filmsRes=await supabaseClient.from("archive").select("tmdb_id,title,name,poster_path,release_date,first_air_date,type,watched,in_watchlist,created_at").order("created_at",{ascending:false});
       if(filmsRes.error)throw filmsRes.error;
       const ratingsRes=await supabaseClient.from("ratings").select("tmdb_id,user_id,rating,created_at,updated_at").order("updated_at",{ascending:false});
       if(ratingsRes.error)throw ratingsRes.error;
+      const profilesRes=await supabaseClient.from("profiles").select("id,nickname");
+      if(profilesRes.error)throw profilesRes.error;
+      const profiles=new Map((profilesRes.data||[]).map(p=>[p.id,{id:p.id,nickname:p.nickname||"Участник",label:/^(test)?polina$/i.test(p.nickname||"")?"Полина":/^nastya$/i.test(p.nickname||"")?"Настя":p.nickname||"Участник"}]));
+      const people=[...profiles.values()].sort((a,b)=>{const order={"Полина":0,"Настя":1};return (order[a.label]??2)-(order[b.label]??2)||a.label.localeCompare(b.label,"ru")});
       const filmMap=new Map((filmsRes.data||[]).map(f=>[Number(f.tmdb_id),f])),grouped=new Map();
       (ratingsRes.data||[]).forEach(row=>{const film=filmMap.get(Number(row.tmdb_id));if(!film)return;if(!grouped.has(Number(row.tmdb_id)))grouped.set(Number(row.tmdb_id),{film,items:[]});grouped.get(Number(row.tmdb_id)).items.push(row)});
-      state.rows=[...grouped.values()].map(g=>{const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");return{...g,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest}});
+      const rows=[...grouped.values()].map(g=>{
+        const userRatings={};g.items.forEach(x=>{userRatings[x.user_id]=Number(x.rating)});
+        const values=g.items.map(x=>Number(x.rating)).filter(Number.isFinite);
+        const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");
+        return{...g,people,userRatings,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
+      });
+      const ratedIds=new Set(rows.map(r=>Number(r.film.tmdb_id)));
+      (filmsRes.data||[]).forEach(f=>{
+        const id=Number(f.tmdb_id);
+        if(ratedIds.has(id)||!(f.watched===true||f.in_watchlist===false))return;
+        rows.push({film:f,items:[],people,userRatings:{},byUser:null,average:null,latest:f.created_at||""});
+      });
+      state.rows=rows.sort((a,b)=>(b.latest||"").localeCompare(a.latest||""));
       render();
     }catch(e){
       console.error("RATINGS LOAD FAILED",e);
+      state.rows=[];
       const list=document.querySelector("#ratingsList");if(list)list.innerHTML='<div class="rating-empty">RATINGS CONNECTION FAILED</div>';
     }
   }
 
-  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return}},true)}
-  async function init(){addStyles();intercept();try{await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{state.session=session||null;loadRatings()});await loadRatings()}catch(e){console.error("SUPABASE RATINGS INIT FAILED",e)}}
+  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return}const status=e.target.closest("#ratings .rating-status-filter");if(status){e.preventDefault();e.stopImmediatePropagation();state.status=status.dataset.ratingStatus||"all";document.querySelectorAll("#ratings .rating-status-filter").forEach(x=>x.classList.remove("active"));status.classList.add("active");render();return}},true)}
+  window.refreshSupabaseRatings=loadRatings;
+   async function init(){addStyles();intercept();try{await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{state.session=session||null;loadRatings()});await loadRatings()}catch(e){console.error("SUPABASE RATINGS INIT FAILED",e)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
