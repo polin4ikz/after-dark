@@ -1,90 +1,119 @@
-/* AFTER DARK — dedicated Venom player page. */
+/* AFTER DARK — automatic, conservative source discovery for the dedicated player page. */
 (function () {
   "use strict";
-  const VERSION = "0.3.6";
-  const PUBLIC_PATH = "https://cdn.jsdelivr.net/npm/player-venom@" + VERSION + "/dist/";
   const FILM_KEY = "after-dark:venom-current-film:v1";
-  const SOURCE_KEY = "after-dark:venom-source:v1";
-  const $ = s => document.querySelector(s);
-  let playerInstance = null;
-  let playerPromise = null;
-  let activeSource = null;
+  const $ = selector => document.querySelector(selector);
 
-  function filmKey(film) {
-    const id = film && (film.tmdbId ?? film.id);
-    if (id == null || !String(id).trim()) return "";
-    const type = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
-    return type + ":" + String(id);
+  function status(message, error) {
+    const el = $("#playerStatus");
+    el.textContent = message;
+    el.classList.toggle("is-error", Boolean(error));
   }
-  function sources() {
-    try { const x = JSON.parse(localStorage.getItem(SOURCE_KEY) || "{}"); return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
-    catch (_) { return {}; }
+  function makeExternalFallback(title) {
+    const area = $("#sourceResults");
+    const link = document.createElement("a");
+    link.className = "source-result source-result--external";
+    link.href = "https://www.justwatch.com/de/suche?q=" + encodeURIComponent(title);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "ПРОВЕРИТЬ ЛЕГАЛЬНЫЕ СЕРВИСЫ ↗";
+    area.appendChild(link);
   }
-  function normalizeSource(raw, kind) {
-    if (!["hls","dash","file"].includes(kind)) throw new Error("Выбери тип источника.");
-    let url;
-    try { url = new URL(String(raw || "").trim()); } catch (_) { throw new Error("Вставь прямую ссылку на видеопоток."); }
-    if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) throw new Error("Нужна безопасная HTTPS-ссылка.");
-    if (url.hostname === "localhost" || url.hostname.endsWith(".localhost") || url.hostname.endsWith(".local")) throw new Error("Локальные адреса не поддерживаются.");
-    return {kind,url:url.href};
-  }
-  function status(message, error) { const el=$("#playerStatus"); el.textContent=message; el.classList.toggle("is-error",!!error); }
-  function loadPlayer() {
-    if (window.VenomPlayer && typeof window.VenomPlayer.make === "function") return Promise.resolve(window.VenomPlayer);
-    if (playerPromise) return playerPromise;
-    playerPromise = new Promise((resolve,reject)=>{
-      const script=document.createElement("script");
-      script.src=PUBLIC_PATH+"player.js"; script.async=true;
-      script.onload=()=>window.VenomPlayer&&typeof window.VenomPlayer.make==="function" ? resolve(window.VenomPlayer) : reject(new Error("Скрипт загрузился, но ожидаемый API VenomPlayer.make не найден. Нужно уточнить API пакета."));
-      script.onerror=()=>reject(new Error("Не удалось загрузить Venom Player с CDN. Проверь подключение или VPN."));
-      document.head.appendChild(script);
-    });
-    return playerPromise;
-  }
-  async function play(source) {
-    activeSource=source;
-    const stage=$("#playerStage");
-    try { playerInstance?.destroy?.(); } catch (_) {}
-    playerInstance=null;
+  function playArchiveSource(source, auto = false) {
+    if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
+    const stage = $("#playerStage");
     stage.replaceChildren();
-    const mount=document.createElement("div"); mount.className="venom-mount"; mount.style.width="100%"; mount.style.height="100%"; stage.appendChild(mount);
-    status("ЗАГРУЖАЮ VENOM PLAYER…");
+    const frame = document.createElement("iframe");
+    frame.src = "https://archive.org/embed/" + encodeURIComponent(source.identifier) + (auto ? "?autoplay=1" : "");
+    frame.title = "AFTER DARK — " + source.title;
+    frame.allow = "autoplay; fullscreen; picture-in-picture";
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.loading = "eager";
+    stage.appendChild(frame);
+    status("ИСТОЧНИК ПРОВЕРЕН · INTERNET ARCHIVE");
+  }
+  function renderCandidate(source) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "source-result";
+    const title = document.createElement("span");
+    title.className = "source-result__title";
+    title.textContent = source.title + (source.year ? " (" + source.year + ")" : "");
+    const meta = document.createElement("span");
+    meta.className = "source-result__meta";
+    const minutes = Math.round(Number(source.durationSeconds || 0) / 60);
+    meta.textContent = "INTERNET ARCHIVE · " + minutes + " МИН. · ОТКРЫТАЯ ЛИЦЕНЗИЯ";
+    button.append(title, meta);
+    button.addEventListener("click", () => playArchiveSource(source, true));
+    $("#sourceResults").appendChild(button);
+  }
+  async function findSources(film) {
+    const title = String(film.title || film.name || "").trim();
+    const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
+    const area = $("#sourceResults");
+    area.replaceChildren();
+    status("ИЩУ ДОСТУПНЫЕ ИСТОЧНИКИ…");
+    const params = new URLSearchParams({ q: title });
+    if (year) params.set("year", year);
     try {
-      const VP=await loadPlayer();
-      if (!mount.isConnected) return;
-      const mediaSource=source.kind==="hls"?{hls:source.url}:source.kind==="dash"?{dash:source.url}:{file:{"Авто":source.url}};
-      playerInstance=VP.make({container:mount,publicPath:PUBLIC_PATH,source:mediaSource,title:$("#mediaTitle").textContent,theme:"modern",aspectRatio:"16:9",autoLandscape:true,pip:true,trackProgress:15,doNotSaveProgress:false,cssVars:{"color-primary":"#8b1d2c","background-color-primary":"rgba(16,14,13,.96)"}});
-      status("VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН");
-    } catch (e) {
-      stage.replaceChildren();
-      status(e && e.message ? e.message : "Не удалось запустить Venom Player.",true);
+      const response = await fetch("/api/watch-sources?" + params.toString(), {
+        headers: { accept: "application/json" }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "SEARCH_UNAVAILABLE");
+      const results = Array.isArray(data.results) ? data.results : [];
+      const exact = results.filter(item => item && item.confidence === "high");
+      if (exact.length === 1) {
+        playArchiveSource(exact[0], true);
+        const note = document.createElement("p");
+        note.className = "source-note";
+        note.textContent = "Найдено точное совпадение с открытой лицензией и полным видео. Если воспроизведение не началось автоматически, нажми Play.";
+        area.appendChild(note);
+        return;
+      }
+      if (results.length) {
+        status("НАШЛИСЬ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
+        const note = document.createElement("p");
+        note.className = "source-note";
+        note.textContent = "Найденные записи проверены на открытую лицензию и наличие видео длительностью от 40 минут. Сверь название перед просмотром.";
+        area.appendChild(note);
+        results.forEach(renderCandidate);
+      } else {
+        status("В ОТКРЫТОМ АРХИВЕ НЕ НАШЁЛСЯ ПРОВЕРЕННЫЙ ИСТОЧНИК");
+        const note = document.createElement("p");
+        note.className = "source-note";
+        note.textContent = "Это не значит, что фильм недоступен: просто мы не нашли подтверждённый открытый видеопоток в этом источнике.";
+        area.appendChild(note);
+      }
+      makeExternalFallback(title);
+    } catch (_) {
+      status("НЕ УДАЛОСЬ ПРОВЕРИТЬ ИСТОЧНИКИ · ПОПРОБУЙ ПОЗЖЕ", true);
+      makeExternalFallback(title);
     }
   }
   function init() {
-    let film=null;
-    try { film=JSON.parse(localStorage.getItem(FILM_KEY)||"null"); } catch (_) {}
-    if (!film || typeof film!=="object") {
-      $("#mediaTitle").textContent="Фильм не выбран";
-      $("#mediaMeta").textContent="Вернись в архив и нажми WATCH на выбранной карточке.";
-      status("НЕ ПОЛУЧЕНЫ ДАННЫЕ ФИЛЬМА",true);
+    let film = null;
+    try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {}
+    if (!film || typeof film !== "object") {
+      $("#mediaTitle").textContent = "Фильм не выбран";
+      $("#mediaMeta").textContent = "Вернись в архив и нажми WATCH на выбранной карточке.";
+      status("НЕ ПОЛУЧЕНЫ ДАННЫЕ ФИЛЬМА", true);
+      makeExternalFallback("");
       return;
     }
-    $("#mediaTitle").textContent=String(film.title||film.name||"Без названия");
-    const type=film.type==="series"||film.media_type==="tv"||film.first_air_date?"СЕРИАЛ":"ФИЛЬМ";
-    $("#mediaType").textContent=type;
-    const year=String(film.release_date||film.first_air_date||"").slice(0,4);
-    $("#mediaMeta").textContent=[year,film.original_title||film.original_name].filter(Boolean).join(" / ");
-    const key=filmKey(film), saved=sources()[key];
-    if(saved){try{const valid=normalizeSource(saved.url,saved.kind);$("#sourceUrl").value=valid.url;$("#sourceKind").value=valid.kind;play(valid);}catch(_){}}
-    $("#sourceForm").addEventListener("submit",async e=>{
-      e.preventDefault();
-      let source;
-      try{source=normalizeSource($("#sourceUrl").value,$("#sourceKind").value);}catch(err){status(err.message,true);return;}
-      const all=sources(); if(key) all[key]=source;
-      try{localStorage.setItem(SOURCE_KEY,JSON.stringify(all));}catch(_){}
-      await play(source);
+    const title = String(film.title || film.name || "Без названия");
+    $("#mediaTitle").textContent = title;
+    const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
+    $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
+    const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
+    $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
+    findSources(film);
+    window.addEventListener("pagehide", () => {
+      const frame = $("#playerStage iframe");
+      if (frame) frame.src = "about:blank";
     });
-    window.addEventListener("pagehide",()=>{try{playerInstance?.pause?.();playerInstance?.destroy?.();}catch(_){}});
   }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init,{once:true}); else init();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
 })();
