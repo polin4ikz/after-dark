@@ -103,7 +103,7 @@
       label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", "), track.codec].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
     }));
     const subtitles = (dash.getTracksFor("text") || []).map((track, index) => ({
-      id: track,
+      id: index,
       label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", ")].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
     }));
     setOptions($("#audioTrack"), audios, 0, "В потоке нет аудиодорожек");
