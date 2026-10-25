@@ -5,4 +5,16 @@
   from = "/api/archive-search"
   to = "/.netlify/functions/archive-search"
   status = 200
-  force = true\n\n[[redirects]]\n  from = "/api/tmdb"\n  to = "/.netlify/functions/tmdb"\n  status = 200\n  force = true\n
+  force = true
+
+[[redirects]]
+  from = "/api/tmdb"
+  to = "/.netlify/functions/tmdb"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/tmdb"
+  to = "/.netlify/functions/tmdb"
+  status = 200
+  force = true
