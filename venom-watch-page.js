@@ -1,11 +1,19 @@
-/* AFTER DARK — Russia-first source discovery for the dedicated player page. */
+/* AFTER DARK — Russia-first source discovery + native HLS/DASH audio track controls. */
 (function () {
   "use strict";
   const FILM_KEY = "after-dark:venom-current-film:v1";
   const $ = selector => document.querySelector(selector);
+  let hls = null;
+  let dash = null;
+  let activeVideo = null;
 
   function status(message, error) {
     const el = $("#playerStatus");
+    el.textContent = message;
+    el.classList.toggle("is-error", Boolean(error));
+  }
+  function streamStatus(message, error) {
+    const el = $("#streamStatus");
     el.textContent = message;
     el.classList.toggle("is-error", Boolean(error));
   }
@@ -16,13 +24,9 @@
     $("#sourceResults").appendChild(note);
   }
   function filmSearchTerms(filmOrTitle) {
-    const film = typeof filmOrTitle === "object" && filmOrTitle !== null
-      ? filmOrTitle
-      : { title: String(filmOrTitle || "") };
+    const film = typeof filmOrTitle === "object" && filmOrTitle !== null ? filmOrTitle : { title: String(filmOrTitle || "") };
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
-    const titles = [...new Set([
-      film.title, film.name, film.original_title, film.original_name
-    ].map(value => String(value || "").trim()).filter(Boolean))];
+    const titles = [...new Set([film.title, film.name, film.original_title, film.original_name].map(value => String(value || "").trim()).filter(Boolean))];
     return { titles, year, primary: titles[0] || "фильм" };
   }
   function addExternalFallback(filmOrTitle) {
@@ -38,9 +42,9 @@
       { label: "VK ВИДЕО", url: "https://vk.com/video?q=" + encodeURIComponent(queryFor(ruTitle)) },
       { label: "RUTUBE", url: "https://rutube.ru/search/?query=" + encodeURIComponent(queryFor(ruTitle)) },
       { label: "YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent([enTitle, year, "full movie"].filter(Boolean).join(" ")) },
-      { label: "LORDFILM · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:lordfilm ' + queryFor(ruTitle)) },
-      { label: "HDREZKA · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent('site:hdrezka ' + queryFor(ruTitle)) },
-      { label: "КИНОПОИСК · ПОИСК", url: "https://yandex.ru/search/?text=" + encodeURIComponent('site:kinopoisk.ru ' + ruTitle + (year ? " " + year : "")) },
+      { label: "LORDFILM · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent("site:lordfilm " + queryFor(ruTitle)) },
+      { label: "HDREZKA · ПОИСК", url: "https://www.google.com/search?gl=ru&hl=ru&q=" + encodeURIComponent("site:hdrezka " + queryFor(ruTitle)) },
+      { label: "КИНОПОИСК · ПОИСК", url: "https://yandex.ru/search/?text=" + encodeURIComponent("site:kinopoisk.ru " + ruTitle + (year ? " " + year : "")) },
       { label: "ВСЕ РЕЗУЛЬТАТЫ", url: "https://yandex.ru/search/?text=" + encodeURIComponent(queryFor(ruTitle)) },
       { label: "СЕРВИСЫ В РОССИИ", url: "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(ruTitle + (year ? " " + year : "")) }
     ];
@@ -54,8 +58,122 @@
       area.appendChild(link);
     }
   }
+  function resetStreamEngines() {
+    if (hls) { hls.destroy(); hls = null; }
+    if (dash) { try { dash.reset(); } catch (_) {} dash = null; }
+    activeVideo = null;
+    $("#audioTrack").replaceChildren(new Option("Недоступно для этого источника", "-1"));
+    $("#audioTrack").disabled = true;
+    $("#subtitleTrack").replaceChildren(new Option("Нет доступных дорожек", "-1"));
+    $("#subtitleTrack").disabled = true;
+  }
+  function setOptions(select, items, selectedIndex, emptyLabel) {
+    select.replaceChildren();
+    if (!items.length) {
+      select.add(new Option(emptyLabel, "-1"));
+      select.disabled = true;
+      return;
+    }
+    items.forEach((item, index) => {
+      const label = item.label || item.name || item.lang || ("Дорожка " + (index + 1));
+      const option = new Option(label, String(item.id ?? index));
+      select.add(option);
+    });
+    select.selectedIndex = Math.max(0, Math.min(Number(selectedIndex) || 0, items.length - 1));
+    select.disabled = items.length < 2;
+  }
+  function refreshHlsTracks() {
+    if (!hls) return;
+    const audios = (hls.audioTracks || []).map((track, index) => ({
+      id: index,
+      label: [track.name, track.lang, track.attrs && track.attrs["LANGUAGE"]].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
+    }));
+    setOptions($("#audioTrack"), audios, hls.audioTrack, "В потоке нет аудиодорожек");
+    const subtitles = (hls.subtitleTracks || []).map((track, index) => ({
+      id: index,
+      label: [track.name, track.lang].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
+    }));
+    setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
+    streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+  }
+  function refreshDashTracks() {
+    if (!dash) return;
+    const audios = (dash.getTracksFor("audio") || []).map((track, index) => ({
+      id: track,
+      label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", "), track.codec].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
+    }));
+    const subtitles = (dash.getTracksFor("text") || []).map((track, index) => ({
+      id: track,
+      label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", ")].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
+    }));
+    setOptions($("#audioTrack"), audios, 0, "В потоке нет аудиодорожек");
+    setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
+    streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+  }
+  function openDirectStream(rawUrl) {
+    let url;
+    try { url = new URL(rawUrl.trim()); } catch (_) { throw new Error("Проверь ссылку: она должна быть полным URL."); }
+    if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) {
+      throw new Error("Поддерживаются только безопасные HTTPS-ссылки.");
+    }
+    const path = url.pathname.toLowerCase();
+    const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
+    if (kind === "unknown") throw new Error("Не распознан формат. Укажи прямую ссылку на .m3u8, .mpd, .mp4 или .webm.");
+    resetStreamEngines();
+    const stage = $("#playerStage");
+    stage.replaceChildren();
+    const video = document.createElement("video");
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.setAttribute("aria-label", "AFTER DARK video player");
+    stage.appendChild(video);
+    activeVideo = video;
+    if (kind === "file") {
+      video.src = url.href;
+      video.addEventListener("loadedmetadata", () => {
+        const tracks = video.audioTracks ? Array.from(video.audioTracks) : [];
+        setOptions($("#audioTrack"), tracks.map((track, i) => ({ id: i, label: track.label || track.language || ("Аудио " + (i + 1)) })), tracks.findIndex(track => track.enabled), "Браузер не предоставил аудиодорожки");
+        if (video.textTracks && video.textTracks.length) {
+          const tracksText = Array.from(video.textTracks).map((track, i) => ({ id: i, label: track.label || track.language || ("Субтитры " + (i + 1)) }));
+          setOptions($("#subtitleTrack"), tracksText, 0, "Нет субтитров");
+        }
+        streamStatus(tracks.length > 1 ? "Доступно несколько аудиодорожек." : "У этого файла или браузера может не быть доступного переключения озвучки.");
+      }, { once: true });
+      video.addEventListener("error", () => streamStatus("Видео не загрузилось. Источник может запрещать доступ с другого сайта или иметь неподдерживаемый формат.", true), { once: true });
+      status("ПРЯМОЙ ВИДЕОФАЙЛ ПОДКЛЮЧЁН");
+      return;
+    }
+    if (kind === "hls") {
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = url.href;
+        video.addEventListener("loadedmetadata", () => streamStatus("HLS открыт встроенным плеером браузера. Список озвучек зависит от поддержки браузера."), { once: true });
+      } else if (window.Hls && window.Hls.isSupported()) {
+        hls = new window.Hls();
+        hls.loadSource(url.href);
+        hls.attachMedia(video);
+        hls.on(window.Hls.Events.MANIFEST_PARSED, refreshHlsTracks);
+        hls.on(window.Hls.Events.AUDIO_TRACKS_UPDATED, refreshHlsTracks);
+        hls.on(window.Hls.Events.SUBTITLE_TRACKS_UPDATED, refreshHlsTracks);
+        hls.on(window.Hls.Events.ERROR, (_event, data) => {
+          if (data && data.fatal) streamStatus("HLS-поток не открылся. Возможно, сервер не разрешает доступ с этого сайта (CORS) или ссылка устарела.", true);
+        });
+      } else throw new Error("Этот браузер не поддерживает HLS-потоки.");
+      status("HLS-ПОТОК ПОДКЛЮЧЁН");
+      return;
+    }
+    if (kind === "dash") {
+      if (!window.dashjs || !window.dashjs.MediaPlayer) throw new Error("Не загрузилась библиотека DASH-плеера.");
+      dash = window.dashjs.MediaPlayer().create();
+      dash.initialize(video, url.href, false);
+      dash.on(window.dashjs.MediaPlayer.events.STREAM_INITIALIZED, refreshDashTracks);
+      dash.on(window.dashjs.MediaPlayer.events.ERROR, () => streamStatus("DASH-поток не открылся. Проверь ссылку и разрешение CORS на сервере.", true));
+      status("DASH-ПОТОК ПОДКЛЮЧЁН");
+    }
+  }
   function playArchiveSource(source, auto = false) {
     if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
+    resetStreamEngines();
     const stage = $("#playerStage");
     stage.replaceChildren();
     const frame = document.createElement("iframe");
@@ -66,7 +184,8 @@
     frame.referrerPolicy = "strict-origin-when-cross-origin";
     frame.loading = "eager";
     stage.appendChild(frame);
-    status("ИСТОЧНИК ПРОВЕРЕН · INTERNET ARCHIVE");
+    status("ИСТОЧНИК ОТКРЫТ · INTERNET ARCHIVE");
+    streamStatus("Для встроенного плеера Archive.org выбор дорожек управляется самим Archive.org; эти переключатели доступны для прямых HLS/DASH-потоков.");
   }
   function renderCandidate(source) {
     const button = document.createElement("button");
@@ -84,8 +203,7 @@
     $("#sourceResults").appendChild(button);
   }
   function providerNames(region) {
-    const offers = ["flatrate", "free", "ads", "rent", "buy"]
-      .flatMap(key => Array.isArray(region[key]) ? region[key] : []);
+    const offers = ["flatrate", "free", "ads", "rent", "buy"].flatMap(key => Array.isArray(region[key]) ? region[key] : []);
     return [...new Set(offers.map(item => item && item.provider_name).filter(Boolean))];
   }
   async function showOfficialProviders(film) {
@@ -93,10 +211,7 @@
     if (!Number.isSafeInteger(id) || id <= 0) return;
     const mediaType = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
     try {
-      const path = "/" + mediaType + "/" + id + "/watch/providers";
-      const response = await fetch("/api/tmdb?path=" + encodeURIComponent(path), {
-        headers: { accept: "application/json" }
-      });
+      const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/" + mediaType + "/" + id + "/watch/providers"), { headers: { accept: "application/json" } });
       if (!response.ok) return;
       const payload = await response.json();
       const region = payload && payload.results && payload.results.RU;
@@ -105,100 +220,110 @@
       if (!names.length || typeof region.link !== "string" || !/^https:\/\//i.test(region.link)) return;
       const link = document.createElement("a");
       link.className = "source-result source-result--external";
-      link.href = region.link;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
+      link.href = region.link; link.target = "_blank"; link.rel = "noopener noreferrer";
       link.textContent = "РОССИЯ · " + names.join(" · ") + " ↗";
       $("#sourceResults").appendChild(link);
       const attribution = document.createElement("p");
       attribution.className = "source-attribution";
       attribution.append("Доступность сервисов в России: ");
       const justwatch = document.createElement("a");
-      justwatch.href = "https://www.justwatch.com/ru/";
-      justwatch.target = "_blank";
-      justwatch.rel = "noopener noreferrer";
-      justwatch.textContent = "JustWatch Россия";
+      justwatch.href = "https://www.justwatch.com/ru/"; justwatch.target = "_blank"; justwatch.rel = "noopener noreferrer"; justwatch.textContent = "JustWatch Россия";
       attribution.append(justwatch, " · данные через TMDB API. Доступность может меняться.");
       $("#sourceResults").appendChild(attribution);
-    } catch (_) {
-      // External Russian search links remain available when provider metadata is offline.
-    }
+    } catch (_) {}
   }
   async function searchOpenArchive(film) {
     const { titles, year } = filmSearchTerms(film);
     const found = new Map();
     for (const title of titles) {
-      const params = new URLSearchParams({ q: title });
-      if (year) params.set("year", year);
+      const params = new URLSearchParams({ q: title }); if (year) params.set("year", year);
       try {
-        const response = await fetch("/api/watch-sources?" + params.toString(), {
-          headers: { accept: "application/json" }
-        });
+        const response = await fetch("/api/watch-sources?" + params.toString(), { headers: { accept: "application/json" } });
         if (!response.ok) continue;
         const data = await response.json();
-        for (const item of Array.isArray(data.results) ? data.results : []) {
-          if (item && item.identifier) found.set(item.identifier, item);
-        }
-      } catch (_) {
-        // Try the next title variant.
-      }
+        for (const item of Array.isArray(data.results) ? data.results : []) if (item && item.identifier) found.set(item.identifier, item);
+      } catch (_) {}
       if (found.size) break;
     }
     return [...found.values()];
   }
   async function findSources(film) {
-    const area = $("#sourceResults");
-    area.replaceChildren();
-    status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
+    const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
       if (exact.length === 1) {
         playArchiveSource(exact[0], true);
-        addNote("Найдено точное совпадение с открытой лицензией и полным видео. Если воспроизведение не началось автоматически, нажми Play.");
+        addNote("Найдено точное совпадение с открытой лицензией. Если воспроизведение не началось автоматически, нажми Play.");
         return;
       }
       if (results.length) {
         status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
-        addNote("Это записи Internet Archive с открытой лицензией. Для современных коммерческих фильмов источник может не найтись — ниже есть поиск по российским площадкам.");
+        addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
         results.forEach(renderCandidate);
       } else {
         status("В ОТКРЫТОМ АРХИВЕ ИСТОЧНИК НЕ НАЙДЕН");
-        addNote("Открытый архив содержит не все фильмы. Ищу дальше по русскоязычным площадкам и сервисам для России.");
+        addNote("Поисковые ссылки ниже открывают результаты поиска, а не готовое воспроизведение. Для просмотра внутри After Dark нужен поддерживаемый поток или встраиваемый плеер.");
       }
     } catch (_) {
-      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПРОБУЮ ДРУГИЕ ПОИСКИ");
+      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
     }
     addExternalFallback(film);
     await showOfficialProviders(film);
   }
   function init() {
+    $("#streamForm").addEventListener("submit", event => {
+      event.preventDefault();
+      try {
+        openDirectStream($("#streamUrl").value);
+      } catch (error) {
+        status(error.message || "Не удалось открыть поток.", true);
+        streamStatus(error.message || "Проверь ссылку.", true);
+      }
+    });
+    $("#audioTrack").addEventListener("change", () => {
+      const index = Number($("#audioTrack").value);
+      if (index < 0) return;
+      if (hls) hls.audioTrack = index;
+      else if (dash) {
+        const tracks = dash.getTracksFor("audio") || [];
+        if (tracks[index]) dash.setCurrentTrack(tracks[index]);
+      } else if (activeVideo && activeVideo.audioTracks && activeVideo.audioTracks[index]) {
+        Array.from(activeVideo.audioTracks).forEach((track, i) => { track.enabled = i === index; });
+      }
+    });
+    $("#subtitleTrack").addEventListener("change", () => {
+      const index = Number($("#subtitleTrack").value);
+      if (index < 0) return;
+      if (hls) hls.subtitleTrack = index;
+      else if (dash) {
+        const tracks = dash.getTracksFor("text") || [];
+        if (tracks[index]) dash.setCurrentTrack(tracks[index]);
+      } else if (activeVideo && activeVideo.textTracks && activeVideo.textTracks[index]) {
+        Array.from(activeVideo.textTracks).forEach((track, i) => { track.mode = i === index ? "showing" : "disabled"; });
+      }
+    });
     let film = null;
     const demo = new URLSearchParams(window.location.search).get("demo");
-    if (demo === "nosferatu") {
-      // Isolated playback smoke test; does not touch the shared archive or Supabase.
-      film = { tmdbId: 653, type: "film", title: "Nosferatu", original_title: "Nosferatu", release_date: "1922-01-01" };
-    } else {
-      try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {}
-    }
+    if (demo === "nosferatu") film = { tmdbId: 653, type: "film", title: "Nosferatu", original_title: "Nosferatu", release_date: "1922-01-01" };
+    else { try { film = JSON.parse(localStorage.getItem(FILM_KEY) || "null"); } catch (_) {} }
     if (!film || typeof film !== "object") {
       $("#mediaTitle").textContent = "Фильм не выбран";
       $("#mediaMeta").textContent = "Вернись в архив и нажми WATCH на выбранной карточке.";
       status("НЕ ПОЛУЧЕНЫ ДАННЫЕ ФИЛЬМА", true);
       return;
     }
-    const title = String(film.title || film.name || "Без названия");
-    $("#mediaTitle").textContent = title;
+    $("#mediaTitle").textContent = String(film.title || film.name || "Без названия");
     const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
     findSources(film);
     window.addEventListener("pagehide", () => {
-      const frame = $("#playerStage iframe");
-      if (frame) frame.src = "about:blank";
+      if (hls) hls.destroy();
+      if (dash) { try { dash.reset(); } catch (_) {} }
+      const frame = $("#playerStage iframe"); if (frame) frame.src = "about:blank";
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
 })();
