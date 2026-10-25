@@ -36,4 +36,6 @@ jobs:
           node --check watch-player.js
           node --check api/archive-search.js
           node --check netlify/functions/archive-search.js
-          node --test tests/watch-player.test.js tests/venom-player.test.js tests/archive-search.test.js tests/tmdb-proxy.test.js tests/movie-night-controls.test.js
+          node --check api/watch-sources.js
+          node --check venom-watch-page.js
+          node --test tests/watch-player.test.js tests/venom-player.test.js tests/archive-search.test.js tests/watch-sources.test.js tests/tmdb-proxy.test.js tests/movie-night-controls.test.js
