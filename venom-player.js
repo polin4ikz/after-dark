@@ -140,15 +140,24 @@
   function observeModal(modal) {
     mountPanel(modal);
     const film = modal._film;
-    const saved = readSources()[filmKey(film)];
+    const key = filmKey(film);
+    const saved = readSources()[key];
     const input = $("#adVenomSource", modal);
     const kind = $("#adVenomKind", modal);
-    if (saved && input && kind && !input.value) {
-      try {
-        const valid = normalizeSource(saved.url, saved.kind);
-        input.value = valid.url;
-        kind.value = valid.kind;
-      } catch (_) {}
+    const panel = $(".ad-venom-panel", modal);
+    if (panel && panel.dataset.filmKey !== key) {
+      panel.dataset.filmKey = key;
+      if (input && kind) {
+        input.value = "";
+        kind.value = "hls";
+        if (saved) {
+          try {
+            const valid = normalizeSource(saved.url, saved.kind);
+            input.value = valid.url;
+            kind.value = valid.kind;
+          } catch (_) {}
+        }
+      }
     }
   }
   function init() {
