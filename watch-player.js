@@ -272,7 +272,7 @@
       const card = button.closest(".archive-card");
       film = card ? getArchiveFilm(card.dataset.id) : null;
     }
-    if (film) openPlayer(film);
+    if (film) { const id = Number(film.tmdbId ?? film.id); const type = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie"; const title = titleOf(film); if (Number.isFinite(id) && id > 0) { window.location.href = "./watch.html?id=" + encodeURIComponent(id) + "&type=" + type + "&title=" + encodeURIComponent(title); } else { window.location.href = "./watch.html?title=" + encodeURIComponent(title); } }
   }
   function init() {
     restoreSourceCache();
