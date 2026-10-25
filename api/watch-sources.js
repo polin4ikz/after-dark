@@ -46,13 +46,13 @@ async function resolveCandidate(item) {
     // Prefer browser-friendly files so the site can use its own video controls.
     const browserPlayable = /\.(mp4|m4v|webm)$/i.test(file.name);
     if (!browserPlayable) return false;
-    const duration = parseDuration(file.length || file.runtime || file.duration);
+    const duration = parseDuration(file.runtime || file.duration || metadata.runtime);
     return duration >= MIN_DURATION_SECONDS && !/sample|preview|trailer|teaser|thumb/i.test(file.name);
   });
   if (!playable) return null;
   const title = String(metadata.title || item.title || "").slice(0, 300);
   const year = String(metadata.year || item.year || "").slice(0, 4);
-  const duration = parseDuration(playable.length || playable.runtime || playable.duration);
+  const duration = parseDuration(playable.runtime || playable.duration || metadata.runtime);
   const wanted = normalizeTitle(item._wantedTitle);
   const actual = normalizeTitle(title);
   const requestedYear = String(item._wantedYear || "").slice(0, 4);
