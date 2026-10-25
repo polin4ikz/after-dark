@@ -92,3 +92,12 @@ This is a code/configuration audit based on files accessible through GitHub's fi
 - Vercel reported a successful deployment check for the branch commit. This confirms the deployment pipeline accepted the commit, not that the live authenticated experience or secret-dependent TMDB calls have been end-to-end verified.
 - Production URL inspection from the current external fetch context returned `login_required`; this does not distinguish deployment protection from a user-facing availability problem. Do not change production settings based on that signal alone.
 - The draft pull request is open as PR #9 for review/CI visibility. It has not been merged.
+
+
+## Follow-up route compatibility audit — 2026-10-25
+
+- Inspected every TMDB request call site in `script.js` and the Movie Night flow. Current browser requests use the single `/api/tmdb` proxy helper; the route families used by the UI are `/search/multi`, `/discover/movie`, `/discover/tv`, `/movie/:id`, `/tv/:id`, and the credits subroutes.
+- Compared those call sites with the server allowlist. The currently observed request families are covered by the allowlist, including movie/TV credits. No client call to the TMDB host was found in the inspected script.
+- The proxy test suite uses mocked upstream responses, so it proves route mapping and request construction, not that TMDB accepts a real credential or that the production environment is configured.
+- Per the user's current decision, token rotation is deferred. No token was changed, no environment settings were edited, and no production or Supabase changes were made.
+- Release remains on hold until the secret-dependent runtime is verifiable and the authenticated two-account regression is completed. This is a safety hold, not a reason to stop code review and automated validation.
