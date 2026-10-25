@@ -3,7 +3,7 @@
 // public-domain/Creative Commons license and a video file with a plausible feature runtime.
 const MAX_QUERY_LENGTH = 120;
 const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&-]+$/u;
-const VIDEO_FORMATS = /^(mpeg4|h\.264|h\.264\s*\+\s*aac|matroska|webm|ogg video|quicktime|mpeg2|mpeg1|mpeg movie|avi)$/i;
+const VIDEO_FORMATS = /\b(mpeg4|h\.264|divx|matroska|webm|ogg video|quicktime|mpeg2|mpeg1|mpeg movie|avi)\b/i;
 const MIN_DURATION_SECONDS = 40 * 60;
 
 function parseDuration(value) {
@@ -52,10 +52,11 @@ async function resolveCandidate(item) {
   const duration = parseDuration(playable.length || playable.runtime || playable.duration);
   const wanted = normalizeTitle(item._wantedTitle);
   const actual = normalizeTitle(title);
-  const exactTitle = Boolean(wanted && actual === wanted);
+  const requestedYear = String(item._wantedYear || "").slice(0, 4);
+  const titleWithYear = normalizeTitle(String(item._wantedTitle || "") + " " + requestedYear);
+  const exactTitle = Boolean(wanted && (actual === wanted || (requestedYear && actual === titleWithYear)));
   const titleMatch = exactTitle || Boolean(wanted && (actual.startsWith(wanted + " ") || wanted.startsWith(actual + " ")));
   if (!titleMatch) return null;
-  const requestedYear = String(item._wantedYear || "").slice(0, 4);
   if (requestedYear && year && requestedYear !== year) return null;
   return {
     provider: "Internet Archive",
@@ -84,7 +85,7 @@ module.exports = async function handler(req, res) {
   }
   try {
     const search = new URL("https://archive.org/advancedsearch.php");
-    search.searchParams.set("q", 'mediatype:movies AND title:("' + query + '")');
+    search.searchParams.set("q", 'mediatype:movies AND title:("' + query + '") AND (licenseurl:"https://creativecommons.org/publicdomain/mark/1.0/" OR licenseurl:"https://creativecommons.org/publicdomain/zero/1.0/" OR licenseurl:"https://creativecommons.org/licenses/by/4.0/" OR licenseurl:"https://creativecommons.org/licenses/by-sa/4.0/")');
     for (const field of ["identifier", "title", "year"]) search.searchParams.append("fl[]", field);
     search.searchParams.set("rows", "8");
     search.searchParams.set("page", "1");
