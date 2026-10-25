@@ -289,8 +289,22 @@
     }
     return [...found.values()];
   }
+  function addVerifiedWatchOption(film) {
+    const terms = filmSearchTerms(film);
+    const isDevilWearsPrada = terms.year === "2006" && terms.titles.some(title => /devil wears prada|дьявол носит\s*[«"]?prada/i.test(title));
+    if (!isDevilWearsPrada) return;
+    const link = document.createElement("a");
+    link.className = "source-result source-result--external";
+    link.href = "https://hd.kinopoisk.ru/film/4f39d7763a829bc3a003fa801a781ca1";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "СМОТРЕТЬ НА КИНОПОИСКЕ · ОФИЦИАЛЬНЫЙ ИСТОЧНИК ↗";
+    $("#sourceResults").prepend(link);
+    addNote("Для этого фильма найден официальный просмотр на Кинопоиске. Лицензионный плеер может запрещать встраивание в сторонние сайты, поэтому ссылка откроется отдельно.");
+  }
   async function findSources(film) {
     const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
+    addVerifiedWatchOption(film);
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
