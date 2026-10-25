@@ -155,7 +155,7 @@
     const observer = new MutationObserver(() => {
       const modal = $("#adWatchPlayer");
       if (modal) observeModal(modal);
-      if (activeStage && !activeStage.isConnected) stopPlayer();
+      if (activeStage && (!activeStage.isConnected || !activeStage.firstElementChild)) stopPlayer();
     });
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("click", event => {
@@ -169,6 +169,8 @@
     if (existing) observeModal(existing);
   }
   if (typeof module !== "undefined" && module.exports) module.exports = { normalizeSource, filmKey };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+    else init();
+  }
 })();
