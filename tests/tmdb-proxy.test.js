@@ -45,7 +45,9 @@ test("TMDB proxy refuses requests until a server-side token is configured", asyn
 
 test("Vercel proxy rejects unsupported methods and paths", async () => {
   const oldToken = process.env.TMDB_BEARER_TOKEN;
+  const oldFetch = global.fetch;
   process.env.TMDB_BEARER_TOKEN = "test-token";
+  global.fetch = async () => ({ status: 200, headers: { get: () => "application/json" }, text: async () => "{}" });
   try {
     const method = mockVercelRequest({ method: "POST" });
     await vercelHandler(method.req, method.res);
@@ -62,6 +64,7 @@ test("Vercel proxy rejects unsupported methods and paths", async () => {
   } finally {
     if (oldToken === undefined) delete process.env.TMDB_BEARER_TOKEN;
     else process.env.TMDB_BEARER_TOKEN = oldToken;
+    global.fetch = oldFetch;
   }
 });
 
