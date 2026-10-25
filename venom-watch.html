@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100e0d">
+  <title>AFTER DARK — Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="venom-watch.css?v=20261025-page1">
+</head>
+<body>
+  <main class="player-page">
+    <header class="player-header">
+      <a class="wordmark" href="index.html#archive">AFTER <em>DARK</em></a>
+      <span>PRIVATE CINEMA / PLAYER</span>
+      <a class="back-link" href="index.html#archive">← В АРХИВ</a>
+    </header>
+    <section class="player-content">
+      <div class="eyebrow">NOW PLAYING <span id="mediaType">PRIVATE SELECTION</span></div>
+      <h1 id="mediaTitle">Загрузка…</h1>
+      <p id="mediaMeta" class="media-meta"></p>
+      <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка плеера…</div>
+      <div id="playerStage" class="player-stage"><div class="player-placeholder">VIDEO<br><em>PLAYER</em></div></div>
+      <form id="sourceForm" class="source-form">
+        <label for="sourceKind">ИСТОЧНИК ВИДЕО</label>
+        <p class="form-note">Вставь прямую HTTPS-ссылку на поток HLS (.m3u8), DASH (.mpd) или файл MP4/WebM. Ссылка на страницу онлайн-кинотеатра не является видеопотоком.</p>
+        <div class="source-controls">
+          <select id="sourceKind" name="kind" aria-label="Тип видеопотока">
+            <option value="hls">HLS · M3U8</option>
+            <option value="dash">DASH · MPD</option>
+            <option value="file">MP4 / WEBM</option>
+          </select>
+          <input id="sourceUrl" name="source" type="url" inputmode="url" placeholder="https://…/master.m3u8" autocomplete="url" required>
+          <button type="submit">ЗАПУСТИТЬ ↗</button>
+        </div>
+        <p class="form-note">Источник сохраняется локально в этом браузере для выбранного фильма. Доступность зависит от ссылки, CORS и прав источника.</p>
+      </form>
+    </section>
+    <footer class="player-footer"><span>AFTER DARK / EST. 2026</span><span>FILMS · SERIES · ANIMATION</span></footer>
+  </main>
+  <script src="venom-watch-page.js?v=20261025-page1"></script>
+</body>
+</html>
