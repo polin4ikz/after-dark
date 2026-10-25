@@ -80,7 +80,7 @@
       window.openFilmCard?.(f.id,{
         tmdbId:f.id,title:f.title,name:f.name,poster_path:f.poster_path||"",
         release_date:f.release_date||"",first_air_date:f.first_air_date||"",
-        type:typeOf(f),vote_average:f.vote_average||0,
+        type:((f.genre_ids||[]).map(Number).includes(16)?"animation":(f.media_type==="tv"||f.first_air_date)?"series":"film"),vote_average:f.vote_average||0,
         genre_ids:f.genre_ids||[],originCountries:f.origin_country||[]
       });
     }
