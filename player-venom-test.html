@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10090c">
+<title>AFTER DARK — Player Venom test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#10090c;--panel:#1b1015;--milk:#e9e1df;--muted:#a99b9e;--red:#a23d55;--line:#51303a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0%,#3b1824 0,transparent 48%),var(--bg);color:var(--milk);font-family:"Bricolage Grotesque",sans-serif;min-height:100vh}
+header,main,footer{width:min(1100px,calc(100% - 36px));margin:auto}header{padding:26px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);gap:16px}.brand{font-size:18px;letter-spacing:.12em;font-weight:800}.brand em{font-style:normal;color:#c98291}header small,.kicker,.meta,footer{color:var(--muted);font-size:11px;letter-spacing:.13em}
+main{padding:42px 0 64px}.kicker{margin-bottom:14px}h1{font-size:clamp(34px,6vw,64px);line-height:.98;letter-spacing:-.04em;margin:0 0 16px}h1 em{font-family:"Instrument Serif",serif;font-weight:400;color:#d18a9b} .intro{color:#c7b8bc;max-width:650px;line-height:1.65;margin-bottom:28px}
+.player-frame{background:#050405;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 25px 90px #0008;min-height:200px}#player-container{width:100%;aspect-ratio:16/9;min-height:220px}#player-container video{width:100%;height:100%;object-fit:contain}
+.status{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px 18px;background:#170e12;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}.status strong{color:var(--milk);font-weight:500}.note{margin-top:24px;padding:18px 20px;border:1px solid var(--line);border-radius:10px;background:#1b101580;line-height:1.6;color:#c7b8bc;font-size:14px}.note strong{color:var(--milk)}footer{border-top:1px solid var(--line);padding:20px 0 30px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:600px){header,main,footer{width:calc(100% - 24px)}main{padding-top:30px}#player-container{min-height:180px}.status{padding:12px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/player-venom@0.3.6/dist/player.js"></script>
+</head>
+<body>
+<header><div class="brand">AFTER <em>DARK</em></div><small>PRIVATE CINEMA / PLAYER LAB</small></header>
+<main>
+<div class="kicker">EXPERIMENT 01 / ISOLATED TEST</div>
+<h1>Player <em>Venom.</em></h1>
+<p class="intro">Изолированный тест библиотеки на открытом демонстрационном видео. Эта страница не меняет основной экран просмотра, каталог или production After Dark.</p>
+<div class="player-frame"><div id="player-container" aria-label="Видеоплеер"></div><div class="status"><span>ENGINE: <strong id="engine-state">Загрузка библиотеки…</strong></span><span>SOURCE: <strong>Public demo MP4</strong></span></div></div>
+<div class="note"><strong>Что проверяем:</strong> запуск библиотеки, воспроизведение тестового MP4, интерфейс настроек и полноэкранный режим. Этот тест не подключается к Lordfilm и не использует чужие защищённые потоки.</div>
+<div class="note" id="error-note" hidden></div>
+</main>
+<footer><span>AFTER DARK — PRIVATE CINEMA</span><span>TEST BRANCH ONLY</span></footer>
+<script>
+(function(){
+  const state = document.getElementById('engine-state');
+  const error = document.getElementById('error-note');
+  function showError(message){
+    state.textContent = 'Ошибка запуска';
+    error.hidden = false;
+    error.textContent = message;
+  }
+  window.addEventListener('error', function(event){
+    if (event && event.message) showError('Ошибка JavaScript: ' + event.message);
+  });
+  if (!window.VenomPlayer || typeof window.VenomPlayer.make !== 'function') {
+    showError('Библиотека не загрузилась или API make() недоступен. Проверь подключение к CDN и консоль браузера.');
+    return;
+  }
+  try {
+    const player = window.VenomPlayer.make({
+      publicPath: 'https://cdn.jsdelivr.net/npm/player-venom@0.3.6/dist/',
+      container: document.getElementById('player-container'),
+      title: 'After Dark — Demo',
+      source: {
+        file: {
+          360: 'https://raw.githubusercontent.com/mnaseersj/BigBuckBunny/master/BigBuckBunny_640x360.mp4'
+        }
+      },
+      theme: 'modern',
+      aspectRatio: '16:9',
+      autoLandscape: true,
+      pip: true,
+      trackProgress: 10,
+      text: {
+        settings: 'Настройки',
+        quality: 'Качество',
+        sound: 'Озвучка',
+        speed: 'Скорость',
+        cc: 'Субтитры'
+      }
+    });
+    state.textContent = 'Библиотека инициализирована';
+    if (player && typeof player.on === 'function') {
+      player.on('ready', function(){ state.textContent = 'Готов к воспроизведению'; });
+      player.on('error', function(){ state.textContent = 'Источник или плеер сообщил об ошибке'; });
+    }
+  } catch (e) {
+    showError('Не удалось создать плеер: ' + (e && e.message ? e.message : String(e)));
+  }
+})();
+</script>
+</body>
+</html>
