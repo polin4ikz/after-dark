@@ -230,6 +230,22 @@
   }
   function playArchiveSource(source, auto = false) {
     if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
+    // Prefer a browser-playable direct file from the open-licensed archive record.
+    // Keep Archive's own player as a fallback if the direct file is blocked or unsupported.
+    if (typeof source.directUrl === "string" && /^https:\/\/archive\.org\/download\/[A-Za-z0-9._%\/-]+$/i.test(source.directUrl)) {
+      try {
+        openDirectStream(source.directUrl);
+        status("ОТКРЫТЫЙ ИСТОЧНИК · ПРЯМОЙ ВИДЕОФАЙЛ");
+        streamStatus("Если браузер не воспроизводит этот файл, можно открыть встроенный плеер Internet Archive.");
+        const video = $("#playerStage video");
+        if (video) video.addEventListener("error", () => playArchiveEmbedFallback(source), { once: true });
+        return;
+      } catch (_) {}
+    }
+    playArchiveEmbedFallback(source, auto);
+  }
+  function playArchiveEmbedFallback(source, auto = false) {
+    if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
     resetStreamEngines();
     const stage = $("#playerStage");
     stage.replaceChildren();
@@ -254,7 +270,7 @@
     const meta = document.createElement("span");
     meta.className = "source-result__meta";
     const minutes = Math.round(Number(source.durationSeconds || 0) / 60);
-    meta.textContent = "INTERNET ARCHIVE · " + minutes + " МИН. · ОТКРЫТАЯ ЛИЦЕНЗИЯ";
+    meta.textContent = "INTERNET ARCHIVE · " + minutes + " МИН. · " + (source.directUrl ? "ПРЯМОЙ ФАЙЛ" : "ВСТРОЕННЫЙ ПЛЕЕР") + " · ОТКРЫТАЯ ЛИЦЕНЗИЯ";
     button.append(title, meta);
     button.addEventListener("click", () => playArchiveSource(source, true));
     $("#sourceResults").appendChild(button);
