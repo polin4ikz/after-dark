@@ -101,3 +101,10 @@ This is a code/configuration audit based on files accessible through GitHub's fi
 - The proxy test suite uses mocked upstream responses, so it proves route mapping and request construction, not that TMDB accepts a real credential or that the production environment is configured.
 - Per the user's current decision, token rotation is deferred. No token was changed, no environment settings were edited, and no production or Supabase changes were made.
 - Release remains on hold until the secret-dependent runtime is verifiable and the authenticated two-account regression is completed. This is a safety hold, not a reason to stop code review and automated validation.
+
+
+## Additional proxy regression coverage — 2026-10-25
+
+- Added automated cases for malformed and overlong query parameters, verifying the proxy rejects them before any upstream request.
+- Added a route matrix for movie detail, TV detail, movie credits, and TV credits so future allowlist edits cannot silently break the detail modal.
+- These tests use mocked upstream responses and are intended to catch regressions in routing and validation. They do not validate a real TMDB credential or replace browser-level testing.
