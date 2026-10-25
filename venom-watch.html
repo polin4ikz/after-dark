@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="venom-watch.css?v=20261025-russearch2">
+  <link rel="stylesheet" href="venom-watch.css?v=20261025-audiotracks">
 </head>
 <body>
   <main class="player-page">
@@ -23,6 +23,23 @@
       <p id="mediaMeta" class="media-meta"></p>
       <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
       <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
+      <section id="nativePlayerTools" class="native-player-tools" aria-label="Подключение видео">
+        <p class="source-note">Если у тебя есть прямая ссылка на видео или поток, подключи её здесь. Поддерживаются MP4/WebM, HLS (.m3u8) и DASH (.mpd). Поисковая страница сама по себе не является видеопотоком.</p>
+        <form id="streamForm" class="stream-form">
+          <label for="streamUrl">ССЫЛКА НА ВИДЕО / ПОТОК</label>
+          <div class="stream-form__row">
+            <input id="streamUrl" name="streamUrl" type="url" inputmode="url" placeholder="https://…/video.m3u8" autocomplete="url" required>
+            <button type="submit">ОТКРЫТЬ</button>
+          </div>
+        </form>
+        <div class="track-controls">
+          <label for="audioTrack">ОЗВУЧКА</label>
+          <select id="audioTrack" disabled><option value="-1">Недоступно для этого источника</option></select>
+          <label for="subtitleTrack">СУБТИТРЫ</label>
+          <select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select>
+        </div>
+        <p id="streamStatus" class="source-note" role="status" aria-live="polite">Выбор дорожек появится, если источник передаёт несколько аудио- или субтитровых дорожек.</p>
+      </section>
       <section class="source-discovery" aria-labelledby="sourceHeading">
         <div class="source-heading" id="sourceHeading">ИСТОЧНИКИ ПРОСМОТРА</div>
         <div id="sourceResults" class="source-results" aria-live="polite"></div>
@@ -30,6 +47,8 @@
     </section>
     <footer class="player-footer"><span>AFTER DARK / EST. 2026</span><span>FILMS · SERIES · ANIMATION</span></footer>
   </main>
-  <script src="venom-watch-page.js?v=20261025-russearch2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
+  <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
+  <script src="venom-watch-page.js?v=20261025-audiotracks"></script>
 </body>
 </html>
