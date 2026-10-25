@@ -17,13 +17,23 @@
   }
   function addExternalFallback(title) {
     const area = $("#sourceResults");
-    const link = document.createElement("a");
-    link.className = "source-result source-result--external";
-    link.href = "https://www.justwatch.com/ru/search?q=" + encodeURIComponent(title);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "ПОИСКАТЬ НА JUSTWATCH ↗";
-    area.appendChild(link);
+    const query = String(title || "").trim();
+    const searches = [
+      { label: "ПОИСКАТЬ В YOUTUBE", url: "https://www.youtube.com/results?search_query=" + encodeURIComponent(query + " full movie") },
+      { label: "ПОИСКАТЬ НА LORDFILM", url: "https://www.google.com/search?q=" + encodeURIComponent('site:lordfilm ' + query + " смотреть онлайн") },
+      { label: "ПОИСКАТЬ НА HDREZKA", url: "https://www.google.com/search?q=" + encodeURIComponent('site:hdrezka ' + query + " смотреть онлайн") },
+      { label: "ПОИСК ПО ВСЕМУ ИНТЕРНЕТУ", url: "https://www.google.com/search?q=" + encodeURIComponent(query + " смотреть онлайн фильм плеер") },
+      { label: "ПРОВЕРИТЬ ЛЕГАЛЬНЫЕ СЕРВИСЫ", url: "https://www.justwatch.com/de/search?q=" + encodeURIComponent(query) }
+    ];
+    for (const item of searches) {
+      const link = document.createElement("a");
+      link.className = "source-result source-result--external";
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = item.label + " ↗";
+      area.appendChild(link);
+    }
   }
   function playArchiveSource(source, auto = false) {
     if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
@@ -132,16 +142,18 @@
         return;
       }
       if (results.length) {
-        status("НАШЛИСЬ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
+        status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
         addNote("Найденные записи проверены на открытую лицензию и наличие видео длительностью от 40 минут. Сверь название перед просмотром.");
         results.forEach(renderCandidate);
       } else {
         status("В ОТКРЫТОМ АРХИВЕ НЕ НАШЁЛСЯ ПРОВЕРЕННЫЙ ИСТОЧНИК");
         addNote("Это не значит, что фильм недоступен: просто мы не нашли подтверждённый открытый видеопоток в этом источнике.");
       }
+      addExternalFallback(title);
       await showOfficialProviders(film);
     } catch (_) {
-      status("НЕ УДАЛОСЬ ПРОВЕРИТЬ ОТКРЫТЫЙ АРХИВ · ПРОВЕРЯЮ СЕРВИСЫ", true);
+      status("АВТОМАТИЧЕСКИЙ ПОТОК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ИСТОЧНИКИ");
+      addExternalFallback(title);
       await showOfficialProviders(film);
     }
   }
