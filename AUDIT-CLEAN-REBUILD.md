@@ -58,3 +58,13 @@ Date: 2026-10-25
 
 ## Audit limitations
 This is a code/configuration audit based on files accessible through GitHub's file API. It is not a full live end-to-end test, a full repository clone, or a production security audit. Hosting secrets and live Supabase policies were not inspected or changed.
+
+## Update — 2026-10-25
+
+- Removed the TMDB bearer credential from the browser bundle in `script.js`; browser requests now target `/api/tmdb` and send the requested API path as a query parameter.
+- Enabled `tests/tmdb-proxy.test.js` in the validation workflow and added the `clean-rebuild` branch to the workflow's push triggers.
+- Verified the current `script.js` no longer contains the TMDB bearer-token variable or a direct TMDB API base URL.
+- The commit's reported Vercel check is successful. This is a deployment check only; it does not prove the full application works end-to-end or that the TMDB server environment variable is configured.
+- **Security follow-up required:** the credential was present in Git history. Revoke/rotate it in TMDB; changing the current file does not erase historical exposure.
+- **Do not merge this branch into `main` yet.** It is 105 commits ahead of `main` and contains a broad accumulated feature set. Run the complete CI and functional regression checks, confirm server environment configuration, then review the diff before any production cutover.
+- Branch cleanup is intentionally postponed until one tested release candidate is selected. Deleting preview branches now would remove useful rollback/reference points without fixing deployment drift.
