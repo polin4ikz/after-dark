@@ -14,6 +14,7 @@ create table if not exists public.archive (
   genre_ids jsonb not null default '[]'::jsonb,
   origin_countries jsonb not null default '[]'::jsonb,
   watched boolean not null default false,
+  in_watchlist boolean not null default true,
   added_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
