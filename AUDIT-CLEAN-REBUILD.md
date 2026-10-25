@@ -90,3 +90,13 @@ This is a GitHub-file-API source/configuration audit, not a full local clone, li
 - **Code/CI confidence:** moderate for syntax, proxy unit tests, player URL validation, and the targeted Movie Night handler regression.
 - **Live functional confidence:** low-to-moderate because current candidate was not exercised end-to-end in authenticated browsers.
 - **Release recommendation:** **DO NOT MERGE / DO NOT RELEASE YET.** Release blockers: (a) verify live schema without running an unreviewed migration, (b) rotate the exposed TMDB token and configure the replacement as a server-side host secret, (c) run authenticated two-account and mobile browser checks, (d) decide whether playback resume and audio/quality selection are required for the first release.
+
+
+## Vercel-only cleanup — 2026-10-25
+- Active cleanup branch: `cleanup/vercel-only-final`, based on `clean-rebuild` so current application changes are preserved.
+- Removed `netlify.toml`, `netlify/functions/tmdb.js`, and `netlify/functions/archive-search.js` from this branch.
+- Kept Vercel handlers `api/tmdb.js` and `api/archive-search.js`; frontend TMDB requests use `/api/tmdb`.
+- Removed deleted Netlify handler checks from the GitHub Actions workflow.
+- Added `in_watchlist boolean not null default true` to the base archive schema for fresh setup. This does NOT apply any migration to the live Supabase project.
+- Vercel reported a successful status on the schema-update commit. Authenticated live behavior and the current Supabase schema remain unverified.
+- Do not merge to `main` or delete old branches/repositories yet. Remaining release blockers: verify current Vercel production branch/project, confirm live Supabase migration/schema, and rotate the previously exposed TMDB bearer token before release.
