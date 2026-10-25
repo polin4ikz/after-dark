@@ -3,7 +3,7 @@
 // public-domain/Creative Commons license and a video file with a plausible feature runtime.
 const MAX_QUERY_LENGTH = 120;
 const SAFE_QUERY = /^[\p{L}\p{N}\s'’.,&:;!?+()/_\-–—]+$/u;
-const VIDEO_FORMATS = /\b(mpeg4|h\.264|divx|matroska|webm|ogg video|quicktime|mpeg2|mpeg1|mpeg movie|avi)\b/i;
+const VIDEO_FORMATS = /\b(mpeg4|h\.264|webm|quicktime)\b/i;
 const MIN_DURATION_SECONDS = 40 * 60;
 
 function parseDuration(value) {
@@ -43,6 +43,9 @@ async function resolveCandidate(item) {
   const files = Array.isArray(data.files) ? data.files : [];
   const playable = files.find(file => {
     if (!file || typeof file.name !== "string" || !VIDEO_FORMATS.test(String(file.format || "").trim())) return false;
+    // Prefer browser-friendly files so the site can use its own video controls.
+    const browserPlayable = /\.(mp4|m4v|webm)$/i.test(file.name);
+    if (!browserPlayable) return false;
     const duration = parseDuration(file.length || file.runtime || file.duration);
     return duration >= MIN_DURATION_SECONDS && !/sample|preview|trailer|teaser|thumb/i.test(file.name);
   });
@@ -66,6 +69,8 @@ async function resolveCandidate(item) {
     durationSeconds: Math.round(duration),
     licenseUrl: String(metadata.licenseurl || metadata.license || metadata.rights || "").slice(0, 500),
     embedUrl: "https://archive.org/embed/" + encodeURIComponent(item.identifier),
+    directUrl: "https://archive.org/download/" + encodeURIComponent(item.identifier) + "/" + playable.name.split("/").map(encodeURIComponent).join("/"),
+    format: String(playable.format || "").slice(0, 80),
     confidence: exactTitle && (!requestedYear || !year || requestedYear === year) ? "high" : "review"
   };
 }
