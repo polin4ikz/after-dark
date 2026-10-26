@@ -45,7 +45,6 @@ function extractPlayerUrl(html, pageUrl) {
   const rawUrls = normalizedHtml.match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
   for (const raw of rawUrls) {
     const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "");
-    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "").replace(/\\\\/g, "");
     try {
       const u = new URL(cleaned);
       if (u.protocol !== "https:" || u.username || u.password) continue;
