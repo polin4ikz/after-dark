@@ -14,10 +14,13 @@ function decodeHtml(value) {
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
     .replace(/&#([0-9]+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
 }
-function isPublicHttps(raw) {
+function isPublicHttps(raw, allowPlayerPort = false) {
   try {
     const u = new URL(raw);
-    if (u.protocol !== "https:" || u.username || u.password || u.port && u.port !== "443") return false;
+    // Some legitimate embedded players serve their iframe on HTTPS port 9443.
+    // Permit that port only when validating a player candidate, never for server-side page fetches.
+    const allowedPort = !u.port || u.port === "443" || (allowPlayerPort && u.port === "9443");
+    if (u.protocol !== "https:" || u.username || u.password || !allowedPort) return false;
     const host = u.hostname.toLowerCase().replace(/\.$/, "");
     if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
         host.endsWith(".internal") || host.endsWith(".test")) return false;
@@ -40,7 +43,7 @@ function extractPlayerUrl(html, pageUrl) {
     const value = decodeHtml(raw.trim()).replace(/\\u0026/g, "&").replace(/\\\//g, "/");
     try {
       const u = new URL(value, pageUrl);
-      if (!isPublicHttps(u.href) || isSearchOrIrrelevant(u.href)) return;
+      if (!isPublicHttps(u.href, true) || isSearchOrIrrelevant(u.href)) return;
       const host = u.hostname.toLowerCase();
       const path = (host + u.pathname + u.search).toLowerCase();
       if (/ads?|banner|tracker|analytics|doubleclick|pixel|statistic/i.test(path)) return;
