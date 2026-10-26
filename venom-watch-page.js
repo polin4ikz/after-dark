@@ -425,6 +425,22 @@
         addNote("Найдено точное совпадение с открытой лицензией. Если воспроизведение не началось автоматически, нажми Play.");
         return;
       }
+      // Search known film pages and embed their player iframe, not the whole source page.
+      const { titles: providerTitles, year: providerYear } = filmSearchTerms(film);
+      for (const providerTitle of providerTitles) {
+        try {
+          const params = new URLSearchParams({ title: providerTitle });
+          if (providerYear) params.set("year", providerYear);
+          const response = await fetch("/api/resolve-film-player?" + params.toString(), { headers: { accept: "application/json" } });
+          const resolved = await response.json().catch(() => ({}));
+          if (response.ok && resolved.embedUrl) {
+            openDirectStream(resolved.embedUrl, true);
+            status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(resolved.provider || "ИСТОЧНИК").toUpperCase());
+            addNote("After Dark нашёл страницу фильма и извлёк адрес встроенного плеера. Если он не запускается, видеохост может запрещать встраивание.");
+            return;
+          }
+        } catch (_) {}
+      }
       if (results.length) {
         status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
         addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
