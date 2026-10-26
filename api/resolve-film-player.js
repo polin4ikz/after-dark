@@ -71,7 +71,7 @@ function extractPlayerUrl(html, pageUrl) {
   // Inspect common player configuration snippets and escaped URLs embedded in scripts.
   const normalized = String(html || "").replaceAll("\\/", "/").replace(/\\u0026/gi, "&").replace(/\\u003d/gi, "=");
   for (const match of normalized.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) add(match[0], 1);
-  for (const match of normalized.matchAll(/(?:file|src|source|embedUrl|iframeUrl|playerUrl|videoUrl|url)\s*[:=]\s*["']([^"']{8,1000})["']/gi)) {
+  for (const match of normalized.matchAll(/(?:file|src|source|embedUrl|iframeUrl|playerUrl|videoUrl)\s*[:=]\s*["']([^"']{8,1000})["']/gi)) {
     add(match[1], 7);
   }
   const unique = [...new Map(candidates.map(item => [item.url, item])).values()];
