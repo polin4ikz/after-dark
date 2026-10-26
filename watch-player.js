@@ -78,7 +78,9 @@
   function watchLabel(film) {
     const progress = window.afterDarkProgress?.get(film);
     if (progress?.status === "in_progress" && Number(progress.position_seconds) > 10) {
-      return "ПРОДОЛЖИТЬ · " + (window.afterDarkProgress?.formatTime(progress.position_seconds) || "");
+      const episode = progress.media_type === "tv" && progress.season_number && progress.episode_number
+        ? " · S" + String(progress.season_number).padStart(2, "0") + " E" + String(progress.episode_number).padStart(2, "0") : "";
+      return "ПРОДОЛЖИТЬ" + episode + " · " + (window.afterDarkProgress?.formatTime(progress.position_seconds) || "");
     }
     return "СМОТРЕТЬ ↗";
   }
