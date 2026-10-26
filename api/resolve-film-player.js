@@ -1,7 +1,7 @@
 // Discover film pages across the public web and extract an embedded player URL.
 // This does not bypass DRM, paywalls, login requirements, or frame restrictions.
 const MAX_TITLE = 120;
-const MAX_PAGES = 8;
+const MAX_PAGES = 16;
 const SEARCH_HOSTS = new Set([
   "google.com", "www.google.com", "duckduckgo.com", "html.duckduckgo.com",
   "bing.com", "www.bing.com", "yandex.com", "yandex.ru", "www.yandex.ru",
@@ -152,7 +152,7 @@ async function searchPages(title, year) {
     title.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim()
   ])].filter(Boolean);
   const queries = [];
-  for (const variant of titleVariants.slice(0, 2)) {
+  for (const variant of titleVariants.slice(0, 3)) {
     const q = [variant, year, "смотреть онлайн фильм плеер"].filter(Boolean).join(" ");
     queries.push(
       { engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q) },
