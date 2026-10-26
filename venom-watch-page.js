@@ -23,6 +23,17 @@
     note.textContent = text;
     $("#sourceResults").appendChild(note);
   }
+  function addFrameFallback(url) {
+    const area = $("#sourceResults");
+    if (!area || !/^https:\/\//i.test(String(url || ""))) return;
+    const link = document.createElement("a");
+    link.className = "source-result source-result--external";
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "ЕСЛИ ПЛЕЕР БЕЛЫЙ — ОТКРЫТЬ ИСТОЧНИК ОТДЕЛЬНО ↗";
+    area.prepend(link);
+  }
   function filmSearchTerms(filmOrTitle) {
     const film = typeof filmOrTitle === "object" && filmOrTitle !== null ? filmOrTitle : { title: String(filmOrTitle || "") };
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
@@ -185,6 +196,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       embedStage.appendChild(frame);
+      addFrameFallback(embedUrl);
       status("ВСТРОЕННЫЙ ПЛЕЕР · " + embedProvider);
       streamStatus("Озвучка и субтитры для встроенного источника настраиваются внутри его плеера, если он предоставляет такие параметры.");
       return;
@@ -210,6 +222,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
+      addFrameFallback(url.href);
       status("ПРОБУЮ ОТКРЫТЬ ВСТРОЕННЫЙ ВИДЕОПЛЕЕР");
       streamStatus("Открыт адрес плеера. Если источник запрещает встраивание, браузер не позволит показать его внутри After Dark.");
       return;
