@@ -478,7 +478,7 @@
   }
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
-    if (!/^\\d{1,12}$/.test(id) || Number(id) <= 0) return false;
+    if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
     const isSeries = isSeriesFilm(film);
     const previousProgress = savedProgress(film);
     const resumeAt = previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
