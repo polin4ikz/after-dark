@@ -728,7 +728,7 @@
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
-    findSources(film);
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).finally(() => findSources(film));
     window.addEventListener("pagehide", () => {
       if (hls) hls.destroy();
       if (dash) { try { dash.reset(); } catch (_) {} }
