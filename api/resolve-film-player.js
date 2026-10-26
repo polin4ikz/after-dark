@@ -61,11 +61,23 @@ function extractPlayerUrl(html, pageUrl) {
 }
 async function fetchText(url, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
+  // Film catalog pages can respond more slowly than search pages; don't fail after only 4 seconds.
+  const timeoutMs = options.timeoutMs || 10000;
+  const fetchOptions = { ...options };
+  delete fetchOptions.timeoutMs;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    if (!response.ok) throw new Error("UPSTREAM_UNAVAILABLE");
+    const response = await fetch(url, { ...fetchOptions, signal: controller.signal, redirect: "follow" });
+    if (!response.ok) {
+      const error = new Error("UPSTREAM_HTTP_ERROR");
+      error.status = response.status;
+      error.finalUrl = response.url || url;
+      throw error;
+    }
     return await response.text();
+  } catch (error) {
+    if (error && typeof error === "object" && !error.finalUrl) error.finalUrl = url;
+    throw error;
   } finally { clearTimeout(timer); }
 }
 function extractSearchLinks(html, baseUrl) {
@@ -143,14 +155,25 @@ module.exports = async function handler(req, res) {
     const diagnostics = { searchPagesFound: pages.length, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
     const pageResults = await Promise.all(pages.map(async pageUrl => {
       try {
-        const html = await fetchText(pageUrl, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml" } });
+        const html = await fetchText(pageUrl, { timeoutMs: 10000, headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Referer": new URL(pageUrl).origin + "/"
+        } });
         const embedUrl = extractPlayerUrl(html, pageUrl);
         diagnostics.pagesChecked.push({ host: new URL(pageUrl).hostname, status: "loaded", embedFound: Boolean(embedUrl), htmlLength: html.length });
         if (!embedUrl) diagnostics.pagesWithoutEmbed++;
         return embedUrl ? { provider: new URL(pageUrl).hostname, pageUrl, embedUrl } : null;
       } catch (error) {
         diagnostics.fetchFailures++;
-        diagnostics.pagesChecked.push({ host: new URL(pageUrl).hostname, status: error.name === "AbortError" ? "timeout" : "fetch_failed" });
+        diagnostics.pagesChecked.push({
+          host: new URL(pageUrl).hostname,
+          status: error.name === "AbortError" ? "timeout" : (error.status ? "http_error" : "fetch_failed"),
+          ...(error.status ? { httpStatus: error.status } : {}),
+          ...(error.code ? { code: String(error.code).slice(0, 80) } : {}),
+          ...(error.finalUrl && error.finalUrl !== pageUrl ? { finalUrl: error.finalUrl } : {})
+        });
         return null;
       }
     }));
