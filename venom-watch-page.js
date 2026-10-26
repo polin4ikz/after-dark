@@ -457,10 +457,10 @@
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
     }
     addExternalFallback(film);
-    await showOfficialProviders(film);
-    // Start the expanded player resolver automatically after the first discovery pass fails.
+    // Start the expanded player resolver immediately; provider metadata must not block it.
     const retryButton = area.querySelector("button.source-result");
     if (retryButton && !retryButton.disabled) retryButton.click();
+    await showOfficialProviders(film);
   }
   function init() {
     $("#audioTrack").addEventListener("change", () => {
