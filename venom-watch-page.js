@@ -136,17 +136,6 @@
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
-  function extractSubmittedUrl(rawValue) {
-    const value = String(rawValue || "").trim();
-    if (!value) throw new Error("Вставь ссылку или полный код iframe.");
-    // Accept a provider's iframe snippet, but extract only its src URL; never inject user HTML.
-    if (/<iframe\b/i.test(value) || /\bsrc\s*=/.test(value)) {
-      const match = value.match(/\bsrc\s*=\s*(["'])(https:\/\/[^"'\s<>]+)\1/i);
-      if (!match) throw new Error("Не удалось найти HTTPS-адрес src внутри кода iframe.");
-      return match[2].replace(/&amp;/gi, "&");
-    }
-    return value;
-  }
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
     let url;
     try { url = new URL(extractSubmittedUrl(rawUrl)); } catch (error) {
