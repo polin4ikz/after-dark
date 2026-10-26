@@ -367,7 +367,7 @@
   }
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.id ?? "");
-    if (!/^\\d{1,12}$/.test(id) || Number(id) <= 0) return false;
+    if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
     const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
     const candidates = [];
 
