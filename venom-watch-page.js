@@ -508,7 +508,7 @@
       candidates.push({
         name: "VIDSCENE",
         origin: "https://player.vidscene.app",
-        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true" + resumeParam,
+        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + resumeParam,
         readyTypes: ["VIDSCENE_PLAYER_EVENT"],
         readyEvents: ["loadedmetadata", "play", "timeupdate"],
         errorEvents: ["error"]
@@ -599,7 +599,9 @@
       let lastMessage = "";
       let found = false;
       try {
-        // Two automatic passes: transient search-engine failures should not require a tap.
+        // Prefer players with a documented playback-progress API, so resume works across devices.
+        found = await tryExternalPlayerFallback(film);
+        // If both ID-based players fail, retry page extraction twice before giving up.
         for (let pass = 0; pass < 2 && !found; pass++) {
           for (const title of titles) {
             try {
@@ -612,7 +614,7 @@
               if (response.ok && data.embedUrl) {
                 openDirectStream(data.embedUrl, true);
                 status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(data.provider || "ИСТОЧНИК").toUpperCase());
-                streamStatus("Источник найден автоматически. Если плеер не запускается, сайт-источник может запрещать встраивание.");
+                streamStatus("Источник найден автоматически. Для внешних плееров точное сохранение позиции зависит от того, передаёт ли источник события воспроизведения.");
                 addNote("Источник найден автоматически по названию фильма; вручную вставлять ссылку не потребовалось.");
                 found = true;
                 break;
@@ -627,10 +629,6 @@
             streamStatus("Повторный поиск идёт автоматически. Проверяю названия ещё раз; нажимать ничего не нужно.");
             await new Promise(resolve => setTimeout(resolve, 1200));
           }
-        }
-        if (!found) {
-          streamStatus("Поиск по страницам не дал результата. Перехожу к независимым плеерам по TMDB ID.");
-          found = await tryExternalPlayerFallback(film);
         }
         if (!found) throw new Error(lastMessage || "Все проверенные способы поиска и встроенные плееры не подтвердили доступное видео.");
       } catch (error) {
@@ -653,6 +651,12 @@
       if (exact.length === 1) {
         playArchiveSource(exact[0], true);
         addNote("Найдено точное совпадение с открытой лицензией. Если воспроизведение не началось автоматически, нажми Play.");
+        return;
+      }
+      // Prefer providers that expose time/episode events; scraped iframes are the fallback.
+      const progressAwarePlayerFound = await tryExternalPlayerFallback(film);
+      if (progressAwarePlayerFound) {
+        await showOfficialProviders(film);
         return;
       }
       // Search known film pages and embed their player iframe, not the whole source page.
@@ -683,9 +687,7 @@
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
     }
     addExternalFallback(film);
-    // Start the expanded player resolver immediately; provider metadata must not block it.
-    const retryButton = area.querySelector("button.source-result");
-    if (retryButton && !retryButton.disabled) retryButton.click();
+    // Keep retry available after all automatic providers and page extraction have failed.
     await showOfficialProviders(film);
   }
   function init() {
