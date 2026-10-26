@@ -2,7 +2,7 @@
 // then extract its embedded player URL. This does not bypass DRM or frame restrictions.
 const SEARCH_DOMAINS = [
   "lord-film.org", "lord.kim", "lordfilm.org", "lordfilm.film",
-  "smeh-v-vaikikia-lordfilm.ru", "kinogo.inc", "kinogo.ec", "hdrezka.ag"
+  "smeh-v-vaikikia-lordfilm.ru", "lord-film7.org", "kinogo.inc", "kinogo.ec", "hdrezka.ag"
 ];
 const MAX_TITLE = 120;
 function decodeHtml(value) {
@@ -39,8 +39,24 @@ function extractPlayerUrl(html, pageUrl) {
       candidates.push({ url: u.href, score });
     } catch (_) {}
   }
-  candidates.sort((a, b) => b.score - a.score);
-  return candidates[0]?.url || null;
+  // Some catalog templates construct their iframe from JavaScript instead of a literal tag.
+  // Inspect only explicit player/embed-like HTTPS URLs already present in that page's HTML.
+  const rawUrls = String(html || "").match(/https?:\\/\\/[^\\s"'<>\\\\]+/gi) || [];
+  for (const raw of rawUrls) {
+    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "").replace(/\\\\\\\\/g, "");
+    try {
+      const u = new URL(cleaned);
+      if (u.protocol !== "https:" || u.username || u.password) continue;
+      if (u.hostname === new URL(pageUrl).hostname) continue;
+      if (/ads?|banner|tracker|analytics|doubleclick/i.test(u.hostname + u.pathname)) continue;
+      const hint = (u.hostname + u.pathname + u.search).toLowerCase();
+      if (!/player|embed|iframe|video_ext|nextembed|alloha|kodik|collaps|videocdn|hdvb|shortener/i.test(hint)) continue;
+      candidates.push({ url: u.href, score: 8 });
+    } catch (_) {}
+  }
+  const unique = [...new Map(candidates.map(item => [item.url, item])).values()];
+  unique.sort((a, b) => b.score - a.score);
+  return unique[0]?.url || null;
 }
 async function fetchText(url, options = {}) {
   const controller = new AbortController();
@@ -53,7 +69,7 @@ async function fetchText(url, options = {}) {
 }
 async function searchPages(title, year) {
   const queries = [
-    [title, year, "смотреть онлайн site:lord-film.org OR site:lord.kim OR site:lordfilm.org"].filter(Boolean).join(" "),
+    [title, year, "смотреть онлайн site:lord-film.org OR site:lord.kim OR site:lordfilm.org OR site:lord-film7.org"].filter(Boolean).join(" "),
     [title, year, "film online site:lord-film.org OR site:lord.kim OR site:lordfilm.org"].filter(Boolean).join(" ")
   ];
   const found = [];
