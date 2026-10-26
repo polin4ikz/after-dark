@@ -9,10 +9,10 @@ function decodeHtml(value) {
 }
 function extractPlayerUrl(html) {
   const candidates = [];
-  const tags = String(html || "").match(/<(?:iframe|embed|video)\\b[^>]*>/gi) || [];
+  const tags = String(html || "").match(/<(?:iframe|embed|video)\b[^>]*>/gi) || [];
   for (const tag of tags) {
     const attrs = {};
-    const pattern = /([\\w:-]+)\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/g;
+    const pattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
     let match;
     while ((match = pattern.exec(tag))) attrs[match[1].toLowerCase()] = decodeHtml(match[2] ?? match[3] ?? match[4] ?? "");
     const raw = attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || attrs["data-url"];
