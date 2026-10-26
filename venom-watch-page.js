@@ -457,17 +457,6 @@
     await showOfficialProviders(film);
   }
   function init() {
-    $("#streamForm").addEventListener("submit", event => {
-      event.preventDefault();
-      try {
-        const rawSource = $("#streamUrl").value;
-        const extractedSource = extractSubmittedUrl(rawSource);
-        openDirectStream(rawSource, /<iframe\b/i.test(rawSource) || /player|embed|video_ext|\/video\/|\/iframe|\/play\//i.test(new URL(extractedSource).pathname));
-      } catch (error) {
-        status(error.message || "Не удалось открыть поток.", true);
-        streamStatus(error.message || "Проверь ссылку.", true);
-      }
-    });
     $("#audioTrack").addEventListener("change", () => {
       const index = Number($("#audioTrack").value);
       if (index < 0) return;
