@@ -377,9 +377,25 @@
         button.type = "button";
         button.className = "source-result";
         button.textContent = "LORD FILM · ПОПРОБОВАТЬ ВСТРОИТЬ В ПЛЕЕР";
-        button.addEventListener("click", () => {
-          try { openDirectStream(source.url); }
-          catch (error) { status(error.message || "Не удалось встроить источник.", true); }
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.textContent = "ИЩУ АДРЕС ВИДЕОПЛЕЕРА…";
+          status("ПЫТАЮСЬ НАЙТИ ВСТРОЕННЫЙ ПЛЕЕР LORD FILM");
+          streamStatus("After Dark ищет адрес iframe плеера в HTML страницы. Если сайт создаёт его скриптом или блокирует запрос, автоматическое извлечение может не сработать.");
+          try {
+            const response = await fetch("/api/lordfilm-player", { headers: { accept: "application/json" } });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.embedUrl) throw new Error(data.message || "Не удалось найти отдельный адрес плеера на странице источника.");
+            openDirectStream(data.embedUrl);
+            status("ПЛЕЕР LORD FILM НАЙДЕН · ПРОБУЮ ОТКРЫТЬ");
+            streamStatus("Встроен адрес плеера, а не исходная страница. Если он не запускается, сам видеохост может запрещать встраивание.");
+          } catch (error) {
+            status("НЕ УДАЛОСЬ ИЗВЛЕЧЬ АДРЕС ПЛЕЕРА", true);
+            streamStatus((error.message || "Источник не отдал адрес плеера.") + " Открой страницу источника отдельно и проверь, есть ли у плеера отдельный код встраивания.", true);
+          } finally {
+            button.disabled = false;
+            button.textContent = "LORD FILM · НАЙТИ И ВСТРОИТЬ ВИДЕОПЛЕЕР";
+          }
         });
         area.prepend(button);
       } else {
