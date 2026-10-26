@@ -1,7 +1,7 @@
 -- AFTER DARK: shared playback progress for the two private archive members.
 -- Run once in Supabase SQL Editor. Does not alter or delete existing archive/rating data.
 create table if not exists public.watch_progress (
-  tmdb_id bigint primary key references public.archive(tmdb_id) on delete cascade,
+  tmdb_id bigint primary key,
   title text,
   media_type text not null default 'movie' check (media_type in ('movie','tv')),
   position_seconds integer not null default 0 check (position_seconds >= 0),
