@@ -296,6 +296,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       embedStage.appendChild(frame);
+      attachFrameProgress(frame, currentFilm, embedProvider || "EMBED", new URL(embedUrl).origin);
       addFrameFallback(embedUrl);
       status("ВСТРОЕННЫЙ ПЛЕЕР · " + embedProvider);
       streamStatus("Озвучка и субтитры для встроенного источника настраиваются внутри его плеера, если он предоставляет такие параметры.");
@@ -322,6 +323,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
+      attachFrameProgress(frame, currentFilm, host.toUpperCase(), url.origin);
       addFrameFallback(url.href);
       status("ПРОБУЮ ОТКРЫТЬ ВСТРОЕННЫЙ ВИДЕОПЛЕЕР");
       streamStatus("Открыт адрес плеера. Если источник запрещает встраивание, браузер не позволит показать его внутри After Dark.");
@@ -337,6 +339,7 @@
     video.setAttribute("aria-label", "AFTER DARK video player");
     stage.appendChild(video);
     activeVideo = video;
+    attachNativeProgress(video, currentFilm, "NATIVE");
     if (kind === "file") {
       video.src = url.href;
       video.addEventListener("loadedmetadata", () => {
@@ -476,7 +479,11 @@
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
-    const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
+    const isSeries = isSeriesFilm(film);
+    const previousProgress = savedProgress(film);
+    const resumeAt = previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
+    const season = Math.max(1, Math.floor(Number(previousProgress?.season_number) || 1));
+    const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
     const candidates = [];
 
     // VidScene exposes an availability endpoint, captions, and source failover.
@@ -496,11 +503,12 @@
       }
     } catch (_) {}
     if (vidSceneAvailable !== false) {
-      const path = isSeries ? "/tv/" + id + "/1/1" : "/movie/" + id;
+      const path = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
+      const resumeParam = resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : "";
       candidates.push({
         name: "VIDSCENE",
         origin: "https://player.vidscene.app",
-        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en",
+        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true" + resumeParam,
         readyTypes: ["VIDSCENE_PLAYER_EVENT"],
         readyEvents: ["loadedmetadata", "play", "timeupdate"],
         errorEvents: ["error"]
@@ -508,11 +516,12 @@
     }
 
     // Independent second provider, using the TMDB id rather than search-result scraping.
-    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-1-1" : "/ru/watch/embed/movie/" + id;
+    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
+    const stellarResumeParam = "&startAt=" + encodeURIComponent(String(resumeAt));
     candidates.push({
       name: "STELLAR",
       origin: "https://stellar.rip",
-      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true",
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true" + stellarResumeParam + (isSeries ? "&nextButton=true&autoNext=true" : ""),
       readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
       readyEvents: ["loadedmetadata", "play", "timeupdate"],
       errorEvents: ["error"]
@@ -530,6 +539,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
+      attachFrameProgress(frame, film, provider.name, provider.origin);
       status("ПРОБУЮ РЕЗЕРВНЫЙ ПЛЕЕР · " + provider.name);
       streamStatus("Автоматически проверяю альтернативный источник. Если он не подтвердит готовность видео, After Dark попробует следующий.");
 
@@ -712,6 +722,7 @@
       status("НЕ ПОЛУЧЕНЫ ДАННЫЕ ФИЛЬМА", true);
       return;
     }
+    currentFilm = film;
     $("#mediaTitle").textContent = String(film.title || film.name || "Без названия");
     const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
