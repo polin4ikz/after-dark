@@ -233,7 +233,11 @@
   function injectButtons() {
     document.querySelectorAll(".archive-card").forEach(card => {
       const actions = $(".archive-actions", card);
-      if (!actions || actions.querySelector("[data-ad-watch-trigger]")) return;
+      if (!actions) return;
+      const primary = actions.querySelector("[data-action='watch']");
+      if (primary) { primary.textContent = watchLabel(getArchiveFilm(card.dataset.id)); return; }
+      const existing = actions.querySelector("[data-ad-watch-trigger]");
+      if (existing) { existing.textContent = watchLabel(getArchiveFilm(card.dataset.id)); return; }
       const button = document.createElement("button");
       button.type = "button";
       button.className = "archive-action ad-watch-trigger";
