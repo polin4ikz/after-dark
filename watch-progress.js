@@ -32,20 +32,22 @@
   };
   async function getClient() {
     if (clientPromise) return clientPromise;
-    clientPromise = new Promise((resolve, reject) => {
-      const init = () => {
-        try {
-          const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          resolve(client);
-        } catch (e) { reject(e); }
-      };
-      if (window.supabase?.createClient) return init();
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-      script.onload = init;
-      script.onerror = () => reject(new Error("Supabase SDK could not load"));
-      document.head.appendChild(script);
-    });
+    clientPromise = (async () => {
+      // On the archive page, reuse the app's authenticated Supabase client instead of
+      // injecting a second SDK/client. The player page can initialize its own client.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      if (window.afterDarkSupabaseReady) return window.afterDarkSupabaseReady;
+      if (window.supabase?.createClient) return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Supabase SDK could not load"));
+        document.head.appendChild(script);
+      });
+      if (!window.supabase?.createClient) throw new Error("Supabase SDK did not expose createClient");
+      return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    })();
     return clientPromise;
   }
   async function syncFromCloud() {
