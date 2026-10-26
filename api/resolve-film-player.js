@@ -68,28 +68,62 @@ async function fetchText(url, options = {}) {
     return await response.text();
   } finally { clearTimeout(timer); }
 }
-async function searchPages(title, year) {
-  const siteQuery = SEARCH_DOMAINS.map(domain => "site:" + domain).join(" OR ");
-  const queries = [
-    [title, year, "смотреть онлайн", siteQuery].filter(Boolean).join(" "),
-    [title, year, "film online", siteQuery].filter(Boolean).join(" ")
-  ];
+function extractSearchLinks(html, baseUrl) {
   const found = [];
-  for (const query of queries) {
+  const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/");
+  const hrefs = [...markup.matchAll(/href\\s*=\\s*(?:"([^"]+)"|'([^']+)'|([^\\s>]+))/gi)]
+    .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
+  for (let href of hrefs) {
     try {
-      const url = new URL("https://www.bing.com/search");
-      url.searchParams.set("format", "rss");
-      url.searchParams.set("q", query);
-      const xml = await fetchText(url.href, { headers: { "User-Agent": "Mozilla/5.0", accept: "application/rss+xml,application/xml,text/xml" } });
-      const links = [...xml.matchAll(/<link>(https?:\/\/[^<]+)<\/link>/gi)].map(m => decodeHtml(m[1]));
-      for (const link of links) {
-        if (allowedPage(link) && !found.includes(link)) found.push(link);
-        if (found.length >= 8) return found;
+      if (href.startsWith("/url?")) {
+        const redirect = new URL(href, baseUrl);
+        href = redirect.searchParams.get("q") || redirect.searchParams.get("url") || href;
       }
+      const url = new URL(href, baseUrl);
+      if (allowedPage(url.href) && !found.includes(url.href)) found.push(url.href);
     } catch (_) {}
+  }
+  // Bing RSS is a useful fallback where its HTML result markup is available.
+  for (const match of markup.matchAll(/<link>(https?:\\/\\/[^<]+)<\\/link>/gi)) {
+    const link = decodeHtml(match[1]);
+    if (allowedPage(link) && !found.includes(link)) found.push(link);
   }
   return found;
 }
+async function searchPages(title, year) {
+  const domains = SEARCH_DOMAINS;
+  const queryText = [title, year].filter(Boolean).join(" ");
+  const queries = [
+    { base: "https://html.duckduckgo.com/html/", q: queryText + " смотреть онлайн site:lord.kim OR site:lord-film.org OR site:lordfilm.org" },
+    { base: "https://www.google.com/search", q: queryText + " смотреть онлайн site:lord.kim OR site:lord-film.org OR site:lordfilm.org" },
+    { base: "https://html.duckduckgo.com/html/", q: queryText + " site:lord.kim" },
+    { base: "https://www.google.com/search", q: queryText + " site:lord.kim" },
+    ...domains.map(domain => ({ base: "https://html.duckduckgo.com/html/", q: queryText + " site:" + domain }))
+  ];
+  const found = [];
+  // Search providers are queried in parallel so a blocked engine doesn't consume the whole serverless budget.
+  const batches = [queries.slice(0, 4), queries.slice(4)];
+  for (const batch of batches) {
+    const results = await Promise.all(batch.map(async item => {
+      try {
+        const url = new URL(item.base);
+        url.searchParams.set("q", item.q);
+        if (item.base.includes("google.com")) url.searchParams.set("hl", "ru");
+        const html = await fetchText(url.href, {
+          headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" }
+        });
+        return extractSearchLinks(html, url.href);
+      } catch (_) { return []; }
+    }));
+    for (const links of results) {
+      for (const link of links) if (!found.includes(link)) found.push(link);
+      if (found.length >= 8) break;
+    }
+    if (found.length >= 8) break;
+  }
+  return found.slice(0, 6);
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cache-Control", "private, no-store");
