@@ -375,30 +375,44 @@
       status("ИЩУ ВСТРОЕННЫЙ ПЛЕЕР ДЛЯ ЭТОГО ФИЛЬМА");
       streamStatus("After Dark ищет страницу фильма по названию и году, затем пытается извлечь отдельный адрес iframe. Некоторые источники блокируют автоматическое извлечение или встраивание.");
       let lastMessage = "";
+      let found = false;
       try {
-        for (const title of titles) {
-          const params = new URLSearchParams({ title });
-          if (year) params.set("year", year);
-          const response = await fetch("/api/resolve-film-player?" + params.toString(), {
-            headers: { accept: "application/json" }
-          });
-          const data = await response.json().catch(() => ({}));
-          if (response.ok && data.embedUrl) {
-            openDirectStream(data.embedUrl, true);
-            status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(data.provider || "ИСТОЧНИК").toUpperCase());
-            streamStatus("Источник найден автоматически. Если плеер не запускается, сайт-источник может запрещать встраивание.");
-            addNote("Источник найден по названию фильма; вручную вставлять ссылку не потребовалось.");
-            return;
+        // Two automatic passes: transient search-engine failures should not require a tap.
+        for (let pass = 0; pass < 2 && !found; pass++) {
+          for (const title of titles) {
+            try {
+              const params = new URLSearchParams({ title });
+              if (year) params.set("year", year);
+              const response = await fetch("/api/resolve-film-player?" + params.toString(), {
+                headers: { accept: "application/json" }
+              });
+              const data = await response.json().catch(() => ({}));
+              if (response.ok && data.embedUrl) {
+                openDirectStream(data.embedUrl, true);
+                status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(data.provider || "ИСТОЧНИК").toUpperCase());
+                streamStatus("Источник найден автоматически. Если плеер не запускается, сайт-источник может запрещать встраивание.");
+                addNote("Источник найден автоматически по названию фильма; вручную вставлять ссылку не потребовалось.");
+                found = true;
+                break;
+              }
+              lastMessage = data.message || data.error || "Не удалось найти встроенный плеер.";
+            } catch (requestError) {
+              lastMessage = requestError && requestError.message || "Источник временно не ответил.";
+            }
           }
-          lastMessage = data.message || data.error || "Не удалось найти встроенный плеер.";
+          if (!found && pass === 0) {
+            status("НЕ НАШЁЛ С ПЕРВОГО РАЗА · ПРОБУЮ ЕЩЁ РАЗ…");
+            streamStatus("Повторный поиск идёт автоматически. Проверяю названия ещё раз; нажимать ничего не нужно.");
+            await new Promise(resolve => setTimeout(resolve, 1200));
+          }
         }
-        throw new Error(lastMessage || "Не удалось найти встроенный плеер для этого фильма.");
+        if (!found) throw new Error(lastMessage || "Не удалось найти встроенный плеер для этого фильма.");
       } catch (error) {
         status("АВТОМАТИЧЕСКИЙ ПОИСК ПЛЕЕРА НЕ УДАЛСЯ", true);
-        streamStatus((error.message || "Источник не найден.") + " Можно попробовать позже: каталог мог быть недоступен или изменить разметку.", true);
+        streamStatus((error.message || "Источник не найден.") + " Источники могли быть недоступны или запретить встраивание.", true);
       } finally {
         button.disabled = false;
-        button.textContent = "ПОВТОРИТЬ ПОИСК И ВСТРОИТЬ ВИДЕОПЛЕЕР";
+        button.textContent = "ПОИСКАТЬ ЕЩЁ РАЗ";
       }
     });
     area.prepend(button);
@@ -444,6 +458,9 @@
     }
     addExternalFallback(film);
     await showOfficialProviders(film);
+    // Start the expanded player resolver automatically after the first discovery pass fails.
+    const retryButton = area.querySelector("button.source-result");
+    if (retryButton && !retryButton.disabled) retryButton.click();
   }
   function init() {
     $("#audioTrack").addEventListener("change", () => {
