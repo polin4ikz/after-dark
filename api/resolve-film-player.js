@@ -1,145 +1,167 @@
-// Find a public film page from a small allowlist of known catalog domains,
-// then extract its embedded player URL. This does not bypass DRM or frame restrictions.
-const SEARCH_DOMAINS = [
-  "lord-film.org", "lord.kim", "lordfilm.org", "lordfilm.film",
-  "smeh-v-vaikikia-lordfilm.ru", "lord-film7.org", "kinogo.inc", "kinogo.ec", "hdrezka.ag"
-];
+// Discover film pages across the public web and extract an embedded player URL.
+// This does not bypass DRM, paywalls, login requirements, or frame restrictions.
 const MAX_TITLE = 120;
+const MAX_PAGES = 12;
+const SEARCH_HOSTS = new Set([
+  "google.com", "www.google.com", "duckduckgo.com", "html.duckduckgo.com",
+  "bing.com", "www.bing.com", "yandex.com", "yandex.ru", "www.yandex.ru",
+  "search.yahoo.com", "yahoo.com", "www.yahoo.com"
+]);
+const SKIP_HOSTS = /(^|\.)(
+  google\.[a-z.]+|duckduckgo\.com|bing\.com|yandex\.[a-z.]+|yahoo\.com|
+  facebook\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|reddit\.com|
+  pinterest\.com|twitter\.com|x\.com|wikipedia\.org|imdb\.com
+)$/ix;
 function decodeHtml(value) {
   return String(value || "").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
     .replace(/&#0*39;|&apos;/gi, "'")
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
     .replace(/&#([0-9]+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
 }
-function allowedPage(raw) {
+function isPublicHttps(raw) {
   try {
     const u = new URL(raw);
-    return u.protocol === "https:" && !u.username && !u.password &&
-      SEARCH_DOMAINS.some(domain => u.hostname === domain || u.hostname.endsWith("." + domain));
+    if (u.protocol !== "https:" || u.username || u.password || u.port && u.port !== "443") return false;
+    const host = u.hostname.toLowerCase().replace(/\.$/, "");
+    if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+        host.endsWith(".internal") || host.endsWith(".test")) return false;
+    if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.|224\.|::1$|fc|fd|fe80)/i.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+    return true;
   } catch (_) { return false; }
+}
+function isSearchOrIrrelevant(raw) {
+  try {
+    const u = new URL(raw), host = u.hostname.toLowerCase();
+    return SEARCH_HOSTS.has(host) || SKIP_HOSTS.test(host) ||
+      /(^|\.)googleadservices\.com$|(^|\.)doubleclick\.net$|(^|\.)googlesyndication\.com$/.test(host);
+  } catch (_) { return true; }
 }
 function extractPlayerUrl(html, pageUrl) {
   const candidates = [];
-  const tags = String(html || "").match(/<(?:iframe|embed|video|source)\b[^>]*>/gi) || [];
+  const add = (raw, score = 0) => {
+    if (!raw || typeof raw !== "string") return;
+    const value = decodeHtml(raw.trim()).replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+    try {
+      const u = new URL(value, pageUrl);
+      if (!isPublicHttps(u.href) || isSearchOrIrrelevant(u.href)) return;
+      const host = u.hostname.toLowerCase();
+      const path = (host + u.pathname + u.search).toLowerCase();
+      if (/ads?|banner|tracker|analytics|doubleclick|pixel|statistic/i.test(path)) return;
+      if (host === new URL(pageUrl).hostname.toLowerCase() && !/player|embed|video|watch|stream/i.test(path)) return;
+      const playerHint = /player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback|movie|watch/i.test(path);
+      candidates.push({ url: u.href, score: score + (playerHint ? 10 : 0) });
+    } catch (_) {}
+  };
+  const tags = String(html || "").match(/<(?:iframe|embed|video|source|object)\b[^>]*>/gi) || [];
   for (const tag of tags) {
     const attrs = {};
     const pattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
     let match;
     while ((match = pattern.exec(tag))) attrs[match[1].toLowerCase()] = decodeHtml(match[2] ?? match[3] ?? match[4] ?? "");
-    const raw = attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || attrs["data-url"] || attrs["data-embed"];
-    if (!raw) continue;
-    try {
-      const u = new URL(raw, pageUrl);
-      if (u.protocol !== "https:" || u.username || u.password) continue;
-      if (/ads?|banner|tracker|analytics|doubleclick/i.test(u.hostname + u.pathname)) continue;
-      const hint = (u.hostname + u.pathname + " " + (attrs.title || "") + " " + (attrs.class || "") + " " + (attrs.id || "")).toLowerCase();
-      const score = (/player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb/i.test(hint) ? 10 : 0)
-        + (tag.toLowerCase().startsWith("<iframe") ? 4 : 0)
-        + (tag.toLowerCase().startsWith("<video") || tag.toLowerCase().startsWith("<source") ? 2 : 0);
-      candidates.push({ url: u.href, score });
-    } catch (_) {}
+    for (const key of ["src", "data-src", "data-lazy-src", "data-url", "data-embed", "data-href", "content"]) {
+      if (attrs[key]) add(attrs[key], tag.toLowerCase().startsWith("<iframe") ? 8 : 4);
+    }
+    for (const key of ["data-player", "data-options", "data-config", "data-setup"]) {
+      if (!attrs[key]) continue;
+      const config = attrs[key].replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
+      for (const match of config.matchAll(/https?:\\?\/\\?\/[^"'\\\s<>]+/gi)) add(match[0], 5);
+      for (const match of config.matchAll(/(?:file|src|url|embedUrl|iframe)\s*[:=]\s*["']([^"']+)["']/gi)) add(match[1], 6);
+    }
   }
-  // Some catalog templates construct their iframe from JavaScript instead of a literal tag.
-  // Inspect only explicit player/embed-like HTTPS URLs already present in that page's HTML.
-  const normalizedHtml = String(html || "").replaceAll("\\/", "/");
-  const rawUrls = normalizedHtml.match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
-  for (const raw of rawUrls) {
-    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "");
-    try {
-      const u = new URL(cleaned);
-      if (u.protocol !== "https:" || u.username || u.password) continue;
-      if (u.hostname === new URL(pageUrl).hostname) continue;
-      if (/ads?|banner|tracker|analytics|doubleclick/i.test(u.hostname + u.pathname)) continue;
-      const hint = (u.hostname + u.pathname + u.search).toLowerCase();
-      if (!/player|embed|iframe|video_ext|nextembed|alloha|kodik|collaps|videocdn|hdvb|shortener/i.test(hint)) continue;
-      candidates.push({ url: u.href, score: 8 });
-    } catch (_) {}
+  // Inspect common player configuration snippets and escaped URLs embedded in scripts.
+  const normalized = String(html || "").replaceAll("\\/", "/").replace(/\\u0026/gi, "&").replace(/\\u003d/gi, "=");
+  for (const match of normalized.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) add(match[0], 1);
+  for (const match of normalized.matchAll(/(?:file|src|source|embedUrl|iframeUrl|playerUrl|videoUrl|url)\s*[:=]\s*["']([^"']{8,1000})["']/gi)) {
+    add(match[1], 7);
   }
   const unique = [...new Map(candidates.map(item => [item.url, item])).values()];
   unique.sort((a, b) => b.score - a.score);
   return unique[0]?.url || null;
 }
-async function fetchText(url, options = {}) {
+async function fetchText(rawUrl, options = {}) {
+  if (!isPublicHttps(rawUrl)) throw new Error("URL_NOT_ALLOWED");
   const controller = new AbortController();
-  // Film catalog pages can respond more slowly than search pages; don't fail after only 4 seconds.
-  const timeoutMs = options.timeoutMs || 10000;
-  const fetchOptions = { ...options };
-  delete fetchOptions.timeoutMs;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs || 9000);
   try {
-    const response = await fetch(url, { ...fetchOptions, signal: controller.signal, redirect: "follow" });
+    const response = await fetch(rawUrl, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+        ...(options.referer ? { Referer: options.referer } : {})
+      }
+    });
     if (!response.ok) {
       const error = new Error("UPSTREAM_HTTP_ERROR");
       error.status = response.status;
-      error.finalUrl = response.url || url;
+      error.finalUrl = response.url || rawUrl;
       throw error;
     }
-    return await response.text();
+    if (response.url && !isPublicHttps(response.url)) throw new Error("REDIRECT_URL_NOT_ALLOWED");
+    return { html: await response.text(), finalUrl: response.url || rawUrl };
   } catch (error) {
-    if (error && typeof error === "object" && !error.finalUrl) error.finalUrl = url;
+    if (error && typeof error === "object" && !error.finalUrl) error.finalUrl = rawUrl;
     throw error;
   } finally { clearTimeout(timer); }
 }
 function extractSearchLinks(html, baseUrl) {
   const found = [];
-  const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/");
+  const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/").replaceAll("\\/", "/");
   const hrefs = [...markup.matchAll(/href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
     .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
   for (let href of hrefs) {
     try {
-      const url = new URL(href, baseUrl);
-      if (/duckduckgo\.com$/i.test(url.hostname) && url.pathname === "/l") {
-        href = url.searchParams.get("uddg") || href;
-      } else if (/google\.com$/i.test(url.hostname) && url.pathname === "/url") {
-        href = url.searchParams.get("q") || url.searchParams.get("url") || href;
+      const wrapped = new URL(href, baseUrl);
+      if (SEARCH_HOSTS.has(wrapped.hostname.toLowerCase())) {
+        const target = wrapped.searchParams.get("uddg") || wrapped.searchParams.get("url") ||
+          wrapped.searchParams.get("q") || wrapped.searchParams.get("u");
+        if (target) href = target;
       }
       const resolved = new URL(href, baseUrl);
-      if (allowedPage(resolved.href) && !found.includes(resolved.href)) found.push(resolved.href);
+      if (isPublicHttps(resolved.href) && !isSearchOrIrrelevant(resolved.href) &&
+          !found.includes(resolved.href) && !/\.(?:jpg|jpeg|png|gif|webp|svg|css|js|pdf)(?:$|\?)/i.test(resolved.pathname)) {
+        found.push(resolved.href);
+      }
     } catch (_) {}
   }
-  // Bing RSS is a useful fallback where its HTML result markup is available.
   for (const match of markup.matchAll(/<link>(https?:\/\/[^<]+)<\/link>/gi)) {
     const link = decodeHtml(match[1]);
-    if (allowedPage(link) && !found.includes(link)) found.push(link);
+    if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
   }
   return found;
 }
 async function searchPages(title, year) {
-  const domains = SEARCH_DOMAINS;
-  const queryText = [title, year].filter(Boolean).join(" ");
-  const queries = [
-    { base: "https://html.duckduckgo.com/html/", q: queryText + " смотреть онлайн site:lord.kim OR site:lord-film.org OR site:lordfilm.org" },
-    { base: "https://www.google.com/search", q: queryText + " смотреть онлайн site:lord.kim OR site:lord-film.org OR site:lordfilm.org" },
-    { base: "https://html.duckduckgo.com/html/", q: queryText + " site:lord.kim" },
-    { base: "https://www.google.com/search", q: queryText + " site:lord.kim" },
-    ...domains.map(domain => ({ base: "https://html.duckduckgo.com/html/", q: queryText + " site:" + domain }))
-  ];
+  const titleVariants = [...new Set([
+    title,
+    title.replace(/[«»„“”]/g, '"'),
+    title.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim()
+  ])].filter(Boolean);
+  const queries = [];
+  for (const variant of titleVariants) {
+    const q = [variant, year, "смотреть онлайн фильм плеер"].filter(Boolean).join(" ");
+    queries.push(
+      { engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q) },
+      { engine: "bing", url: "https://www.bing.com/search?q=" + encodeURIComponent(q) },
+      { engine: "google", url: "https://www.google.com/search?hl=ru&q=" + encodeURIComponent(q) }
+    );
+    queries.push({ engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent([variant, year, "watch online movie embed player"].filter(Boolean).join(" ")) });
+  }
   const found = [];
-  // Add known, verified title pages first so noisy search results cannot push them out of the inspection limit.
-  const normalizedTitle = title.toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  if ((!year || year === "2001") && /(?:гарри поттер|harry potter)/i.test(normalizedTitle)) {
-    found.push("https://lord.kim/26334-garri-potter-i-filosofskii-kamen-fo15.html");
-  }
-  if ((!year || year === "2006") && /(?:дьявол носит prada|devil wears prada)/i.test(normalizedTitle)) {
-    found.push("https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/");
-  }
-  // Query all search fallbacks concurrently; one blocked provider should not prevent discovery.
-  const results = await Promise.all(queries.map(async item => {
+  const results = await Promise.all(queries.map(async query => {
     try {
-      const url = new URL(item.base);
-      url.searchParams.set("q", item.q);
-      if (item.base.includes("google.com")) url.searchParams.set("hl", "ru");
-      const html = await fetchText(url.href, {
-        headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" }
-      });
-      return extractSearchLinks(html, url.href);
+      const { html } = await fetchText(query.url, { timeoutMs: 7000 });
+      return extractSearchLinks(html, query.url);
     } catch (_) { return []; }
   }));
-  for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
-
-  return [...new Set(found)].slice(0, 6);
+  for (const links of results) for (const link of links) {
+    if (!found.includes(link)) found.push(link);
+  }
+  // Search results often include unrelated pages. Keep a broad set and check all candidates.
+  return found.slice(0, MAX_PAGES);
 }
-
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cache-Control", "private, no-store");
@@ -155,16 +177,17 @@ module.exports = async function handler(req, res) {
     const diagnostics = { searchPagesFound: pages.length, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
     const pageResults = await Promise.all(pages.map(async pageUrl => {
       try {
-        const html = await fetchText(pageUrl, { timeoutMs: 10000, headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-          "Referer": new URL(pageUrl).origin + "/"
-        } });
-        const embedUrl = extractPlayerUrl(html, pageUrl);
-        diagnostics.pagesChecked.push({ host: new URL(pageUrl).hostname, status: "loaded", embedFound: Boolean(embedUrl), htmlLength: html.length });
+        const { html, finalUrl } = await fetchText(pageUrl, { timeoutMs: 9000, referer: new URL(pageUrl).origin + "/" });
+        const embedUrl = extractPlayerUrl(html, finalUrl);
+        diagnostics.pagesChecked.push({
+          host: new URL(pageUrl).hostname,
+          status: "loaded",
+          finalHost: new URL(finalUrl).hostname,
+          embedFound: Boolean(embedUrl),
+          htmlLength: html.length
+        });
         if (!embedUrl) diagnostics.pagesWithoutEmbed++;
-        return embedUrl ? { provider: new URL(pageUrl).hostname, pageUrl, embedUrl } : null;
+        return embedUrl ? { provider: new URL(finalUrl).hostname, pageUrl: finalUrl, embedUrl } : null;
       } catch (error) {
         diagnostics.fetchFailures++;
         diagnostics.pagesChecked.push({
@@ -172,7 +195,7 @@ module.exports = async function handler(req, res) {
           status: error.name === "AbortError" ? "timeout" : (error.status ? "http_error" : "fetch_failed"),
           ...(error.status ? { httpStatus: error.status } : {}),
           ...(error.code ? { code: String(error.code).slice(0, 80) } : {}),
-          ...(error.finalUrl && error.finalUrl !== pageUrl ? { finalUrl: error.finalUrl } : {})
+          ...(error.message === "URL_NOT_ALLOWED" || error.message === "REDIRECT_URL_NOT_ALLOWED" ? { reason: error.message } : {})
         });
         return null;
       }
@@ -181,7 +204,7 @@ module.exports = async function handler(req, res) {
     if (resolved) return res.status(200).json({ ...resolved, diagnostics });
     return res.status(404).json({
       error: "PLAYER_NOT_FOUND",
-      message: "Не удалось извлечь адрес iframe из найденных страниц.",
+      message: "Поиск не нашёл доступный для встраивания плеер. Некоторые страницы могут требовать JavaScript, cookies или запрещать iframe.",
       diagnostics
     });
   } catch (error) {
@@ -190,4 +213,4 @@ module.exports = async function handler(req, res) {
   }
 };
 module.exports.extractPlayerUrl = extractPlayerUrl;
-module.exports.allowedPage = allowedPage;
+module.exports.isPublicHttps = isPublicHttps;
