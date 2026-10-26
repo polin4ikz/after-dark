@@ -365,6 +365,107 @@
     }
     return [...found.values()];
   }
+  async function tryExternalPlayerFallback(film) {
+    const id = String(film.tmdbId ?? film.id ?? "");
+    if (!/^\\d{1,12}$/.test(id) || Number(id) <= 0) return false;
+    const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
+    const candidates = [];
+
+    // VidScene exposes an availability endpoint, captions, and source failover.
+    // If its availability check says "false", skip it; if the check itself fails,
+    // still try the player rather than making the user do anything.
+    let vidSceneAvailable = null;
+    try {
+      const kind = isSeries ? "tv" : "movie";
+      const check = await fetch("https://api.vidscene.app/v1/" + kind + "/" + encodeURIComponent(id), {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (check.ok) {
+        const data = await check.json();
+        if (data && data.available === false) vidSceneAvailable = false;
+        else if (data && data.available === true) vidSceneAvailable = true;
+      }
+    } catch (_) {}
+    if (vidSceneAvailable !== false) {
+      const path = isSeries ? "/tv/" + id + "/1/1" : "/movie/" + id;
+      candidates.push({
+        name: "VIDSCENE",
+        origin: "https://player.vidscene.app",
+        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en",
+        readyTypes: ["VIDSCENE_PLAYER_EVENT"],
+        readyEvents: ["loadedmetadata", "play", "timeupdate"],
+        errorEvents: ["error"]
+      });
+    }
+
+    // Independent second provider, using the TMDB id rather than search-result scraping.
+    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-1-1" : "/ru/watch/embed/movie/" + id;
+    candidates.push({
+      name: "STELLAR",
+      origin: "https://stellar.rip",
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true",
+      readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
+      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      errorEvents: ["error"]
+    });
+
+    for (const provider of candidates) {
+      const stage = $("#playerStage");
+      resetStreamEngines();
+      stage.replaceChildren();
+      const frame = document.createElement("iframe");
+      frame.src = provider.url;
+      frame.title = "AFTER DARK — " + provider.name;
+      frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.loading = "eager";
+      stage.appendChild(frame);
+      status("ПРОБУЮ РЕЗЕРВНЫЙ ПЛЕЕР · " + provider.name);
+      streamStatus("Автоматически проверяю альтернативный источник. Если он не подтвердит готовность видео, After Dark попробует следующий.");
+
+      const outcome = await new Promise(resolve => {
+        let settled = false;
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          window.removeEventListener("message", onMessage);
+          resolve(value);
+        };
+        const onMessage = event => {
+          if (event.origin !== provider.origin || event.source !== frame.contentWindow) return;
+          const data = event.data;
+          if (!data || typeof data !== "object") return;
+          if (provider.name === "STELLAR" && data.type === "STELLAR_EMBED_READY") {
+            try { frame.contentWindow.postMessage({ type: "STELLAR_EMBED_INIT" }, provider.origin); } catch (_) {}
+            return;
+          }
+          if (!provider.readyTypes.includes(data.type)) return;
+          const eventName = data.data && data.data.event;
+          if (provider.readyEvents.includes(eventName) || data.type === "MEDIA_DATA") finish("ready");
+          else if (provider.errorEvents.includes(eventName)) finish("failed");
+        };
+        const timer = setTimeout(() => finish("timeout"), 18000);
+        window.addEventListener("message", onMessage);
+        frame.addEventListener("error", () => finish("failed"), { once: true });
+      });
+
+      if (outcome === "ready") {
+        status("ВИДЕО ГОТОВО · " + provider.name);
+        streamStatus("Источник подтвердил готовность видео. Если воспроизведение недоступно в вашем регионе, попробую другой источник после сообщения об ошибке.");
+        addNote("Автоматически выбран резервный плеер: " + provider.name + ".");
+        return true;
+      }
+      // Avoid leaving a failed/empty provider iframe visible while trying the next.
+      frame.src = "about:blank";
+      stage.replaceChildren();
+      status("ИСТОЧНИК НЕ ОТВЕТИЛ · ПРОБУЮ СЛЕДУЮЩИЙ");
+    }
+    return false;
+  }
+
   function addAutomaticPlayerOption(film) {
     const area = $("#sourceResults");
     const { titles, year } = filmSearchTerms(film);
@@ -409,7 +510,11 @@
             await new Promise(resolve => setTimeout(resolve, 1200));
           }
         }
-        if (!found) throw new Error(lastMessage || "Не удалось найти встроенный плеер для этого фильма.");
+        if (!found) {
+          streamStatus("Поиск по страницам не дал результата. Перехожу к независимым плеерам по TMDB ID.");
+          found = await tryExternalPlayerFallback(film);
+        }
+        if (!found) throw new Error(lastMessage || "Все проверенные способы поиска и встроенные плееры не подтвердили доступное видео.");
       } catch (error) {
         status("АВТОМАТИЧЕСКИЙ ПОИСК ПЛЕЕРА НЕ УДАЛСЯ", true);
         streamStatus((error.message || "Источник не найден.") + " Источники могли быть недоступны или запретить встраивание.", true);
