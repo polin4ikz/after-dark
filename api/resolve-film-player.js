@@ -61,7 +61,7 @@ function extractPlayerUrl(html, pageUrl) {
 }
 async function fetchText(url, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 7000);
+  const timer = setTimeout(() => controller.abort(), 4000);
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     if (!response.ok) throw new Error("UPSTREAM_UNAVAILABLE");
@@ -102,24 +102,21 @@ async function searchPages(title, year) {
   ];
   const found = [];
   // Search providers are queried in parallel so a blocked engine doesn't consume the whole serverless budget.
-  const batches = [queries.slice(0, 4), queries.slice(4)];
-  for (const batch of batches) {
-    const results = await Promise.all(batch.map(async item => {
-      try {
-        const url = new URL(item.base);
-        url.searchParams.set("q", item.q);
-        if (item.base.includes("google.com")) url.searchParams.set("hl", "ru");
-        const html = await fetchText(url.href, {
-          headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" }
-        });
-        return extractSearchLinks(html, url.href);
-      } catch (_) { return []; }
-    }));
-    for (const links of results) {
-      for (const link of links) if (!found.includes(link)) found.push(link);
-      if (found.length >= 8) break;
-    }
-    if (found.length >= 8) break;
+  const searchBatch = async batch => Promise.all(batch.map(async item => {
+    try {
+      const url = new URL(item.base);
+      url.searchParams.set("q", item.q);
+      if (item.base.includes("google.com")) url.searchParams.set("hl", "ru");
+      const html = await fetchText(url.href, {
+        headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" }
+      });
+      return extractSearchLinks(html, url.href);
+    } catch (_) { return []; }
+  }));
+  for (const batch of [queries.slice(0, 4), queries.slice(4)]) {
+    const results = await searchBatch(batch);
+    for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
+    if (found.length >= 1) break;
   }
   return found.slice(0, 6);
 }
@@ -136,13 +133,15 @@ module.exports = async function handler(req, res) {
   }
   try {
     const pages = await searchPages(title, year);
-    for (const pageUrl of pages) {
+    const pageResults = await Promise.all(pages.slice(0, 5).map(async pageUrl => {
       try {
         const html = await fetchText(pageUrl, { headers: { "User-Agent": "Mozilla/5.0 (compatible; AfterDarkPlayer/1.0)", accept: "text/html,application/xhtml+xml" } });
         const embedUrl = extractPlayerUrl(html, pageUrl);
-        if (embedUrl) return res.status(200).json({ provider: new URL(pageUrl).hostname, pageUrl, embedUrl });
-      } catch (_) {}
-    }
+        return embedUrl ? { provider: new URL(pageUrl).hostname, pageUrl, embedUrl } : null;
+      } catch (_) { return null; }
+    }));
+    const resolved = pageResults.find(Boolean);
+    if (resolved) return res.status(200).json(resolved);
     return res.status(404).json({ error: "PLAYER_NOT_FOUND", message: "Не удалось автоматически найти доступный iframe плеера для этого фильма. Источник мог изменить разметку или создавать плеер скриптом." });
   } catch (error) {
     console.error("Film player resolution failed", error);
