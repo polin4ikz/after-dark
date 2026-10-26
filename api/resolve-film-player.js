@@ -41,8 +41,10 @@ function extractPlayerUrl(html, pageUrl) {
   }
   // Some catalog templates construct their iframe from JavaScript instead of a literal tag.
   // Inspect only explicit player/embed-like HTTPS URLs already present in that page's HTML.
-  const rawUrls = String(html || "").match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
+  const normalizedHtml = String(html || "").replaceAll("\\/", "/");
+  const rawUrls = normalizedHtml.match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
   for (const raw of rawUrls) {
+    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "");
     const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "").replace(/\\\\/g, "");
     try {
       const u = new URL(cleaned);
