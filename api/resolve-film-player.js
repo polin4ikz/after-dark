@@ -17,9 +17,10 @@ function decodeHtml(value) {
 function isPublicHttps(raw, allowPlayerPort = false) {
   try {
     const u = new URL(raw);
-    // Some legitimate embedded players serve their iframe on HTTPS port 9443.
-    // Permit that port only when validating a player candidate, never for server-side page fetches.
-    const allowedPort = !u.port || u.port === "443" || (allowPlayerPort && u.port === "9443");
+    // Embedded player providers may use non-standard HTTPS ports.
+    // Allow any port only for a discovered player candidate; server-side page fetches
+    // remain restricted to the default HTTPS port to reduce SSRF exposure.
+    const allowedPort = !u.port || u.port === "443" || allowPlayerPort;
     if (u.protocol !== "https:" || u.username || u.password || !allowedPort) return false;
     const host = u.hostname.toLowerCase().replace(/\.$/, "");
     if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
