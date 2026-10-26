@@ -75,6 +75,13 @@
     return type + ":" + String(id);
   }
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
+  function watchLabel(film) {
+    const progress = window.afterDarkProgress?.get(film);
+    if (progress?.status === "in_progress" && Number(progress.position_seconds) > 10) {
+      return "ПРОДОЛЖИТЬ · " + (window.afterDarkProgress?.formatTime(progress.position_seconds) || "");
+    }
+    return "СМОТРЕТЬ ↗";
+  }
 
   function ensureModal() {
     let modal = $("#adWatchPlayer");
@@ -231,7 +238,7 @@
       button.type = "button";
       button.className = "archive-action ad-watch-trigger";
       button.dataset.adWatchTrigger = "archive";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel(getArchiveFilm(card.dataset.id));
       actions.appendChild(button);
     });
     const nightActions = $(".movie-night-final-actions");
@@ -240,7 +247,7 @@
       button.type = "button";
       button.className = "movie-night-action ad-watch-trigger";
       button.dataset.adWatchTrigger = "movie-night";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel(window.movieNight?.result);
       nightActions.appendChild(button);
     }
     const detailActions = $(".ad-film-detail-actions");
@@ -249,7 +256,7 @@
       button.type = "button";
       button.className = "ad-watch-detail-trigger ad-watch-trigger";
       button.dataset.adWatchTrigger = "detail";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel($("#afterDarkFilmDetail")?._film);
       detailActions.prepend(button);
     }
   }
@@ -286,6 +293,8 @@
     restoreSourceCache();
     document.addEventListener("click", onWatchClick, true);
     injectButtons();
+    window.afterDarkProgressReady?.then(injectButtons).catch(() => {});
+    window.addEventListener("afterdark:progress-updated", injectButtons);
     new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
     window.afterDarkWatchPlayer = { open: openPlayer, close: closePlayer, normalizeEmbedUrl };
   }
