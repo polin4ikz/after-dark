@@ -1,7 +1,7 @@
 // Discover film pages across the public web and extract an embedded player URL.
 // This does not bypass DRM, paywalls, login requirements, or frame restrictions.
 const MAX_TITLE = 120;
-const MAX_PAGES = 12;
+const MAX_PAGES = 8;
 const SEARCH_HOSTS = new Set([
   "google.com", "www.google.com", "duckduckgo.com", "html.duckduckgo.com",
   "bing.com", "www.bing.com", "yandex.com", "yandex.ru", "www.yandex.ru",
@@ -136,19 +136,18 @@ async function searchPages(title, year) {
     title.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim()
   ])].filter(Boolean);
   const queries = [];
-  for (const variant of titleVariants) {
+  for (const variant of titleVariants.slice(0, 2)) {
     const q = [variant, year, "смотреть онлайн фильм плеер"].filter(Boolean).join(" ");
     queries.push(
       { engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q) },
       { engine: "bing", url: "https://www.bing.com/search?q=" + encodeURIComponent(q) },
       { engine: "google", url: "https://www.google.com/search?hl=ru&q=" + encodeURIComponent(q) }
     );
-    queries.push({ engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent([variant, year, "watch online movie embed player"].filter(Boolean).join(" ")) });
   }
   const found = [];
   const results = await Promise.all(queries.map(async query => {
     try {
-      const { html } = await fetchText(query.url, { timeoutMs: 7000 });
+      const { html } = await fetchText(query.url, { timeoutMs: 4000 });
       return extractSearchLinks(html, query.url);
     } catch (_) { return []; }
   }));
@@ -173,7 +172,7 @@ module.exports = async function handler(req, res) {
     const diagnostics = { searchPagesFound: pages.length, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
     const pageResults = await Promise.all(pages.map(async pageUrl => {
       try {
-        const { html, finalUrl } = await fetchText(pageUrl, { timeoutMs: 9000, referer: new URL(pageUrl).origin + "/" });
+        const { html, finalUrl } = await fetchText(pageUrl, { timeoutMs: 5000, referer: new URL(pageUrl).origin + "/" });
         const embedUrl = extractPlayerUrl(html, finalUrl);
         diagnostics.pagesChecked.push({
           host: new URL(pageUrl).hostname,
