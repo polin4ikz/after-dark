@@ -477,24 +477,34 @@
     return [...found.values()];
   }
   async function tryExternalPlayerFallback(film) {
-    const id = String(film.tmdbId ?? film.id ?? "");
-    if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
+    const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
+    if (!/^\\d{1,12}$/.test(id) || Number(id) <= 0) return false;
     const isSeries = isSeriesFilm(film);
     const previousProgress = savedProgress(film);
     const resumeAt = previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
     const season = Math.max(1, Math.floor(Number(previousProgress?.season_number) || 1));
     const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
-    const candidates = [];
 
-    // VidScene exposes an availability endpoint, captions, and source failover.
-    // If its availability check says "false", skip it; if the check itself fails,
-    // still try the player rather than making the user do anything.
+    // Stellar is first: it has worked for real titles and documents progress events,
+    // startAt resume, localized controls, and episode navigation.
+    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
+    const candidates = [{
+      name: "STELLAR",
+      origin: "https://stellar.rip",
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
+      readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
+      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      errorEvents: ["error"]
+    }];
+
+    // Only spend a short budget on VidScene availability after Stellar fails.
+    // A failed availability API is not fatal: the player itself still gets a chance.
     let vidSceneAvailable = null;
     try {
       const kind = isSeries ? "tv" : "movie";
       const check = await fetch("https://api.vidscene.app/v1/" + kind + "/" + encodeURIComponent(id), {
         headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(4500)
+        signal: AbortSignal.timeout(1500)
       });
       if (check.ok) {
         const data = await check.json();
@@ -504,28 +514,15 @@
     } catch (_) {}
     if (vidSceneAvailable !== false) {
       const path = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
-      const resumeParam = resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : "";
       candidates.push({
         name: "VIDSCENE",
         origin: "https://player.vidscene.app",
-        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + resumeParam,
+        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
         readyTypes: ["VIDSCENE_PLAYER_EVENT"],
         readyEvents: ["loadedmetadata", "play", "timeupdate"],
         errorEvents: ["error"]
       });
     }
-
-    // Independent second provider, using the TMDB id rather than search-result scraping.
-    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
-    const stellarResumeParam = "&startAt=" + encodeURIComponent(String(resumeAt));
-    candidates.push({
-      name: "STELLAR",
-      origin: "https://stellar.rip",
-      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true" + stellarResumeParam + (isSeries ? "&nextButton=true&autoNext=true" : ""),
-      readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
-      readyEvents: ["loadedmetadata", "play", "timeupdate"],
-      errorEvents: ["error"]
-    });
 
     for (const provider of candidates) {
       const stage = $("#playerStage");
@@ -540,8 +537,10 @@
       frame.loading = "eager";
       stage.appendChild(frame);
       attachFrameProgress(frame, film, provider.name, provider.origin);
-      status("ПРОБУЮ РЕЗЕРВНЫЙ ПЛЕЕР · " + provider.name);
-      streamStatus("Автоматически проверяю альтернативный источник. Если он не подтвердит готовность видео, After Dark попробует следующий.");
+      status(provider.name === "STELLAR" ? "ЗАПУСКАЮ ОСНОВНОЙ ПЛЕЕР · STELLAR" : "ПРОБУЮ РЕЗЕРВНЫЙ ПЛЕЕР · " + provider.name);
+      streamStatus(provider.name === "STELLAR"
+        ? "Сначала проверяю Stellar по TMDB ID. Озвучку, субтитры и доступные настройки качества выбирай внутри самого плеера."
+        : "Stellar не подтвердил готовность видео; автоматически проверяю резервный источник.");
 
       const outcome = await new Promise(resolve => {
         let settled = false;
@@ -561,22 +560,25 @@
             return;
           }
           if (!provider.readyTypes.includes(data.type)) return;
-          const eventName = data.data && data.data.event;
+          const payload = data.data && typeof data.data === "object" ? data.data : data;
+          const eventName = String(payload.event || payload.name || "").toLowerCase();
           if (provider.readyEvents.includes(eventName) || data.type === "MEDIA_DATA") finish("ready");
           else if (provider.errorEvents.includes(eventName)) finish("failed");
         };
-        const timer = setTimeout(() => finish("timeout"), 18000);
+        // Stellar should feel quick; don't wait the old 18 seconds before fallback.
+        const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 7500 : 9000);
         window.addEventListener("message", onMessage);
         frame.addEventListener("error", () => finish("failed"), { once: true });
       });
 
       if (outcome === "ready") {
         status("ВИДЕО ГОТОВО · " + provider.name);
-        streamStatus("Источник подтвердил готовность видео. Если воспроизведение недоступно в вашем регионе, попробую другой источник после сообщения об ошибке.");
-        addNote("Автоматически выбран резервный плеер: " + provider.name + ".");
+        streamStatus(provider.name === "STELLAR"
+          ? "Плеер готов. Выбирай доступную озвучку, субтитры и качество в его собственных настройках. Позиция сохраняется, если плеер передаёт события воспроизведения."
+          : "Источник готов. Возможность сохранять позицию и менять дорожки зависит от API этого плеера.");
+        addNote("Автоматически выбран плеер: " + provider.name + ".");
         return true;
       }
-      // Avoid leaving a failed/empty provider iframe visible while trying the next.
       frame.src = "about:blank";
       stage.replaceChildren();
       status("ИСТОЧНИК НЕ ОТВЕТИЛ · ПРОБУЮ СЛЕДУЮЩИЙ");
@@ -643,8 +645,22 @@
     addNote("Автопоиск встроенного плеера доступен для этого фильма. Результат зависит от доступности источника и разрешения на встраивание.");
   }
   async function findSources(film) {
-    const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
+    const area = $("#sourceResults");
+    area.replaceChildren();
+    status("ЗАПУСКАЮ STELLAR ПО TMDB ID…");
     addAutomaticPlayerOption(film);
+
+    // Fast path: try Stellar immediately. Do not wait for archive searches or TMDB provider cards.
+    try {
+      if (await tryExternalPlayerFallback(film)) {
+        await showOfficialProviders(film);
+        return;
+      }
+    } catch (error) {
+      console.warn("Primary embedded players failed:", error);
+    }
+
+    status("STELLAR НЕ ОТВЕТИЛ · ПРОВЕРЯЮ ДРУГИЕ ИСТОЧНИКИ…");
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
@@ -653,13 +669,6 @@
         addNote("Найдено точное совпадение с открытой лицензией. Если воспроизведение не началось автоматически, нажми Play.");
         return;
       }
-      // Prefer providers that expose time/episode events; scraped iframes are the fallback.
-      const progressAwarePlayerFound = await tryExternalPlayerFallback(film);
-      if (progressAwarePlayerFound) {
-        await showOfficialProviders(film);
-        return;
-      }
-      // Search known film pages and embed their player iframe, not the whole source page.
       const { titles: providerTitles, year: providerYear } = filmSearchTerms(film);
       for (const providerTitle of providerTitles) {
         try {
@@ -670,7 +679,7 @@
           if (response.ok && resolved.embedUrl) {
             openDirectStream(resolved.embedUrl, true);
             status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(resolved.provider || "ИСТОЧНИК").toUpperCase());
-            addNote("After Dark нашёл страницу фильма и извлёк адрес встроенного плеера. Если он не запускается, видеохост может запрещать встраивание.");
+            addNote("After Dark нашёл страницу фильма и извлёк адрес встроенного плеера. Точное сохранение позиции зависит от событий, которые передаёт источник.");
             return;
           }
         } catch (_) {}
@@ -680,14 +689,14 @@
         addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
         results.forEach(renderCandidate);
       } else {
-        status("В ОТКРЫТОМ АРХИВЕ НЕТ ПОДХОДЯЩЕГО ВИДЕОФАЙЛА");
-        addNote("Автопоиск пока проверяет только Internet Archive и видео с открытой лицензией. Ссылки на другие сайты находятся в карточках выше; дополнительные поисковики скрыты в разделе ниже.");
+        status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
+        addNote("Проверены Stellar, резервный плеер и поиск открытых видео. Доступность зависит от источника и региона.");
       }
-    } catch (_) {
-      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН · ПОПРОБУЙ ДРУГИЕ ПОИСКИ");
+    } catch (error) {
+      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
+      console.warn("Automatic source discovery failed:", error);
     }
     addExternalFallback(film);
-    // Keep retry available after all automatic providers and page extraction have failed.
     await showOfficialProviders(film);
   }
   function init() {
