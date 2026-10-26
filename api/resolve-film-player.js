@@ -191,13 +191,13 @@ async function searchPages(title, year) {
   // Search results often include unrelated pages. Keep a broad set and check all candidates.
 
   // Prefer likely film pages over generic search hits, aggregators, and unrelated navigation.
-  const titleTokens = titleVariants[0].toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter(token => token.length >= 4);
+  const titleTokens = [...new Set(titleVariants.join(" ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(token => token.length >= 3))];
   const ranked = found.map((url, index) => {
     let score = 0;
     const normalizedUrl = decodeURIComponent(url).toLowerCase();
     for (const token of titleTokens) if (normalizedUrl.includes(token)) score += 3;
     if (/lordfilm|hdrezka|kinogo|rezka|film|kino|serial/i.test(new URL(url).hostname)) score += 2;
-    if (/search|category|tag|page\\//i.test(new URL(url).pathname)) score -= 2;
+    if (/search|category|tag|page\//i.test(new URL(url).pathname)) score -= 2;
     return { url, index, score };
   }).sort((a, b) => b.score - a.score || a.index - b.index);
   return { pages: ranked.slice(0, MAX_PAGES).map(item => item.url), searchDiagnostics };
