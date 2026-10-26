@@ -140,6 +140,7 @@ async function searchPages(title, year) {
     const q = [variant, year, "смотреть онлайн фильм плеер"].filter(Boolean).join(" ");
     queries.push(
       { engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q) },
+      { engine: "bing-rss", url: "https://www.bing.com/search?format=rss&q=" + encodeURIComponent(q) },
       { engine: "bing", url: "https://www.bing.com/search?q=" + encodeURIComponent(q) },
       { engine: "google", url: "https://www.google.com/search?hl=ru&q=" + encodeURIComponent(q) }
     );
@@ -155,6 +156,13 @@ async function searchPages(title, year) {
     if (!found.includes(link)) found.push(link);
   }
   // Search results often include unrelated pages. Keep a broad set and check all candidates.
+  // Fallback: some search engines put destinations in escaped HTML/JSON rather than href attributes.
+  const decodedMarkup = String(html || "").replace(/\\u0026/gi, "&").replace(/\\\//g, "/");
+  for (const match of decodedMarkup.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) {
+    const link = decodeHtml(match[0]).replace(/[),;]+$/g, "");
+    if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
+  }
+
   return found.slice(0, MAX_PAGES);
 }
 module.exports = async function handler(req, res) {
