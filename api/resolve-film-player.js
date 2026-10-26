@@ -112,8 +112,15 @@ function extractSearchLinks(html, baseUrl) {
     try {
       const wrapped = new URL(href, baseUrl);
       if (SEARCH_HOSTS.has(wrapped.hostname.toLowerCase())) {
-        const target = wrapped.searchParams.get("uddg") || wrapped.searchParams.get("url") ||
+        let target = wrapped.searchParams.get("uddg") || wrapped.searchParams.get("url") ||
           wrapped.searchParams.get("q") || wrapped.searchParams.get("u");
+        // Bing's click-tracking links commonly encode the destination as u=a1<base64>.
+        if (target && wrapped.hostname.toLowerCase().endsWith("bing.com") && /^a1[A-Za-z0-9_-]+$/.test(target)) {
+          try {
+            const decoded = Buffer.from(target.slice(2), "base64").toString("utf8");
+            if (/^https:\/\//i.test(decoded)) target = decoded;
+          } catch (_) {}
+        }
         if (target) href = target;
       }
       const resolved = new URL(href, baseUrl);
@@ -152,18 +159,29 @@ async function searchPages(title, year) {
     );
   }
   const found = [];
+  const searchDiagnostics = [];
   const results = await Promise.all(queries.map(async query => {
     try {
-      const { html } = await fetchText(query.url, { timeoutMs: 4000 });
-      return extractSearchLinks(html, query.url);
-    } catch (_) { return []; }
+      const { html, finalUrl } = await fetchText(query.url, { timeoutMs: 3500 });
+      const links = extractSearchLinks(html, finalUrl);
+      searchDiagnostics.push({ engine: query.engine, status: "loaded", httpHost: new URL(finalUrl).hostname, htmlLength: html.length, linksExtracted: links.length });
+      return links;
+    } catch (error) {
+      searchDiagnostics.push({
+        engine: query.engine,
+        status: error.status ? "http_error" : (error.name === "AbortError" ? "timeout" : "fetch_failed"),
+        ...(error.status ? { httpStatus: error.status } : {}),
+        ...(error.finalUrl ? { host: (() => { try { return new URL(error.finalUrl).hostname; } catch (_) { return ""; } })() } : {})
+      });
+      return [];
+    }
   }));
   for (const links of results) for (const link of links) {
     if (!found.includes(link)) found.push(link);
   }
   // Search results often include unrelated pages. Keep a broad set and check all candidates.
 
-  return found.slice(0, MAX_PAGES);
+  return { pages: found.slice(0, MAX_PAGES), searchDiagnostics };
 }
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -176,8 +194,9 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "INVALID_FILM_QUERY" });
   }
   try {
-    const pages = await searchPages(title, year);
-    const diagnostics = { searchPagesFound: pages.length, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
+    const searchResult = await searchPages(title, year);
+    const pages = searchResult.pages;
+    const diagnostics = { searchPagesFound: pages.length, searchEngines: searchResult.searchDiagnostics, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
     const pageResults = await Promise.all(pages.map(async pageUrl => {
       try {
         const { html, finalUrl } = await fetchText(pageUrl, { timeoutMs: 5000, referer: new URL(pageUrl).origin + "/" });
