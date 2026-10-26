@@ -20,10 +20,10 @@ function allowedPage(raw) {
 }
 function extractPlayerUrl(html, pageUrl) {
   const candidates = [];
-  const tags = String(html || "").match(/<(?:iframe|embed|video|source)\\b[^>]*>/gi) || [];
+  const tags = String(html || "").match(/<(?:iframe|embed|video|source)\b[^>]*>/gi) || [];
   for (const tag of tags) {
     const attrs = {};
-    const pattern = /([\\w:-]+)\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/g;
+    const pattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
     let match;
     while ((match = pattern.exec(tag))) attrs[match[1].toLowerCase()] = decodeHtml(match[2] ?? match[3] ?? match[4] ?? "");
     const raw = attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || attrs["data-url"] || attrs["data-embed"];
@@ -63,7 +63,7 @@ async function searchPages(title, year) {
       url.searchParams.set("format", "rss");
       url.searchParams.set("q", query);
       const xml = await fetchText(url.href, { headers: { "User-Agent": "Mozilla/5.0", accept: "application/rss+xml,application/xml,text/xml" } });
-      const links = [...xml.matchAll(/<link>(https?:\\/\\/[^<]+)<\\/link>/gi)].map(m => decodeHtml(m[1]));
+      const links = [...xml.matchAll(/<link>(https?:\/\/[^<]+)<\/link>/gi)].map(m => decodeHtml(m[1]));
       for (const link of links) {
         if (allowedPage(link) && !found.includes(link)) found.push(link);
         if (found.length >= 8) return found;
@@ -77,9 +77,9 @@ module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method !== "GET") { res.setHeader("Allow", "GET"); return res.status(405).json({ error: "METHOD_NOT_ALLOWED" }); }
   const requestUrl = new URL(req.url, "https://after-dark.invalid");
-  const title = (requestUrl.searchParams.get("title") || "").trim().replace(/\\s+/g, " ");
+  const title = (requestUrl.searchParams.get("title") || "").trim().replace(/\s+/g, " ");
   const year = (requestUrl.searchParams.get("year") || "").trim();
-  if (!title || title.length > MAX_TITLE || !/[\\p{L}\\p{N}]/u.test(title) || (year && !/^\\d{4}$/.test(year))) {
+  if (!title || title.length > MAX_TITLE || !/[\p{L}\p{N}]/u.test(title) || (year && !/^\d{4}$/.test(year))) {
     return res.status(400).json({ error: "INVALID_FILM_QUERY" });
   }
   try {
