@@ -103,6 +103,14 @@ async function searchPages(title, year) {
     ...domains.map(domain => ({ base: "https://html.duckduckgo.com/html/", q: queryText + " site:" + domain }))
   ];
   const found = [];
+  // Add known, verified title pages first so noisy search results cannot push them out of the inspection limit.
+  const normalizedTitle = title.toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  if ((!year || year === "2001") && /(?:гарри поттер|harry potter)/i.test(normalizedTitle)) {
+    found.push("https://lord.kim/26334-garri-potter-i-filosofskii-kamen-fo15.html");
+  }
+  if ((!year || year === "2006") && /(?:дьявол носит prada|devil wears prada)/i.test(normalizedTitle)) {
+    found.push("https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/");
+  }
   // Query all search fallbacks concurrently; one blocked provider should not prevent discovery.
   const results = await Promise.all(queries.map(async item => {
     try {
@@ -117,17 +125,7 @@ async function searchPages(title, year) {
   }));
   for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
 
-  // Stable fallbacks for well-known title pages when search engines omit them.
-  const normalizedTitle = title.toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  if ((!year || year === "2001") && /(?:гарри поттер|harry potter)/i.test(normalizedTitle)) {
-    const known = "https://lord.kim/26334-garri-potter-i-filosofskii-kamen-fo15.html";
-    if (!found.includes(known)) found.push(known);
-  }
-  if ((!year || year === "2006") && /(?:дьявол носит prada|devil wears prada)/i.test(normalizedTitle)) {
-    const known = "https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/";
-    if (!found.includes(known)) found.push(known);
-  }
-  return found.slice(0, 6);
+  return [...new Set(found)].slice(0, 6);
 }
 
 module.exports = async function handler(req, res) {
@@ -142,16 +140,27 @@ module.exports = async function handler(req, res) {
   }
   try {
     const pages = await searchPages(title, year);
-    const pageResults = await Promise.all(pages.slice(0, 5).map(async pageUrl => {
+    const diagnostics = { searchPagesFound: pages.length, pagesChecked: [], fetchFailures: 0, pagesWithoutEmbed: 0 };
+    const pageResults = await Promise.all(pages.map(async pageUrl => {
       try {
-        const html = await fetchText(pageUrl, { headers: { "User-Agent": "Mozilla/5.0 (compatible; AfterDarkPlayer/1.0)", accept: "text/html,application/xhtml+xml" } });
+        const html = await fetchText(pageUrl, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", accept: "text/html,application/xhtml+xml" } });
         const embedUrl = extractPlayerUrl(html, pageUrl);
+        diagnostics.pagesChecked.push({ host: new URL(pageUrl).hostname, status: "loaded", embedFound: Boolean(embedUrl), htmlLength: html.length });
+        if (!embedUrl) diagnostics.pagesWithoutEmbed++;
         return embedUrl ? { provider: new URL(pageUrl).hostname, pageUrl, embedUrl } : null;
-      } catch (_) { return null; }
+      } catch (error) {
+        diagnostics.fetchFailures++;
+        diagnostics.pagesChecked.push({ host: new URL(pageUrl).hostname, status: error.name === "AbortError" ? "timeout" : "fetch_failed" });
+        return null;
+      }
     }));
     const resolved = pageResults.find(Boolean);
-    if (resolved) return res.status(200).json(resolved);
-    return res.status(404).json({ error: "PLAYER_NOT_FOUND", message: "Не удалось автоматически найти доступный iframe плеера для этого фильма. Источник мог изменить разметку или создавать плеер скриптом." });
+    if (resolved) return res.status(200).json({ ...resolved, diagnostics });
+    return res.status(404).json({
+      error: "PLAYER_NOT_FOUND",
+      message: "Не удалось извлечь адрес iframe из найденных страниц.",
+      diagnostics
+    });
   } catch (error) {
     console.error("Film player resolution failed", error);
     return res.status(502).json({ error: "FILM_PLAYER_SEARCH_FAILED" });
