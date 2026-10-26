@@ -189,10 +189,10 @@
       streamStatus("Озвучка и субтитры для встроенного источника настраиваются внутри его плеера, если он предоставляет такие параметры.");
       return;
     }
-    const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
+    const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
     if (kind === "unknown") {
       // Best-effort provider-page embedding. Browser-enforced X-Frame-Options/CSP is respected.
-      if (/^(?:www\\.)?(?:google\\.[^/]+|yandex\\.[^/]+|bing\\.com|duckduckgo\\.com)$/i.test(host)) {
+      if (/^(?:www\.)?(?:google\.[^/]+|yandex\.[^/]+|bing\.com|duckduckgo\.com)$/i.test(host)) {
         throw new Error("Это поисковая выдача, а не страница фильма. Открой конкретную страницу источника.");
       }
       resetStreamEngines();
