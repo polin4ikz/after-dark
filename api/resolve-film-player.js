@@ -71,14 +71,14 @@ async function fetchText(url, options = {}) {
 function extractSearchLinks(html, baseUrl) {
   const found = [];
   const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/");
-  const hrefs = [...markup.matchAll(/href\\s*=\\s*(?:"([^"]+)"|'([^']+)'|([^\\s>]+))/gi)]
+  const hrefs = [...markup.matchAll(/href\\s*=\\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
     .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
   for (let href of hrefs) {
     try {
       const url = new URL(href, baseUrl);
-      if (/duckduckgo\\.com$/i.test(url.hostname) && url.pathname === "/l") {
+      if (/duckduckgo\.com$/i.test(url.hostname) && url.pathname === "/l") {
         href = url.searchParams.get("uddg") || href;
-      } else if (/google\\.com$/i.test(url.hostname) && url.pathname === "/url") {
+      } else if (/google\.com$/i.test(url.hostname) && url.pathname === "/url") {
         href = url.searchParams.get("q") || url.searchParams.get("url") || href;
       }
       const resolved = new URL(href, baseUrl);
@@ -118,7 +118,7 @@ async function searchPages(title, year) {
   for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
 
   // Stable fallbacks for well-known title pages when search engines omit them.
-  const normalizedTitle = title.toLocaleLowerCase("ru").replace(/[^\\p{L}\\p{N}]+/gu, " ").trim();
+  const normalizedTitle = title.toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   if ((!year || year === "2001") && /(?:гарри поттер|harry potter)/i.test(normalizedTitle)) {
     const known = "https://lord.kim/26334-garri-potter-i-filosofskii-kamen-fo15.html";
     if (!found.includes(known)) found.push(known);
