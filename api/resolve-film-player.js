@@ -75,12 +75,14 @@ function extractSearchLinks(html, baseUrl) {
     .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
   for (let href of hrefs) {
     try {
-      if (href.startsWith("/url?")) {
-        const redirect = new URL(href, baseUrl);
-        href = redirect.searchParams.get("q") || redirect.searchParams.get("url") || href;
-      }
       const url = new URL(href, baseUrl);
-      if (allowedPage(url.href) && !found.includes(url.href)) found.push(url.href);
+      if (/duckduckgo\\.com$/i.test(url.hostname) && url.pathname === "/l") {
+        href = url.searchParams.get("uddg") || href;
+      } else if (/google\\.com$/i.test(url.hostname) && url.pathname === "/url") {
+        href = url.searchParams.get("q") || url.searchParams.get("url") || href;
+      }
+      const resolved = new URL(href, baseUrl);
+      if (allowedPage(resolved.href) && !found.includes(resolved.href)) found.push(resolved.href);
     } catch (_) {}
   }
   // Bing RSS is a useful fallback where its HTML result markup is available.
@@ -101,8 +103,8 @@ async function searchPages(title, year) {
     ...domains.map(domain => ({ base: "https://html.duckduckgo.com/html/", q: queryText + " site:" + domain }))
   ];
   const found = [];
-  // Search providers are queried in parallel so a blocked engine doesn't consume the whole serverless budget.
-  const searchBatch = async batch => Promise.all(batch.map(async item => {
+  // Query all search fallbacks concurrently; one blocked provider should not prevent discovery.
+  const results = await Promise.all(queries.map(async item => {
     try {
       const url = new URL(item.base);
       url.searchParams.set("q", item.q);
@@ -113,11 +115,7 @@ async function searchPages(title, year) {
       return extractSearchLinks(html, url.href);
     } catch (_) { return []; }
   }));
-  for (const batch of [queries.slice(0, 4), queries.slice(4)]) {
-    const results = await searchBatch(batch);
-    for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
-    if (found.length >= 1) break;
-  }
+  for (const links of results) for (const link of links) if (!found.includes(link)) found.push(link);
   return found.slice(0, 6);
 }
 
