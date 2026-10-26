@@ -120,10 +120,21 @@
       const { error } = await client.from("watch_progress").upsert(payload, { onConflict: "tmdb_id" });
       if (error) throw error;
       if (row.status === "completed") {
-        const { error: archiveError } = await client.from("archive").update({
-          watched: true, in_watchlist: false, updated_at: row.updated_at
-        }).eq("tmdb_id", id);
-        if (archiveError) console.warn("Completed status saved, archive status sync failed:", archiveError.message);
+        const { data: existingArchive, error: archiveReadError } = await client.from("archive")
+          .select("tmdb_id").eq("tmdb_id", id).maybeSingle();
+        if (archiveReadError) throw archiveReadError;
+        if (existingArchive) {
+          const { error: archiveError } = await client.from("archive").update({
+            watched: true, in_watchlist: false, updated_at: row.updated_at
+          }).eq("tmdb_id", id);
+          if (archiveError) console.warn("Completed status saved, archive status sync failed:", archiveError.message);
+        } else {
+          const { error: archiveInsertError } = await client.from("archive").insert({
+            tmdb_id: id, title: row.title || "Untitled", type: row.media_type === "tv" ? "series" : "film",
+            watched: true, in_watchlist: false, added_by: user.id, updated_at: row.updated_at
+          });
+          if (archiveInsertError) console.warn("Completed title could not be added to history:", archiveInsertError.message);
+        }
       }
     } catch (error) {
       console.info("AFTER DARK: progress saved locally; cloud sync will retry later.", error?.message || error);
