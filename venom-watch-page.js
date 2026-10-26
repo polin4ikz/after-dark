@@ -189,8 +189,27 @@
       streamStatus("Озвучка и субтитры для встроенного источника настраиваются внутри его плеера, если он предоставляет такие параметры.");
       return;
     }
-    const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
-    if (kind === "unknown") throw new Error("Это не прямая ссылка на поток и не распознанная ссылка YouTube, Rutube или VK Видео. Для встраивания поддерживаются страницы конкретного видео, а не поисковая выдача.");
+    const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
+    if (kind === "unknown") {
+      // Best-effort provider-page embedding. Browser-enforced X-Frame-Options/CSP is respected.
+      if (/^(?:www\\.)?(?:google\\.[^/]+|yandex\\.[^/]+|bing\\.com|duckduckgo\\.com)$/i.test(host)) {
+        throw new Error("Это поисковая выдача, а не страница фильма. Открой конкретную страницу источника.");
+      }
+      resetStreamEngines();
+      const stage = $("#playerStage");
+      stage.replaceChildren();
+      const frame = document.createElement("iframe");
+      frame.src = url.href;
+      frame.title = "AFTER DARK — встроенная страница источника";
+      frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.loading = "eager";
+      stage.appendChild(frame);
+      status("ПРОБУЮ ВСТРОИТЬ СТРАНИЦУ ИСТОЧНИКА");
+      streamStatus("Если вместо плеера пустое окно или ошибка, источник запрещает встраивание. Тогда нужен его embed-код или прямая ссылка на видеопоток.");
+      return;
+    }
     resetStreamEngines();
     const stage = $("#playerStage");
     stage.replaceChildren();
@@ -353,13 +372,25 @@
       }
     ];
     for (const source of sources) {
-      const link = document.createElement("a");
-      link.className = "source-result source-result--external";
-      link.href = source.url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = source.label;
-      area.prepend(link);
+      if (/LORD FILM/i.test(source.label)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "source-result";
+        button.textContent = "LORD FILM · ПОПРОБОВАТЬ ВСТРОИТЬ В ПЛЕЕР";
+        button.addEventListener("click", () => {
+          try { openDirectStream(source.url); }
+          catch (error) { status(error.message || "Не удалось встроить источник.", true); }
+        });
+        area.prepend(button);
+      } else {
+        const link = document.createElement("a");
+        link.className = "source-result source-result--external";
+        link.href = source.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = source.label;
+        area.prepend(link);
+      }
     }
     addNote("Прямое воспроизведение доступно, только если источник предоставляет совместимый встроенный плеер или прямой видеофайл. Страница фильма не равна видеопотоку.");
   }
