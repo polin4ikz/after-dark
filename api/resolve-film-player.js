@@ -7,7 +7,7 @@ const SEARCH_HOSTS = new Set([
   "bing.com", "www.bing.com", "yandex.com", "yandex.ru", "www.yandex.ru",
   "search.yahoo.com", "yahoo.com", "www.yahoo.com"
 ]);
-const SKIP_HOSTS = /(^|\.)(google\.[a-z.]+|duckduckgo\.com|bing\.com|yandex\.[a-z.]+|yahoo\.com|facebook\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|reddit\.com|pinterest\.com|twitter\.com|x\.com|wikipedia\.org|imdb\.com)$/i;
+const SKIP_HOSTS = /(^|\.)(google\.[a-z.]+|duckduckgo\.com|bing\.com|bingparachute\.com|staging-bing-int\.com|microsoft\.com|live\.com|msn\.com|office\.com|windows\.com|yandex\.[a-z.]+|yahoo\.com|facebook\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|reddit\.com|pinterest\.com|twitter\.com|x\.com|wikipedia\.org|imdb\.com)$/i;
 function decodeHtml(value) {
   return String(value || "").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
     .replace(/&#0*39;|&apos;/gi, "'")
