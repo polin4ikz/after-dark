@@ -127,6 +127,12 @@ function extractSearchLinks(html, baseUrl) {
     const link = decodeHtml(match[1]);
     if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
   }
+  // Fallback: some search engines put destinations in escaped HTML/JSON rather than href attributes.
+  const decodedMarkup = markup.replace(/\\u0026/gi, "&").replace(/\\\//g, "/");
+  for (const match of decodedMarkup.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) {
+    const link = decodeHtml(match[0]).replace(/[),;]+$/g, "");
+    if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
+  }
   return found;
 }
 async function searchPages(title, year) {
@@ -156,12 +162,6 @@ async function searchPages(title, year) {
     if (!found.includes(link)) found.push(link);
   }
   // Search results often include unrelated pages. Keep a broad set and check all candidates.
-  // Fallback: some search engines put destinations in escaped HTML/JSON rather than href attributes.
-  const decodedMarkup = String(html || "").replace(/\\u0026/gi, "&").replace(/\\\//g, "/");
-  for (const match of decodedMarkup.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) {
-    const link = decodeHtml(match[0]).replace(/[),;]+$/g, "");
-    if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
-  }
 
   return found.slice(0, MAX_PAGES);
 }
