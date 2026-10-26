@@ -497,32 +497,17 @@
       errorEvents: ["error"]
     }];
 
-    // Only spend a short budget on VidScene availability after Stellar fails.
-    // A failed availability API is not fatal: the player itself still gets a chance.
-    let vidSceneAvailable = null;
-    try {
-      const kind = isSeries ? "tv" : "movie";
-      const check = await fetch("https://api.vidscene.app/v1/" + kind + "/" + encodeURIComponent(id), {
-        headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(1500)
-      });
-      if (check.ok) {
-        const data = await check.json();
-        if (data && data.available === false) vidSceneAvailable = false;
-        else if (data && data.available === true) vidSceneAvailable = true;
-      }
-    } catch (_) {}
-    if (vidSceneAvailable !== false) {
-      const path = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
-      candidates.push({
-        name: "VIDSCENE",
-        origin: "https://player.vidscene.app",
-        url: "https://player.vidscene.app" + path + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
-        readyTypes: ["VIDSCENE_PLAYER_EVENT"],
-        readyEvents: ["loadedmetadata", "play", "timeupdate"],
-        errorEvents: ["error"]
-      });
-    }
+    // Avoid a separate availability request before the main player starts.
+    // Try VidScene directly only if Stellar fails; this keeps startup latency low.
+    const vidScenePath = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
+    candidates.push({
+      name: "VIDSCENE",
+      origin: "https://player.vidscene.app",
+      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
+      readyTypes: ["VIDSCENE_PLAYER_EVENT"],
+      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      errorEvents: ["error"]
+    });
 
     for (const provider of candidates) {
       const stage = $("#playerStage");
