@@ -136,7 +136,7 @@
     }
     return value;
   }
-  function openDirectStream(rawUrl) {
+  function openDirectStream(rawUrl, allowUnknownEmbed = false) {
     let url;
     try { url = new URL(extractSubmittedUrl(rawUrl)); } catch (error) {
       if (error && error.message && /iframe|HTTPS|ссылку/i.test(error.message)) throw error;
@@ -191,23 +191,27 @@
     }
     const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
     if (kind === "unknown") {
-      // Best-effort provider-page embedding. Browser-enforced X-Frame-Options/CSP is respected.
-      if (/^(?:www\.)?(?:google\.[^/]+|yandex\.[^/]+|bing\.com|duckduckgo\.com)$/i.test(host)) {
-        throw new Error("Это поисковая выдача, а не страница фильма. Открой конкретную страницу источника.");
+      // Do not put an ordinary film webpage inside the video viewport.
+      if (/^(?:www\\.)?(?:google\\.[^/]+|yandex\\.[^/]+|bing\\.com|duckduckgo\\.com)$/i.test(host)) {
+        throw new Error("Это поисковая выдача, а не видеоплеер. Открой конкретный источник и найди ссылку для встраивания.");
+      }
+      const looksLikeEmbed = /player|embed|video_ext|\\/video\\/|\\/iframe|\\/play\\//i.test(url.pathname);
+      if (!allowUnknownEmbed && !looksLikeEmbed) {
+        throw new Error("Это похоже на обычную страницу сайта, а не на адрес видеоплеера. Нужен URL из src тега iframe (код «Встроить») или прямая ссылка на видео.");
       }
       resetStreamEngines();
       const stage = $("#playerStage");
       stage.replaceChildren();
       const frame = document.createElement("iframe");
       frame.src = url.href;
-      frame.title = "AFTER DARK — встроенная страница источника";
+      frame.title = "AFTER DARK — встроенный видеоплеер";
       frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
       frame.allowFullscreen = true;
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
-      status("ПРОБУЮ ВСТРОИТЬ СТРАНИЦУ ИСТОЧНИКА");
-      streamStatus("Если вместо плеера пустое окно или ошибка, источник запрещает встраивание. Тогда нужен его embed-код или прямая ссылка на видеопоток.");
+      status("ПРОБУЮ ОТКРЫТЬ ВСТРОЕННЫЙ ВИДЕОПЛЕЕР");
+      streamStatus("Открыт адрес плеера. Если источник запрещает встраивание, браузер не позволит показать его внутри After Dark.");
       return;
     }
     resetStreamEngines();
@@ -386,7 +390,7 @@
             const response = await fetch("/api/lordfilm-player", { headers: { accept: "application/json" } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.embedUrl) throw new Error(data.message || "Не удалось найти отдельный адрес плеера на странице источника.");
-            openDirectStream(data.embedUrl);
+            openDirectStream(data.embedUrl, true);
             status("ПЛЕЕР LORD FILM НАЙДЕН · ПРОБУЮ ОТКРЫТЬ");
             streamStatus("Встроен адрес плеера, а не исходная страница. Если он не запускается, сам видеохост может запрещать встраивание.");
           } catch (error) {
@@ -439,7 +443,9 @@
     $("#streamForm").addEventListener("submit", event => {
       event.preventDefault();
       try {
-        openDirectStream($("#streamUrl").value);
+        const rawSource = $("#streamUrl").value;
+        const extractedSource = extractSubmittedUrl(rawSource);
+        openDirectStream(rawSource, /<iframe\\b/i.test(rawSource) || /player|embed|video_ext|\\/video\\/|\\/iframe|\\/play\\//i.test(new URL(extractedSource).pathname));
       } catch (error) {
         status(error.message || "Не удалось открыть поток.", true);
         streamStatus(error.message || "Проверь ссылку.", true);
