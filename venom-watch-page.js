@@ -6,6 +6,114 @@
   let hls = null;
   let dash = null;
   let activeVideo = null;
+  let currentFilm = null;
+  let lastProgressSavedAt = 0;
+  let lastProgressSavedSecond = -1;
+  let completionActionsShown = false;
+
+  function isSeriesFilm(film) {
+    return !!film && (film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date));
+  }
+  function savedProgress(film) {
+    return window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
+  }
+  function showCompletionActions(film) {
+    if (!film || isSeriesFilm(film) || completionActionsShown) return;
+    completionActionsShown = true;
+    let panel = document.querySelector("#watchCompletionActions");
+    if (!panel) {
+      panel = document.createElement("section");
+      panel.id = "watchCompletionActions";
+      panel.className = "watch-completion-actions";
+      const stage = $("#playerStage");
+      stage?.insertAdjacentElement("afterend", panel);
+    }
+    const id = Number(film.tmdbId ?? film.id);
+    panel.innerHTML = '<p>Фильм завершён. Сохранили просмотр в истории.</p><a class="source-result source-result--external" href="index.html?rate=' + id + '#ratings">ОЦЕНИТЬ ФИЛЬМ ↗</a><a class="source-result source-result--external" href="index.html#archive">ВЕРНУТЬСЯ В АРХИВ</a>';
+  }
+  function savePlaybackProgress(film, values, provider, force = false) {
+    if (!film || !window.afterDarkProgress?.save) return;
+    const currentTime = Number(values.currentTime ?? values.position_seconds ?? values.positionSeconds);
+    const duration = Number(values.duration ?? values.duration_seconds ?? values.durationSeconds);
+    if (!Number.isFinite(currentTime) || currentTime < 0) return;
+    const now = Date.now();
+    if (!force && now - lastProgressSavedAt < 8000 && Math.abs(currentTime - lastProgressSavedSecond) < 8) return;
+    lastProgressSavedAt = now;
+    lastProgressSavedSecond = currentTime;
+    const series = isSeriesFilm(film);
+    const ended = values.ended === true || values.event === "ended" || values.event === "complete" || values.event === "completed";
+    const completed = !series && (ended || (Number.isFinite(duration) && duration > 0 && currentTime >= duration * 0.96));
+    const season = Number(values.season ?? values.season_number);
+    const episode = Number(values.episode ?? values.episode_number);
+    window.afterDarkProgress.save({
+      tmdb_id: Number(film.tmdbId ?? film.id),
+      title: film.title || film.name || "",
+      media_type: series ? "tv" : "movie",
+      position_seconds: completed ? Math.max(0, Math.floor(duration || currentTime)) : Math.floor(currentTime),
+      duration_seconds: Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : 0,
+      status: completed ? "completed" : "in_progress",
+      season_number: Number.isInteger(season) && season > 0 ? season : undefined,
+      episode_number: Number.isInteger(episode) && episode > 0 ? episode : undefined,
+      source_provider: provider || "unknown"
+    }).then(() => {
+      if (completed) {
+        status("ПРОСМОТР ЗАВЕРШЁН · СОХРАНЯЮ ИСТОРИЮ");
+        showCompletionActions(film);
+      }
+    }).catch(error => console.warn("PLAYBACK PROGRESS SAVE FAILED", error));
+  }
+  function attachNativeProgress(video, film, provider) {
+    const restore = () => {
+      const p = savedProgress(film);
+      if (!p || p.status !== "in_progress" || Number(p.position_seconds) < 10 || !Number.isFinite(video.duration)) return;
+      if (Number(p.position_seconds) < video.duration - 5) {
+        try { video.currentTime = Number(p.position_seconds); streamStatus("Продолжаем с " + window.afterDarkProgress.formatTime(p.position_seconds) + "."); } catch (_) {}
+      }
+    };
+    video.addEventListener("loadedmetadata", restore, { once: true });
+    video.addEventListener("timeupdate", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration }, provider));
+    video.addEventListener("pause", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration }, provider, true));
+    video.addEventListener("ended", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration, ended: true }, provider, true));
+  }
+  function attachFrameProgress(frame, film, providerName, origin) {
+    if (!frame || !film || !origin) return;
+    const saved = savedProgress(film);
+    const onMessage = event => {
+      if (event.origin !== origin || event.source !== frame.contentWindow) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "STELLAR_EMBED_READY") {
+        try { frame.contentWindow.postMessage({ type: "STELLAR_EMBED_INIT" }, origin); } catch (_) {}
+        return;
+      }
+      const isVidScene = data.type === "VIDSCENE_PLAYER_EVENT";
+      const isStellar = data.type === "PLAYER_EVENT" || data.type === "MEDIA_DATA";
+      if (!isVidScene && !isStellar) return;
+      const payload = data.data && typeof data.data === "object" ? data.data : data;
+      const eventName = String(payload.event || payload.name || "").toLowerCase();
+      if (providerName === "VIDSCENE" && eventName === "loadedmetadata" && saved?.status === "in_progress" && Number(saved.position_seconds) > 10) {
+        try {
+          frame.contentWindow.postMessage({ type: "VIDSCENE_PLAYER_COMMAND", command: "seekTo", data: { time: Number(saved.position_seconds) } }, origin);
+        } catch (_) {}
+      }
+      if (eventName === "episodechange") {
+        savePlaybackProgress(film, { currentTime: 0, duration: 0, season: payload.season, episode: payload.episode, event: eventName }, providerName, true);
+        return;
+      }
+      const currentTime = payload.currentTime ?? payload.current_time ?? payload.position ?? payload.position_seconds;
+      const duration = payload.duration ?? payload.durationSeconds ?? payload.duration_seconds;
+      const ended = eventName === "ended" || eventName === "complete" || eventName === "completed";
+      if (currentTime !== undefined || ended) {
+        savePlaybackProgress(film, { currentTime: currentTime ?? duration ?? 0, duration, season: payload.season, episode: payload.episode, event: eventName, ended }, providerName, ended || eventName === "pause" || eventName === "seeked");
+      }
+    };
+    window.addEventListener("message", onMessage);
+    frame.addEventListener("load", () => {
+      if (providerName === "STELLAR") {
+        try { frame.contentWindow.postMessage({ type: "STELLAR_EMBED_INIT" }, origin); } catch (_) {}
+      }
+    });
+  }
 
   function status(message, error) {
     const el = $("#playerStatus");
