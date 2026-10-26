@@ -343,5 +343,16 @@ window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   const params = new URLSearchParams(window.location.search);
   const id = Number(params.get("rate"));
   if (!Number.isSafeInteger(id) || id <= 0) return;
-  window.afterDarkRatingsReady?.then(() => setTimeout(() => window.openSupabaseRating?.(id), 350)).catch(error => console.warn("POST-WATCH RATING OPEN FAILED", error));
+  window.afterDarkRatingsReady?.then(async () => {
+    // Archive hydration is asynchronous; wait for the completed title to enter the local film map.
+    for (let attempt = 0; attempt < 32; attempt++) {
+      if (window.afterDarkGetFilm?.(id)) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        window.openSupabaseRating?.(id);
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    console.warn("POST-WATCH RATING NOT OPENED: film metadata is not available in the archive yet", id);
+  }).catch(error => console.warn("POST-WATCH RATING OPEN FAILED", error));
 })();
