@@ -31,3 +31,16 @@ test("distinguishes movie and series source keys", () => {
   assert.equal(filmKey({ id: 456, media_type: "tv" }), "tv:456");
   assert.equal(filmKey({}), "");
 });
+
+
+test("resolver does not mistake unrelated page links for a video player", () => {
+  const { extractPlayerUrl } = require("../api/resolve-film-player.js");
+  const html = '<html><body><a href="https://go.microsoft.com/fwlink/?linkid=868923">continue</a><a href="https://example.com/about">about</a></body></html>';
+  assert.equal(extractPlayerUrl(html, "https://example.com/film"), null);
+});
+
+test("resolver prefers an explicit iframe player URL", () => {
+  const { extractPlayerUrl } = require("../api/resolve-film-player.js");
+  const html = '<html><body><a href="https://example.com/about">about</a><iframe src="https://player.example.net/embed/film-123"></iframe></body></html>';
+  assert.equal(extractPlayerUrl(html, "https://example.com/film"), "https://player.example.net/embed/film-123");
+});
