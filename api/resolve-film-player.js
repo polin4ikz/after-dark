@@ -41,9 +41,9 @@ function extractPlayerUrl(html, pageUrl) {
   }
   // Some catalog templates construct their iframe from JavaScript instead of a literal tag.
   // Inspect only explicit player/embed-like HTTPS URLs already present in that page's HTML.
-  const rawUrls = String(html || "").match(/https?:\\/\\/[^\\s"'<>\\\\]+/gi) || [];
+  const rawUrls = String(html || "").match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
   for (const raw of rawUrls) {
-    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "").replace(/\\\\\\\\/g, "");
+    const cleaned = decodeHtml(raw).replace(/[),;]+$/g, "").replace(/\\\\/g, "");
     try {
       const u = new URL(cleaned);
       if (u.protocol !== "https:" || u.username || u.password) continue;
@@ -70,7 +70,7 @@ async function fetchText(url, options = {}) {
 async function searchPages(title, year) {
   const queries = [
     [title, year, "смотреть онлайн site:lord-film.org OR site:lord.kim OR site:lordfilm.org OR site:lord-film7.org"].filter(Boolean).join(" "),
-    [title, year, "film online site:lord-film.org OR site:lord.kim OR site:lordfilm.org"].filter(Boolean).join(" ")
+    [title, year, "film online site:lord-film.org OR site:lord.kim OR site:lordfilm.org OR site:lord-film7.org"].filter(Boolean).join(" ")
   ];
   const found = [];
   for (const query of queries) {
