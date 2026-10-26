@@ -192,10 +192,10 @@
     const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
     if (kind === "unknown") {
       // Do not put an ordinary film webpage inside the video viewport.
-      if (/^(?:www\\.)?(?:google\\.[^/]+|yandex\\.[^/]+|bing\\.com|duckduckgo\\.com)$/i.test(host)) {
+      if (/^(?:www\.)?(?:google\.[^/]+|yandex\.[^/]+|bing\.com|duckduckgo\.com)$/i.test(host)) {
         throw new Error("Это поисковая выдача, а не видеоплеер. Открой конкретный источник и найди ссылку для встраивания.");
       }
-      const looksLikeEmbed = /player|embed|video_ext|\\/video\\/|\\/iframe|\\/play\\//i.test(url.pathname);
+      const looksLikeEmbed = /player|embed|video_ext|\/video\/|\/iframe|\/play\//i.test(url.pathname);
       if (!allowUnknownEmbed && !looksLikeEmbed) {
         throw new Error("Это похоже на обычную страницу сайта, а не на адрес видеоплеера. Нужен URL из src тега iframe (код «Встроить») или прямая ссылка на видео.");
       }
@@ -445,7 +445,7 @@
       try {
         const rawSource = $("#streamUrl").value;
         const extractedSource = extractSubmittedUrl(rawSource);
-        openDirectStream(rawSource, /<iframe\\b/i.test(rawSource) || /player|embed|video_ext|\\/video\\/|\\/iframe|\\/play\\//i.test(new URL(extractedSource).pathname));
+        openDirectStream(rawSource, /<iframe\b/i.test(rawSource) || /player|embed|video_ext|\/video\/|\/iframe|\/play\//i.test(new URL(extractedSource).pathname));
       } catch (error) {
         status(error.message || "Не удалось открыть поток.", true);
         streamStatus(error.message || "Проверь ссылку.", true);
