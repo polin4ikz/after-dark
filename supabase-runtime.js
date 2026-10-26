@@ -338,3 +338,10 @@ window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
   (document.body||document.documentElement).appendChild(script);
 });
+/* A completed film can deep-link straight into its rating modal after returning from the player. */
+(()=> {
+  const params = new URLSearchParams(window.location.search);
+  const id = Number(params.get("rate"));
+  if (!Number.isSafeInteger(id) || id <= 0) return;
+  window.afterDarkRatingsReady?.then(() => setTimeout(() => window.openSupabaseRating?.(id), 350)).catch(error => console.warn("POST-WATCH RATING OPEN FAILED", error));
+})();
