@@ -69,9 +69,10 @@ async function fetchText(url, options = {}) {
   } finally { clearTimeout(timer); }
 }
 async function searchPages(title, year) {
+  const siteQuery = SEARCH_DOMAINS.map(domain => "site:" + domain).join(" OR ");
   const queries = [
-    [title, year, "смотреть онлайн site:lord-film.org OR site:lord.kim OR site:lordfilm.org OR site:lord-film7.org"].filter(Boolean).join(" "),
-    [title, year, "film online site:lord-film.org OR site:lord.kim OR site:lordfilm.org OR site:lord-film7.org"].filter(Boolean).join(" ")
+    [title, year, "смотреть онлайн", siteQuery].filter(Boolean).join(" "),
+    [title, year, "film online", siteQuery].filter(Boolean).join(" ")
   ];
   const found = [];
   for (const query of queries) {
