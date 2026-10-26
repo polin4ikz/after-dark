@@ -93,7 +93,7 @@
       source_provider: String(input.source_provider || input.sourceProvider || previous.source_provider || "unknown").slice(0, 80),
       updated_at: new Date().toISOString()
     };
-    if (row.duration_seconds > 0 && row.position_seconds >= row.duration_seconds * 0.96) row.status = "completed";
+    if (row.media_type !== "tv" && row.duration_seconds > 0 && row.position_seconds >= row.duration_seconds * 0.96) row.status = "completed";
     records.set(id, row);
     writeLocal();
     emit();
