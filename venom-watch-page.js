@@ -142,7 +142,10 @@
       if (error && error.message && /iframe|HTTPS|ссылку/i.test(error.message)) throw error;
       throw new Error("Проверь ссылку: вставь полный HTTPS-адрес или код iframe.");
     }
-    if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) {
+    // Auto-discovered external player iframes may use non-standard HTTPS ports.
+    // Keep strict default-port validation for direct/manual URLs; the automatic resolver
+    // passes allowUnknownEmbed=true only after its server-side candidate validation.
+    if (url.protocol !== "https:" || url.username || url.password || (!allowUnknownEmbed && url.port && url.port !== "443")) {
       throw new Error("Поддерживаются только безопасные HTTPS-ссылки.");
     }
     const path = url.pathname.toLowerCase();
