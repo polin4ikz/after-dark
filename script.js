@@ -4,6 +4,7 @@ const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
 let supabaseClient=null;
 const supabaseReady=new Promise((resolve,reject)=>{if(window.supabase){supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);resolve(supabaseClient);return}const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";s.onload=()=>{try{supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);resolve(supabaseClient)}catch(e){reject(e)}};s.onerror=()=>reject(new Error("SUPABASE SDK FAILED TO LOAD"));document.head.appendChild(s)});
+window.afterDarkSupabaseReady=supabaseReady;
 const $=(s,p=document)=>p.querySelector(s),$$=(s,p=document)=>[...p.querySelectorAll(s)];
 const body=document.body,cursor=$(".cursor"),archiveTrack=$("#archiveTrack"),searchInput=$("#searchInput"),searchResults=$("#searchResults");
 let films=[],currentType="all",searchController=null,searchTimer=null;
