@@ -71,7 +71,7 @@ async function fetchText(url, options = {}) {
 function extractSearchLinks(html, baseUrl) {
   const found = [];
   const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/");
-  const hrefs = [...markup.matchAll(/href\\s*=\\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
+  const hrefs = [...markup.matchAll(/href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
     .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
   for (let href of hrefs) {
     try {
@@ -86,7 +86,7 @@ function extractSearchLinks(html, baseUrl) {
     } catch (_) {}
   }
   // Bing RSS is a useful fallback where its HTML result markup is available.
-  for (const match of markup.matchAll(/<link>(https?:\\/\\/[^<]+)<\\/link>/gi)) {
+  for (const match of markup.matchAll(/<link>(https?:\/\/[^<]+)<\/link>/gi)) {
     const link = decodeHtml(match[1]);
     if (allowedPage(link) && !found.includes(link)) found.push(link);
   }
