@@ -5,7 +5,7 @@ const MAX_PAGES = 16;
 const SEARCH_HOSTS = new Set([
   "google.com", "www.google.com", "duckduckgo.com", "html.duckduckgo.com",
   "bing.com", "www.bing.com", "yandex.com", "yandex.ru", "www.yandex.ru",
-  "search.yahoo.com", "yahoo.com", "www.yahoo.com"
+  "search.yahoo.com", "yahoo.com", "www.yahoo.com", "yandex.ru", "www.yandex.ru"
 ]);
 const SKIP_HOSTS = /(^|\.)(google\.[a-z.]+|duckduckgo\.com|bing\.com|bingparachute\.com|staging-bing-int\.com|microsoft\.com|live\.com|msn\.com|office\.com|windows\.com|yandex\.[a-z.]+|yahoo\.com|facebook\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|reddit\.com|pinterest\.com|twitter\.com|x\.com|wikipedia\.org|imdb\.com)$/i;
 function decodeHtml(value) {
@@ -153,13 +153,19 @@ async function searchPages(title, year) {
   ])].filter(Boolean);
   const queries = [];
   for (const variant of titleVariants.slice(0, 3)) {
-    const q = [variant, year, "смотреть онлайн фильм плеер"].filter(Boolean).join(" ");
-    queries.push(
-      { engine: "ddg", url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q) },
-      { engine: "bing-rss", url: "https://www.bing.com/search?format=rss&q=" + encodeURIComponent(q) },
-      { engine: "bing", url: "https://www.bing.com/search?q=" + encodeURIComponent(q) },
-      { engine: "google", url: "https://www.google.com/search?hl=ru&q=" + encodeURIComponent(q) }
-    );
+    const queriesForTitle = [
+      { label: "general", q: [variant, year, "смотреть онлайн"].filter(Boolean).join(" ") },
+      { label: "lordfilm", q: ["site:lordfilm", variant, year, "смотреть онлайн"].filter(Boolean).join(" ") },
+      { label: "watch", q: [variant, year, "смотреть онлайн бесплатно в хорошем качестве"].filter(Boolean).join(" ") }
+    ];
+    for (const query of queriesForTitle) {
+      queries.push(
+        { engine: "yandex", query: query.label, url: "https://yandex.ru/search/?text=" + encodeURIComponent(query.q) },
+        { engine: "ddg", query: query.label, url: "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query.q) },
+        { engine: "bing-rss", query: query.label, url: "https://www.bing.com/search?format=rss&q=" + encodeURIComponent(query.q) },
+        { engine: "google", query: query.label, url: "https://www.google.com/search?hl=ru&q=" + encodeURIComponent(query.q) }
+      );
+    }
   }
   const found = [];
   const searchDiagnostics = [];
@@ -184,7 +190,17 @@ async function searchPages(title, year) {
   }
   // Search results often include unrelated pages. Keep a broad set and check all candidates.
 
-  return { pages: found.slice(0, MAX_PAGES), searchDiagnostics };
+  // Prefer likely film pages over generic search hits, aggregators, and unrelated navigation.
+  const titleTokens = titleVariants[0].toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter(token => token.length >= 4);
+  const ranked = found.map((url, index) => {
+    let score = 0;
+    const normalizedUrl = decodeURIComponent(url).toLowerCase();
+    for (const token of titleTokens) if (normalizedUrl.includes(token)) score += 3;
+    if (/lordfilm|hdrezka|kinogo|rezka|film|kino|serial/i.test(new URL(url).hostname)) score += 2;
+    if (/search|category|tag|page\\//i.test(new URL(url).pathname)) score -= 2;
+    return { url, index, score };
+  }).sort((a, b) => b.score - a.score || a.index - b.index);
+  return { pages: ranked.slice(0, MAX_PAGES).map(item => item.url), searchDiagnostics };
 }
 module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
