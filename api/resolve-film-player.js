@@ -45,8 +45,11 @@ function extractPlayerUrl(html, pageUrl) {
       const path = (host + u.pathname + u.search).toLowerCase();
       if (/ads?|banner|tracker|analytics|doubleclick|pixel|statistic/i.test(path)) return;
       if (host === new URL(pageUrl).hostname.toLowerCase() && !/player|embed|video|watch|stream/i.test(path)) return;
-      const playerHint = /player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback|movie|watch/i.test(path);
-      candidates.push({ url: u.href, score: score + (playerHint ? 10 : 0) });
+      // Generic URLs in page HTML are often navigation, ads, or redirects, not players.
+      // Accept explicit media/embed tags, or require a strong player-specific URL hint.
+      const explicitPlayerHint = /player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback/i.test(path);
+      if (score < 4 && !explicitPlayerHint) return;
+      candidates.push({ url: u.href, score: score + (explicitPlayerHint ? 10 : 0) });
     } catch (_) {}
   };
   const tags = String(html || "").match(/<(?:iframe|embed|video|source|object)\b[^>]*>/gi) || [];
@@ -62,7 +65,7 @@ function extractPlayerUrl(html, pageUrl) {
       if (!attrs[key]) continue;
       const config = attrs[key].replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
       for (const match of config.matchAll(/https?:\\?\/\\?\/[^"'\\\s<>]+/gi)) add(match[0], 5);
-      for (const match of config.matchAll(/(?:file|src|url|embedUrl|iframe)\s*[:=]\s*["']([^"']+)["']/gi)) add(match[1], 6);
+      for (const match of config.matchAll(/(?:file|src|source|embedUrl|iframeUrl|playerUrl|videoUrl|iframe)\s*[:=]\s*["']([^"']+)["']/gi)) add(match[1], 6);
     }
   }
   // Inspect common player configuration snippets and escaped URLs embedded in scripts.
