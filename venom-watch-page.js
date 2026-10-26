@@ -360,63 +360,51 @@
     }
     return [...found.values()];
   }
-  function addVerifiedWatchOption(film) {
-    const terms = filmSearchTerms(film);
-    const isDevilWearsPrada = terms.year === "2006" && terms.titles.some(title => /devil wears prada|дьявол носит\s*[«"]?prada/i.test(title));
-    if (!isDevilWearsPrada) return;
+  function addAutomaticPlayerOption(film) {
     const area = $("#sourceResults");
-    const sources = [
-      {
-        label: "LORD FILM · СТРАНИЦА ФИЛЬМА ↗",
-        url: "https://smeh-v-vaikikia-lordfilm.ru/film/dyavol-nosit-prada-2006/"
-      },
-      {
-        label: "КИНОПОИСК · ОФИЦИАЛЬНАЯ СТРАНИЦА ↗",
-        url: "https://hd.kinopoisk.ru/film/4f39d7763a829bc3a003fa801a781ca1"
-      }
-    ];
-    for (const source of sources) {
-      if (/LORD FILM/i.test(source.label)) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "source-result";
-        button.textContent = "LORD FILM · ПОПРОБОВАТЬ ВСТРОИТЬ В ПЛЕЕР";
-        button.addEventListener("click", async () => {
-          button.disabled = true;
-          button.textContent = "ИЩУ АДРЕС ВИДЕОПЛЕЕРА…";
-          status("ПЫТАЮСЬ НАЙТИ ВСТРОЕННЫЙ ПЛЕЕР LORD FILM");
-          streamStatus("After Dark ищет адрес iframe плеера в HTML страницы. Если сайт создаёт его скриптом или блокирует запрос, автоматическое извлечение может не сработать.");
-          try {
-            const response = await fetch("/api/lordfilm-player", { headers: { accept: "application/json" } });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.embedUrl) throw new Error(data.message || "Не удалось найти отдельный адрес плеера на странице источника.");
+    const { titles, year } = filmSearchTerms(film);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "source-result";
+    button.textContent = "АВТОМАТИЧЕСКИ НАЙТИ И ВСТРОИТЬ ВИДЕОПЛЕЕР";
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      button.textContent = "ИЩУ И ИЗВЛЕКАЮ АДРЕС ПЛЕЕРА…";
+      status("ИЩУ ВСТРОЕННЫЙ ПЛЕЕР ДЛЯ ЭТОГО ФИЛЬМА");
+      streamStatus("After Dark ищет страницу фильма по названию и году, затем пытается извлечь отдельный адрес iframe. Некоторые источники блокируют автоматическое извлечение или встраивание.");
+      let lastMessage = "";
+      try {
+        for (const title of titles) {
+          const params = new URLSearchParams({ title });
+          if (year) params.set("year", year);
+          const response = await fetch("/api/resolve-film-player?" + params.toString(), {
+            headers: { accept: "application/json" }
+          });
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.embedUrl) {
             openDirectStream(data.embedUrl, true);
-            status("ПЛЕЕР LORD FILM НАЙДЕН · ПРОБУЮ ОТКРЫТЬ");
-            streamStatus("Встроен адрес плеера, а не исходная страница. Если он не запускается, сам видеохост может запрещать встраивание.");
-          } catch (error) {
-            status("НЕ УДАЛОСЬ ИЗВЛЕЧЬ АДРЕС ПЛЕЕРА", true);
-            streamStatus((error.message || "Источник не отдал адрес плеера.") + " Открой страницу источника отдельно и проверь, есть ли у плеера отдельный код встраивания.", true);
-          } finally {
-            button.disabled = false;
-            button.textContent = "LORD FILM · НАЙТИ И ВСТРОИТЬ ВИДЕОПЛЕЕР";
+            status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(data.provider || "ИСТОЧНИК").toUpperCase());
+            streamStatus("Источник найден автоматически. Если плеер не запускается, сайт-источник может запрещать встраивание.");
+            addNote("Источник найден по названию фильма; вручную вставлять ссылку не потребовалось.");
+            return;
           }
-        });
-        area.prepend(button);
-      } else {
-        const link = document.createElement("a");
-        link.className = "source-result source-result--external";
-        link.href = source.url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = source.label;
-        area.prepend(link);
+          lastMessage = data.message || data.error || "Не удалось найти встроенный плеер.";
+        }
+        throw new Error(lastMessage || "Не удалось найти встроенный плеер для этого фильма.");
+      } catch (error) {
+        status("АВТОМАТИЧЕСКИЙ ПОИСК ПЛЕЕРА НЕ УДАЛСЯ", true);
+        streamStatus((error.message || "Источник не найден.") + " Можно попробовать позже: каталог мог быть недоступен или изменить разметку.", true);
+      } finally {
+        button.disabled = false;
+        button.textContent = "ПОВТОРИТЬ ПОИСК И ВСТРОИТЬ ВИДЕОПЛЕЕР";
       }
-    }
-    addNote("Прямое воспроизведение доступно, только если источник предоставляет совместимый встроенный плеер или прямой видеофайл. Страница фильма не равна видеопотоку.");
+    });
+    area.prepend(button);
+    addNote("Автопоиск встроенного плеера доступен для этого фильма. Результат зависит от доступности источника и разрешения на встраивание.");
   }
   async function findSources(film) {
     const area = $("#sourceResults"); area.replaceChildren(); status("ИЩУ ИСТОЧНИКИ ДЛЯ РОССИИ…");
-    addVerifiedWatchOption(film);
+    addAutomaticPlayerOption(film);
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
