@@ -63,3 +63,13 @@ test("saves and reads playback progress independently per title", () => {
     else global.localStorage = previousStorage;
   }
 });
+
+
+test("resumes only meaningful unfinished progress", () => {
+  const { resumeTimeFor } = require("../venom-player.js");
+  assert.equal(resumeTimeFor(null), 0);
+  assert.equal(resumeTimeFor({ time: 8, duration: 600 }), 0);
+  assert.equal(resumeTimeFor({ time: 120, duration: 600 }), 120);
+  assert.equal(resumeTimeFor({ time: 590, duration: 600 }), 0);
+  assert.equal(resumeTimeFor({ time: 120, duration: 0 }), 120);
+});
