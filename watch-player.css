@@ -46,3 +46,12 @@ body.ad-watch-player-open{overflow:hidden}
 .ad-venom-mount{position:absolute;inset:0;width:100%;height:100%;min-height:240px}
 .ad-venom-mount>*{width:100%;height:100%}
 @media(max-width:650px){.ad-venom-controls{grid-template-columns:1fr}.ad-venom-controls button{min-height:44px}.ad-venom-controls select{min-height:44px}}
+
+/* Watchmode availability results — same quiet bordeaux / milk treatment. */
+.ad-watch-player__availability{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;margin:0 0 10px}
+.ad-watch-player__availability label{font:9px "Geist Mono",monospace;letter-spacing:.08em;opacity:.65}
+.ad-watch-player__availability select{min-width:0;width:100%;padding:10px 12px;border:1px solid rgba(230,229,224,.24);background:#171211;color:var(--milk,#e6e5e0);font:inherit}
+.ad-watch-player__availability .ad-watch-player__search{grid-column:1/-1;margin:0}
+.ad-watch-player__availability-results{display:grid;gap:8px;max-height:220px;overflow:auto;margin:0 0 16px;color:var(--milk,#e6e5e0);font-size:.82rem}
+.ad-watch-player__availability-results:empty{display:none}
+.ad-watch-player__availability .ad-watch-player__search:disabled{opacity:.55;cursor:wait}
