@@ -148,6 +148,9 @@
     startOverButton.addEventListener("click", () => {
       const key = filmKey(modal._film);
       if (!key) return;
+      // Pause/destroy first: the pause event can save one final progress tick.
+      // Remove it only after that event has been detached, or the next launch may resume again.
+      stopPlayer();
       try { localStorage.removeItem(progressKey(key)); } catch (_) {}
       if (resumePanel) resumePanel.hidden = true;
       const input = $("#adVenomSource", form);
