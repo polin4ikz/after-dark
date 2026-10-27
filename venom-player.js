@@ -106,6 +106,7 @@
     try { playerInstance?.destroy?.(); } catch (_) {}
     playerInstance = null;
     activeStage = null;
+    activeFilmKey = "";
   }
   function mountPanel(modal) {
     if ($(".ad-venom-panel", modal)) return;
@@ -145,13 +146,18 @@
       try {
         const VenomPlayer = await loadPlayer();
         if (!modal.classList.contains("is-open") || !container.isConnected) return;
+        const savedProgress = readProgress(key);
+        const resumeTime = savedProgress && savedProgress.time > 10 && (!savedProgress.duration || savedProgress.time < savedProgress.duration - 15) ? savedProgress.time : 0;
         const mediaSource = source.kind === "hls" ? { hls: source.url }
           : source.kind === "dash" ? { dash: source.url }
           : { file: { 720: source.url } };
+        activeFilmKey = key;
+        lastProgressWrite = 0;
         playerInstance = VenomPlayer.make({
           container,
           publicPath: PUBLIC_PATH,
           source: mediaSource,
+          time: resumeTime,
           title: String(film?.title || film?.name || "AFTER DARK"),
           theme: "modern",
           aspectRatio: "16:9",
@@ -165,6 +171,22 @@
           }
         });
         activeStage = stage;
+        if (playerInstance && typeof playerInstance.on === "function") {
+          const captureProgress = data => {
+            if (!key || activeFilmKey !== key) return;
+            const current = Number(data?.currentTime ?? data?.seconds ?? data?.time ?? data?.position);
+            const duration = Number(data?.duration ?? data?.totalTime);
+            if (!Number.isFinite(current) || current < 0) return;
+            const rounded = Math.floor(current);
+            if (rounded - lastProgressWrite >= 10 || lastProgressWrite === 0) {
+              saveProgress(key, rounded, duration);
+              lastProgressWrite = rounded;
+            }
+          };
+          playerInstance.on("timeupdate", captureProgress);
+          playerInstance.on("viewProgress", captureProgress);
+          playerInstance.on("ended", () => { try { localStorage.removeItem(progressKey(key)); } catch (_) {} });
+        }
         if (key) {
           const all = readSources();
           all[key] = source;
