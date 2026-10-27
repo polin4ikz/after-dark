@@ -70,24 +70,33 @@
       // will not fire again and leaves the player UI waiting forever.
       const script = document.createElement("script");
       let settled = false;
-      const fail = () => {
+      const timeout = setTimeout(() => finishWithError(new Error("Загрузка Venom Player заняла слишком много времени. Проверь подключение и VPN.")), 15000);
+      const cleanup = () => {
+        clearTimeout(timeout);
+        script.removeEventListener("error", onError);
+        script.removeEventListener("load", onLoad);
+      };
+      const finishWithError = error => {
         if (settled) return;
         settled = true;
+        cleanup();
         playerPromise = null;
-        reject(new Error("Не удалось загрузить Venom Player с CDN. Проверь подключение и VPN."));
+        script.remove();
+        reject(error);
       };
-      script.addEventListener("error", fail, { once: true });
-      script.addEventListener("load", () => {
+      const onError = () => finishWithError(new Error("Не удалось загрузить Venom Player с CDN. Проверь подключение и VPN."));
+      const onLoad = () => {
         if (settled) return;
         if (window.VenomPlayer && typeof window.VenomPlayer.make === "function") {
           settled = true;
+          cleanup();
           resolve(window.VenomPlayer);
         } else {
-          settled = true;
-          playerPromise = null;
-          reject(new Error("Venom Player загрузился, но API VenomPlayer.make не найден."));
+          finishWithError(new Error("Venom Player загрузился, но API VenomPlayer.make не найден."));
         }
-      }, { once: true });
+      };
+      script.addEventListener("error", onError);
+      script.addEventListener("load", onLoad);
       script.src = PUBLIC_PATH + "player.js";
       script.async = true;
       script.dataset.afterDarkVenom = "true";
@@ -130,6 +139,8 @@
       event.preventDefault();
       const film = modal._film;
       const key = filmKey(film);
+      const requestToken = String((Number(modal.dataset.venomRequestToken) || 0) + 1);
+      modal.dataset.venomRequestToken = requestToken;
       const stage = $(".ad-watch-player__stage", modal);
       const kind = $("#adVenomKind", form).value;
       let source;
@@ -145,7 +156,7 @@
       setStatus(modal, "ЗАГРУЖАЮ VENOM PLAYER…", false);
       try {
         const VenomPlayer = await loadPlayer();
-        if (!modal.classList.contains("is-open") || !container.isConnected) return;
+        if (!modal.classList.contains("is-open") || !container.isConnected || modal.dataset.venomRequestToken !== requestToken) return;
         const savedProgress = readProgress(key);
         const resumeTime = savedProgress && savedProgress.time > 10 && (!savedProgress.duration || savedProgress.time < savedProgress.duration - 15) ? savedProgress.time : 0;
         const mediaSource = source.kind === "hls" ? { hls: source.url }
@@ -194,6 +205,7 @@
         }
         setStatus(modal, resumeTime ? "ПРОДОЛЖАЕМ С " + formatTime(resumeTime) + " · VENOM PLAYER" : "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН", false);
       } catch (error) {
+        if (modal.dataset.venomRequestToken !== requestToken || !modal.classList.contains("is-open")) return;
         stage.replaceChildren();
         setStatus(modal, error?.message || "Не удалось запустить Venom Player.", true);
       }
