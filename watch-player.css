@@ -55,3 +55,6 @@ body.ad-watch-player-open{overflow:hidden}
 .ad-watch-player__availability-results{display:grid;gap:8px;max-height:220px;overflow:auto;margin:0 0 16px;color:var(--milk,#e6e5e0);font-size:.82rem}
 .ad-watch-player__availability-results:empty{display:none}
 .ad-watch-player__availability .ad-watch-player__search:disabled{opacity:.55;cursor:wait}
+
+.ad-watch-player__attribution{margin:-8px 0 16px;color:rgba(230,229,224,.55);font-size:9px;line-height:1.6;letter-spacing:.04em}
+.ad-watch-player__attribution a{color:var(--milk,#e6e5e0);text-decoration:underline;text-underline-offset:3px}
