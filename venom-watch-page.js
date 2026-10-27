@@ -473,6 +473,9 @@
             if (video && !video.dataset.afterDarkProgressBound) {
               video.dataset.afterDarkProgressBound = "true";
               attachNativeProgress(video, currentFilm, "VENOM");
+              video.addEventListener("error", () => {
+                if (mount.isConnected) playArchiveEmbedFallback(source);
+              }, { once: true });
               if (video.readyState >= 1) {
                 const saved = savedProgress(currentFilm);
                 const position = Number(saved?.position_seconds || 0);
