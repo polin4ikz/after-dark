@@ -152,7 +152,7 @@
           : source.kind === "dash" ? { dash: source.url }
           : { file: { 720: source.url } };
         activeFilmKey = key;
-        lastProgressWrite = 0;
+        lastProgressWrite = -10;
         playerInstance = VenomPlayer.make({
           container,
           publicPath: PUBLIC_PATH,
@@ -174,8 +174,8 @@
         if (playerInstance && typeof playerInstance.on === "function") {
           const captureProgress = data => {
             if (!key || activeFilmKey !== key) return;
-            const current = Number(data?.currentTime ?? data?.seconds ?? data?.time ?? data?.position);
-            const duration = Number(data?.duration ?? data?.totalTime);
+            const current = Number(data?.currentTime ?? data?.seconds ?? data?.time ?? data?.position ?? data?.target?.currentTime ?? data?.currentTarget?.currentTime ?? data?.detail?.currentTime);
+            const duration = Number(data?.duration ?? data?.totalTime ?? data?.target?.duration ?? data?.currentTarget?.duration ?? data?.detail?.duration);
             if (!Number.isFinite(current) || current < 0) return;
             const rounded = Math.floor(current);
             if (rounded - lastProgressWrite >= 10 || lastProgressWrite === 0) {
