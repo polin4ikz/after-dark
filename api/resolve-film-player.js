@@ -52,11 +52,11 @@ function extractPlayerUrl(html, pageUrl) {
 
       // Do not mistake poster art, thumbnails, scripts, or other assets for an embed.
       // The word "player" can appear in image filenames (for example, ottstudioplayer.jpeg).
-      if (/\\.(?:avif|bmp|gif|jpe?g|png|svg|webp|ico|css|m?js|woff2?|ttf|otf|pdf)(?:$)/i.test(pathname)) return;
-      if (/\\/(?:icons?|images?|posters?|thumbnails?|thumbs?)\\//i.test(pathname)) return;
+      if (/\.(?:avif|bmp|gif|jpe?g|png|svg|webp|ico|css|m?js|woff2?|ttf|otf|pdf)(?:$)/i.test(pathname)) return;
+      if (/\/(?:icons?|images?|posters?|thumbnails?|thumbs?)\//i.test(pathname)) return;
 
       // A direct media URL is useful to the native/Venom player and outranks page assets.
-      const directMediaHint = /\\.(?:m3u8|mpd|mp4|m4v|webm)(?:$)/i.test(pathname);
+      const directMediaHint = /\.(?:m3u8|mpd|mp4|m4v|webm)(?:$)/i.test(pathname);
       if (host === new URL(pageUrl).hostname.toLowerCase() && !directMediaHint &&
           !/player|embed|video|watch|stream/i.test(path)) return;
       // Generic URLs in page HTML are often navigation, ads, or redirects, not players.
