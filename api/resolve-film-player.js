@@ -61,8 +61,9 @@ function extractPlayerUrl(html, pageUrl) {
           !/player|embed|video|watch|stream/i.test(path)) return;
       // Generic URLs in page HTML are often navigation, ads, or redirects, not players.
       // Accept direct media, explicit media/embed tags, or strong player-specific URL hints.
-      const explicitPlayerHint = /player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback/i.test(path);
-      if (!directMediaHint && score < 4 && !explicitPlayerHint) return;
+      const explicitPlayerHint = /(?:^|[./_-])(?:player|video|embed|iframe|stream|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback)(?:[./_-]|$)/i.test(path);
+      // Tag type alone is insufficient: editorial pages and ad frames also contain iframes.
+      if (!directMediaHint && !explicitPlayerHint) return;
       candidates.push({ url: u.href, score: score + (directMediaHint ? 30 : 0) + (explicitPlayerHint ? 10 : 0) });
     } catch (_) {}
   };
