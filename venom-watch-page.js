@@ -252,7 +252,8 @@
     if (hls) { hls.destroy(); hls = null; }
     if (dash) { try { dash.reset(); } catch (_) {} dash = null; }
     activeVideo = null;
-    $("#audioTrack").replaceChildren(new Option("Недоступно для этого источника", "-1"));
+    $("#trackControls").hidden = true;
+    $("#audioTrack").replaceChildren(new Option("Источник не предоставляет выбор", "-1"));
     $("#audioTrack").disabled = true;
     $("#subtitleTrack").replaceChildren(new Option("Нет доступных дорожек", "-1"));
     $("#subtitleTrack").disabled = true;
@@ -284,6 +285,7 @@
       label: [track.name, track.lang].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
     }));
     setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
+    $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
     streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function refreshDashTracks() {
@@ -298,6 +300,7 @@
     }));
     setOptions($("#audioTrack"), audios, 0, "В потоке нет аудиодорожек");
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
+    $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
     streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
@@ -405,6 +408,7 @@
           const tracksText = Array.from(video.textTracks).map((track, i) => ({ id: i, label: track.label || track.language || ("Субтитры " + (i + 1)) }));
           setOptions($("#subtitleTrack"), tracksText, 0, "Нет субтитров");
         }
+        $("#trackControls").hidden = !(tracks.length > 1 || (video.textTracks && video.textTracks.length > 0));
         streamStatus(tracks.length > 1 ? "Доступно несколько аудиодорожек." : "У этого файла или браузера может не быть доступного переключения озвучки.");
       }, { once: true });
       video.addEventListener("error", () => streamStatus("Видео не загрузилось. Источник может запрещать доступ с другого сайта или иметь неподдерживаемый формат.", true), { once: true });
@@ -709,7 +713,7 @@
       frame.loading = "eager";
       stage.appendChild(frame);
       attachFrameProgress(frame, film, provider.name, provider.origin);
-      status(provider.name === "STELLAR" ? "ЗАПУСКАЮ ОСНОВНОЙ ПЛЕЕР · STELLAR" : "ПРОБУЮ РЕЗЕРВНЫЙ ПЛЕЕР · " + provider.name);
+      status("ПРОВЕРЯЮ ВСТРОЕННЫЙ ПЛЕЕР · " + provider.name);
       streamStatus(provider.name === "STELLAR"
         ? "Сначала проверяю Stellar по TMDB ID. Озвучку, субтитры и доступные настройки качества выбирай внутри самого плеера."
         : "Stellar не подтвердил готовность видео; автоматически проверяю резервный источник.");
@@ -744,9 +748,9 @@
       });
 
       if (outcome === "ready") {
-        status("ВИДЕО ГОТОВО · " + provider.name);
+        status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
         streamStatus(provider.name === "STELLAR"
-          ? "Плеер готов. Выбирай доступную озвучку, субтитры и качество в его собственных настройках. Позиция сохраняется, если плеер передаёт события воспроизведения."
+          ? "Плеер загрузился и ответил, но After Dark не может подтвердить, что видео действительно воспроизводится или содержит русскую дорожку."
           : "Источник готов. Возможность сохранять позицию и менять дорожки зависит от API этого плеера.");
         addNote("Автоматически выбран плеер: " + provider.name + ".");
         return true;
