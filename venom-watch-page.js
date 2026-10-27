@@ -70,7 +70,8 @@
         try { video.currentTime = Number(p.position_seconds); streamStatus("Продолжаем с " + window.afterDarkProgress.formatTime(p.position_seconds) + "."); } catch (_) {}
       }
     };
-    video.addEventListener("loadedmetadata", restore, { once: true });
+    if (video.readyState >= 1) restore();
+    else video.addEventListener("loadedmetadata", restore, { once: true });
     video.addEventListener("timeupdate", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration }, provider));
     video.addEventListener("pause", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration }, provider, true));
     video.addEventListener("ended", () => savePlaybackProgress(film, { currentTime: video.currentTime, duration: video.duration, ended: true }, provider, true));
@@ -193,6 +194,10 @@
     area.append(toggle, panel);
   }
   function resetStreamEngines() {
+    if (venomPlayerInstance) {
+      try { venomPlayerInstance.destroy?.(); } catch (_) {}
+      venomPlayerInstance = null;
+    }
     if (hls) { hls.destroy(); hls = null; }
     if (dash) { try { dash.reset(); } catch (_) {} dash = null; }
     activeVideo = null;
@@ -382,13 +387,139 @@
       status("DASH-ПОТОК ПОДКЛЮЧЁН");
     }
   }
-  function playArchiveSource(source, auto = false) {
+  const VENOM_VERSION = "0.3.6";
+  const VENOM_PUBLIC_PATH = "https://cdn.jsdelivr.net/npm/player-venom@" + VENOM_VERSION + "/dist/";
+  let venomPlayerInstance = null;
+  let venomScriptPromise = null;
+
+  function loadVenomPlayer() {
+    if (window.VenomPlayer && typeof window.VenomPlayer.make === "function") {
+      return Promise.resolve(window.VenomPlayer);
+    }
+    if (venomScriptPromise) return venomScriptPromise;
+    venomScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = VENOM_PUBLIC_PATH + "player.js";
+      script.async = true;
+      script.onload = () => {
+        if (window.VenomPlayer && typeof window.VenomPlayer.make === "function") resolve(window.VenomPlayer);
+        else reject(new Error("Venom Player загрузился без ожидаемого API."));
+      };
+      script.onerror = () => reject(new Error("Не удалось загрузить Venom Player с CDN."));
+      document.head.appendChild(script);
+    }).catch(error => {
+      venomScriptPromise = null;
+      throw error;
+    });
+    return venomScriptPromise;
+  }
+
+  async function playVenomDirectSource(source) {
+    let url;
+    try { url = new URL(source && source.directUrl); } catch (_) { return false; }
+    // Venom plays a direct media URL; it does not resolve film pages or protected streams.
+    if (url.protocol !== "https:" || url.hostname !== "archive.org" ||
+        !/^\/download\/[A-Za-z0-9._-]+\/.+$/i.test(url.pathname)) return false;
+    const path = url.pathname.toLowerCase();
+    const kind = path.endsWith(".m3u8") ? "hls"
+      : path.endsWith(".mpd") ? "dash"
+      : /\.(mp4|webm|m4v)$/i.test(path) ? "file" : "";
+    if (!kind) return false;
+
+    const stage = $("#playerStage");
+    if (!stage) return false;
+    resetStreamEngines();
+    stage.replaceChildren();
+    const mount = document.createElement("div");
+    mount.className = "ad-venom-mount";
+    mount.setAttribute("aria-label", "Видеоплеер Venom");
+    stage.appendChild(mount);
+    status("ЗАГРУЖАЮ VENOM PLAYER…");
+    streamStatus("Подключаю Venom к найденному прямому видеоисточнику.");
+
+    let player = null;
+    try {
+      const VenomPlayer = await loadVenomPlayer();
+      if (!mount.isConnected) return false;
+      const mediaSource = kind === "hls" ? { hls: url.href }
+        : kind === "dash" ? { dash: url.href }
+        : { file: { "Авто": url.href } };
+      player = VenomPlayer.make({
+        container: mount,
+        publicPath: VENOM_PUBLIC_PATH,
+        source: mediaSource,
+        title: String(source.title || currentFilm?.title || currentFilm?.name || "AFTER DARK"),
+        theme: "modern",
+        aspectRatio: "16:9",
+        autoLandscape: true,
+        pip: true,
+        trackProgress: 15,
+        doNotSaveProgress: true,
+        cssVars: {
+          "color-primary": "#8b1d2c",
+          "background-color-primary": "rgba(16, 14, 13, .96)"
+        }
+      });
+      venomPlayerInstance = player;
+      const ready = await new Promise(resolve => {
+        let settled = false;
+        const timer = setTimeout(() => finish(false), 8000);
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (value) {
+            const video = mount.querySelector("video");
+            if (video && !video.dataset.afterDarkProgressBound) {
+              video.dataset.afterDarkProgressBound = "true";
+              attachNativeProgress(video, currentFilm, "VENOM");
+              if (video.readyState >= 1) {
+                const saved = savedProgress(currentFilm);
+                const position = Number(saved?.position_seconds || 0);
+                if (saved?.status === "in_progress" && position > 10 &&
+                    Number.isFinite(video.duration) && position < video.duration - 5) {
+                  try { video.currentTime = position; } catch (_) {}
+                }
+              }
+            }
+          }
+          resolve(value);
+        };
+        if (typeof player?.once === "function") {
+          player.once("ready", () => finish(true));
+          player.once("error", () => finish(false));
+        } else if (typeof player?.on === "function") {
+          player.on("ready", () => finish(true));
+          player.on("error", () => finish(false));
+        }
+        if (mount.querySelector("video")) finish(true);
+      });
+      if (!ready || !mount.isConnected) {
+        try { player?.destroy?.(); } catch (_) {}
+        if (venomPlayerInstance === player) venomPlayerInstance = null;
+        if (mount.isConnected) mount.remove();
+        return false;
+      }
+      status("VENOM PLAYER ГОТОВ · ПРЯМОЙ ИСТОЧНИК");
+      streamStatus("Прогресс сохраняется в After Dark. Доступные качество и дорожки зависят от самого источника.");
+      return true;
+    } catch (error) {
+      try { player?.destroy?.(); } catch (_) {}
+      if (venomPlayerInstance === player) venomPlayerInstance = null;
+      if (mount.isConnected) mount.remove();
+      console.warn("Venom direct playback unavailable; falling back to native player.", error);
+      return false;
+    }
+  }
+
+  async function playArchiveSource(source, auto = false) {
     if (!source || typeof source.identifier !== "string" || !/^[A-Za-z0-9._-]{1,120}$/.test(source.identifier)) return;
     // Prefer a browser-playable direct file from the open-licensed archive record.
     // Keep Archive's own player as a fallback if the direct file is blocked or unsupported.
     let safeDirectUrl = false;
     try { const direct = new URL(source.directUrl); safeDirectUrl = direct.protocol === "https:" && direct.hostname === "archive.org" && /^\/download\/[A-Za-z0-9._-]+\/.+$/i.test(direct.pathname); } catch (_) {}
     if (safeDirectUrl) {
+      if (await playVenomDirectSource(source)) return;
       try {
         openDirectStream(source.directUrl);
         status("ОТКРЫТЫЙ ИСТОЧНИК · ПРЯМОЙ ВИДЕОФАЙЛ");
@@ -726,6 +857,7 @@
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
     Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).finally(() => findSources(film));
     window.addEventListener("pagehide", () => {
+      if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
       if (dash) { try { dash.reset(); } catch (_) {} }
       const frame = $("#playerStage iframe"); if (frame) frame.src = "about:blank";
