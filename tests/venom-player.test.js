@@ -59,6 +59,6 @@ test("resolver returns no player when a page only exposes poster images", () => 
 
 test("resolver rejects editorial iframe pages that only mention streaming", () => {
   const { extractPlayerUrl } = require("../api/resolve-film-player.js");
-  const html = '<html><body><iframe src="https://guides.justwatch.com/it/ordine-film-nosferatu-streaming"></iframe><img src="https://images.justwatch.com/icon/339998382/s100/ottstudioplayer.jpeg"></body></html>';
+  const html = '<html><body><iframe src="https://guides.justwatch.com/it/ordine-film-nosferatu-streaming"></iframe><iframe src="https://www.justwatch.com/us/provider/amazon-prime-video"></iframe><img src="https://images.justwatch.com/icon/339998382/s100/ottstudioplayer.jpeg"></body></html>';
   assert.equal(extractPlayerUrl(html, "https://example.com/film"), null);
 });
