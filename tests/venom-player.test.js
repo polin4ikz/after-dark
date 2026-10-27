@@ -73,3 +73,54 @@ test("resumes only meaningful unfinished progress", () => {
   assert.equal(resumeTimeFor({ time: 590, duration: 600 }), 0);
   assert.equal(resumeTimeFor({ time: 120, duration: 0 }), 120);
 });
+
+
+test("progress event handler saves periodically, saves pause immediately, and clears on ended", () => {
+  const previousStorage = global.localStorage;
+  const values = new Map();
+  global.localStorage = {
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) { values.set(key, String(value)); },
+    removeItem(key) { values.delete(key); }
+  };
+  try {
+    const { createProgressCapture, readProgress } = require("../venom-player.js");
+    const capture = createProgressCapture("movie:20", () => true);
+    const media = { currentTime: 30.8, duration: 600 };
+    capture({ type: "timeupdate", target: media });
+    assert.equal(readProgress("movie:20").time, 30);
+    media.currentTime = 35;
+    capture({ type: "timeupdate", target: media });
+    assert.equal(readProgress("movie:20").time, 30, "timeupdate writes are throttled");
+    media.currentTime = 36.4;
+    capture({ type: "pause", target: media });
+    assert.equal(readProgress("movie:20").time, 36, "pause writes immediately");
+    capture({ type: "ended", target: media });
+    assert.equal(readProgress("movie:20"), null, "finished playback clears saved progress");
+  } finally {
+    if (previousStorage === undefined) delete global.localStorage;
+    else global.localStorage = previousStorage;
+  }
+});
+
+test("progress event handler ignores stale playback and invalid media times", () => {
+  const previousStorage = global.localStorage;
+  const values = new Map();
+  global.localStorage = {
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) { values.set(key, String(value)); },
+    removeItem(key) { values.delete(key); }
+  };
+  try {
+    const { createProgressCapture, readProgress } = require("../venom-player.js");
+    const capture = createProgressCapture("movie:21", () => false);
+    capture({ type: "pause", target: { currentTime: 90, duration: 600 } });
+    assert.equal(readProgress("movie:21"), null);
+    const activeCapture = createProgressCapture("movie:21", () => true);
+    activeCapture({ type: "pause", target: { currentTime: Number.NaN, duration: 600 } });
+    assert.equal(readProgress("movie:21"), null);
+  } finally {
+    if (previousStorage === undefined) delete global.localStorage;
+    else global.localStorage = previousStorage;
+  }
+});
