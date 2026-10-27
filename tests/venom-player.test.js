@@ -30,5 +30,6 @@ test("creates distinct movie and series source keys", () => {
   assert.equal(filmKey({ tmdbId: 123, type: "film" }), "movie:123");
   assert.equal(filmKey({ tmdbId: 123, type: "series" }), "tv:123");
   assert.equal(filmKey({ id: 456, media_type: "tv" }), "tv:456");
+  assert.equal(filmKey({ id: 789, type: "tv" }), "tv:789");
   assert.equal(filmKey({}), "");
 });
