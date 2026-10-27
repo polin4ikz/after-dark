@@ -119,7 +119,7 @@
         if (!modal.classList.contains("is-open") || !container.isConnected) return;
         const mediaSource = source.kind === "hls" ? { hls: source.url }
           : source.kind === "dash" ? { dash: source.url }
-          : { file: { "Авто": source.url } };
+          : { file: { 720: source.url } };
         playerInstance = VenomPlayer.make({
           container,
           publicPath: PUBLIC_PATH,
