@@ -167,12 +167,23 @@
             const valid = normalizeSource(saved.url, saved.kind);
             input.value = valid.url;
             kind.value = valid.kind;
-            // Once a source has been configured for this title, launch it when
-            // the user presses WATCH again instead of asking for the URL each time.
-            if (modal.classList.contains("is-open")) panel.requestSubmit();
           } catch (_) {}
         }
       }
+    }
+    // Reopening the same title must relaunch its saved source too. The modal token
+    // changes only on an explicit open, so observer callbacks cannot relaunch it in a loop.
+    const openToken = modal.dataset.openToken || "";
+    if (saved && modal.classList.contains("is-open") && openToken && panel.dataset.lastOpenToken !== openToken) {
+      try {
+        const valid = normalizeSource(saved.url, saved.kind);
+        panel.dataset.lastOpenToken = openToken;
+        if (input && kind) {
+          input.value = valid.url;
+          kind.value = valid.kind;
+          panel.requestSubmit();
+        }
+      } catch (_) { panel.dataset.lastOpenToken = openToken; }
     }
   }
   function init() {
