@@ -44,3 +44,15 @@ test("resolver prefers an explicit iframe player URL", () => {
   const html = '<html><body><a href="https://example.com/about">about</a><iframe src="https://player.example.net/embed/film-123"></iframe></body></html>';
   assert.equal(extractPlayerUrl(html, "https://example.com/film"), "https://player.example.net/embed/film-123");
 });
+
+test("resolver rejects player-named images and prefers direct video media", () => {
+  const { extractPlayerUrl } = require("../api/resolve-film-player.js");
+  const html = '<html><body><img src="https://images.justwatch.com/icon/339998382/s100/ottstudioplayer.jpeg"><script>const poster="https://images.justwatch.com/icon/1/s100/film-player.png";</script><video><source src="https://cdn.example/media/feature.mp4"></video></body></html>';
+  assert.equal(extractPlayerUrl(html, "https://example.com/film"), "https://cdn.example/media/feature.mp4");
+});
+
+test("resolver returns no player when a page only exposes poster images", () => {
+  const { extractPlayerUrl } = require("../api/resolve-film-player.js");
+  const html = '<html><body><img src="https://images.justwatch.com/icon/339998382/s100/ottstudioplayer.jpeg"></body></html>';
+  assert.equal(extractPlayerUrl(html, "https://example.com/film"), null);
+});
