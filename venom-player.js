@@ -5,6 +5,9 @@
   const VERSION = "0.3.6";
   const PUBLIC_PATH = "https://cdn.jsdelivr.net/npm/player-venom@" + VERSION + "/dist/";
   const STORAGE_KEY = "after-dark:venom-source:v1";
+  const PROGRESS_STORAGE_KEY = "after-dark:venom-progress:v1";
+  let activeFilmKey = "";
+  let lastProgressWrite = 0;
   const $ = (selector, root = document) => root.querySelector(selector);
   let playerPromise = null;
   let playerInstance = null;
@@ -21,6 +24,31 @@
       const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
       return value && typeof value === "object" && !Array.isArray(value) ? value : {};
     } catch (_) { return {}; }
+  }
+  function progressKey(key) { return key ? PROGRESS_STORAGE_KEY + ":" + key : ""; }
+  function readProgress(key) {
+    try {
+      const storageKey = progressKey(key);
+      if (!storageKey) return null;
+      const item = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (!item || !Number.isFinite(item.time) || item.time < 0) return null;
+      return { time: Math.floor(item.time), duration: Number.isFinite(item.duration) && item.duration > 0 ? Math.floor(item.duration) : 0, updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : 0 };
+    } catch (_) { return null; }
+  }
+  function saveProgress(key, time, duration) {
+    const storageKey = progressKey(key);
+    if (!storageKey || !Number.isFinite(time) || time < 0) return false;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ time: Math.floor(time), duration: Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : 0, updatedAt: Date.now() }));
+      return true;
+    } catch (_) { return false; }
+  }
+  function formatTime(value) {
+    const seconds = Math.max(0, Math.floor(Number(value) || 0));
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return h ? h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") : m + ":" + String(s).padStart(2, "0");
   }
   function normalizeSource(rawUrl, kind) {
     if (!["hls", "dash", "file"].includes(kind)) throw new Error("Выбери тип источника.");
@@ -142,7 +170,7 @@
           all[key] = source;
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {}
         }
-        setStatus(modal, "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН", false);
+        setStatus(modal, resumeTime ? "ПРОДОЛЖАЕМ С " + formatTime(resumeTime) + " · VENOM PLAYER" : "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН", false);
       } catch (error) {
         stage.replaceChildren();
         setStatus(modal, error?.message || "Не удалось запустить Venom Player.", true);
@@ -203,7 +231,7 @@
     const existing = $("#adWatchPlayer");
     if (existing) observeModal(existing);
   }
-  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeSource, filmKey };
+  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeSource, filmKey, readProgress, saveProgress, formatTime, PROGRESS_STORAGE_KEY };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
     else init();
