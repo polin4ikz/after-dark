@@ -167,6 +167,9 @@
             const valid = normalizeSource(saved.url, saved.kind);
             input.value = valid.url;
             kind.value = valid.kind;
+            // Once a source has been configured for this title, launch it when
+            // the user presses WATCH again instead of asking for the URL each time.
+            if (modal.classList.contains("is-open")) panel.requestSubmit();
           } catch (_) {}
         }
       }
