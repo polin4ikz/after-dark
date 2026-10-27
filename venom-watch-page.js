@@ -10,12 +10,60 @@
   let lastProgressSavedAt = 0;
   let lastProgressSavedSecond = -1;
   let completionActionsShown = false;
+  let ignoreSavedProgressForThisSession = false;
 
   function isSeriesFilm(film) {
     return !!film && (film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date));
   }
   function savedProgress(film) {
+    if (ignoreSavedProgressForThisSession) return null;
     return window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
+  }
+  function askResumeChoice(film) {
+    const saved = window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
+    const position = Number(saved?.position_seconds || 0);
+    if (!saved || saved.status !== "in_progress" || position < 10) return Promise.resolve();
+    const overlay = document.createElement("div");
+    overlay.className = "resume-dialog-backdrop";
+    overlay.setAttribute("role", "presentation");
+    const dialog = document.createElement("section");
+    dialog.className = "resume-dialog";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "resumeDialogTitle");
+    const title = document.createElement("p");
+    title.className = "resume-dialog__eyebrow";
+    title.textContent = "ТВОЙ ПРОСМОТР";
+    const heading = document.createElement("h2");
+    heading.id = "resumeDialogTitle";
+    heading.textContent = "Ты остановилась на " + (window.afterDarkProgress?.formatTime ? window.afterDarkProgress.formatTime(position) : Math.floor(position / 60) + " мин.");
+    const description = document.createElement("p");
+    description.className = "resume-dialog__description";
+    description.textContent = "Продолжить с сохранённого места или начать просмотр сначала?";
+    const actions = document.createElement("div");
+    actions.className = "resume-dialog__actions";
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "resume-dialog__continue";
+    continueButton.textContent = "Продолжить";
+    const restartButton = document.createElement("button");
+    restartButton.type = "button";
+    restartButton.className = "resume-dialog__restart";
+    restartButton.textContent = "Начать сначала";
+    actions.append(continueButton, restartButton);
+    dialog.append(title, heading, description, actions);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    return new Promise(resolve => {
+      const finish = restart => {
+        ignoreSavedProgressForThisSession = restart;
+        overlay.remove();
+        resolve();
+      };
+      continueButton.addEventListener("click", () => finish(false), { once: true });
+      restartButton.addEventListener("click", () => finish(true), { once: true });
+      continueButton.focus();
+    });
   }
   function showCompletionActions(film) {
     if (!film || isSeriesFilm(film) || completionActionsShown) return;
@@ -858,7 +906,7 @@
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).finally(() => findSources(film));
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(() => askResumeChoice(film)).then(() => findSources(film));
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
