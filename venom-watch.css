@@ -75,3 +75,10 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .resume-dialog__restart{background:rgba(232,221,200,.045);color:var(--milk)}
 .resume-dialog__restart:hover{background:rgba(232,221,200,.1);border-color:rgba(232,221,200,.5)}
 @media(max-width:520px){.stream-form{padding:14px}.stream-form__row{flex-direction:column}.stream-form button{min-height:46px}.resume-dialog__actions{flex-direction:column}.resume-dialog__actions button{width:100%}}
+
+.track-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0;padding:16px;border:1px solid rgba(232,221,200,.14);background:rgba(232,221,200,.025)}
+.track-controls[hidden]{display:none}
+.track-controls label{display:flex;flex-direction:column;gap:8px;color:rgba(232,221,200,.65);font:10px "Geist Mono",monospace;letter-spacing:.1em}
+.track-controls select{width:100%;min-height:42px;padding:8px 10px;border:1px solid rgba(232,221,200,.22);border-radius:3px;background:#191312;color:#f2e9dc;font:13px Arial,sans-serif}
+.track-controls select:disabled{opacity:.72}
+@media(max-width:520px){.track-controls{grid-template-columns:1fr;gap:14px}}
