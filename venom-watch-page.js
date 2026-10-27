@@ -673,7 +673,7 @@
     const candidates = [{
       name: "STELLAR",
       origin: "https://stellar.rip",
-      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=true&poster=true&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
       readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
       readyEvents: ["loadedmetadata", "play", "timeupdate"],
       errorEvents: ["error"]
