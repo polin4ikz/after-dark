@@ -246,6 +246,7 @@
     if (searchButton) searchButton.disabled = false;
     const cached = SOURCE_CACHE.get(filmKey(film));
     input.value = cached ? cached.url : "";
+    modal.dataset.openToken = String((Number(modal.dataset.openToken) || 0) + 1);
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("ad-watch-player-open");
