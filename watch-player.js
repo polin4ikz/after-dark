@@ -71,7 +71,7 @@
   function filmKey(film) {
     const id = film && (film.tmdbId ?? film.id);
     if (id == null || !String(id).trim()) return "";
-    const type = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
+    const type = film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
     return type + ":" + String(id);
   }
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
@@ -108,7 +108,7 @@
       if (availabilityButton) {
         const film = modal._film;
         const id = Number(film && (film.tmdbId ?? film.id));
-        const type = film && (film.type === "series" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
+        const type = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
         const region = $("#adWatchRegion", modal)?.value || "RU";
         const output = $(".ad-watch-player__availability-results", modal);
         if (!Number.isSafeInteger(id) || id < 1 || !output) {
@@ -312,7 +312,7 @@
       const result = window.movieNight?.result;
       if (result) film = Object.assign({}, result, {
         tmdbId: result.tmdbId ?? result.id,
-        type: result.type || (result.media_type === "tv" || result.first_air_date ? "series" : "film")
+        type: result.type === "tv" || result.media_type === "tv" || result.first_air_date ? "series" : (result.type || "film")
       });
     } else if (button.dataset.adWatchTrigger === "detail") {
       film = $("#afterDarkFilmDetail")?._film || null;
