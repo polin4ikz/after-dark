@@ -135,11 +135,28 @@
       '<input id="adVenomSource" name="source" type="url" inputmode="url" placeholder="https://…/master.m3u8" autocomplete="url" required>',
       '<button type="submit">ЗАПУСТИТЬ ↗</button>',
       '</div>',
-      '<p class="ad-venom-note">Источник сохраняется только в этом браузере. Доступность зависит от ссылки, CORS и прав источника.</p>'
+      '<p class="ad-venom-note">Источник сохраняется только в этом браузере. Доступность зависит от ссылки, CORS и прав источника.</p>',
+      '<div class="ad-venom-resume" hidden><span class="ad-venom-resume__label"></span><button type="button" class="ad-venom-start-over">НАЧАТЬ СНАЧАЛА ↺</button></div>'
     ].join("");
     const originalForm = $(".ad-watch-player__form:not(.ad-venom-panel)", modal);
     if (originalForm) originalForm.insertAdjacentElement("afterend", form);
     else $(".ad-watch-player__window", modal)?.appendChild(form);
+
+    const resumePanel = $(".ad-venom-resume", form);
+    const resumeLabel = $(".ad-venom-resume__label", form);
+    const startOverButton = $(".ad-venom-start-over", form);
+    startOverButton.addEventListener("click", () => {
+      const key = filmKey(modal._film);
+      if (!key) return;
+      try { localStorage.removeItem(progressKey(key)); } catch (_) {}
+      if (resumePanel) resumePanel.hidden = true;
+      const input = $("#adVenomSource", form);
+      if (input && input.value.trim()) {
+        form.requestSubmit();
+      } else {
+        setStatus(modal, "ПРОГРЕСС СБРОШЕН · ВСТАВЬ ССЫЛКУ И ЗАПУСТИ ВИДЕО С НАЧАЛА", false);
+      }
+    });
 
     form.addEventListener("submit", async event => {
       event.preventDefault();
@@ -231,6 +248,13 @@
     const input = $("#adVenomSource", modal);
     const kind = $("#adVenomKind", modal);
     const panel = $(".ad-venom-panel", modal);
+    const resumePanel = panel && $(".ad-venom-resume", panel);
+    const resumeLabel = panel && $(".ad-venom-resume__label", panel);
+    const startOverButton = panel && $(".ad-venom-start-over", panel);
+    const resumeTime = resumeTimeFor(readProgress(key));
+    if (resumePanel) resumePanel.hidden = !resumeTime;
+    if (resumeLabel && resumeTime) resumeLabel.textContent = "ПРОДОЛЖИТЬ С " + formatTime(resumeTime);
+    if (startOverButton) startOverButton.hidden = !resumeTime;
     if (panel && panel.dataset.filmKey !== key) {
       panel.dataset.filmKey = key;
       if (input && kind) {
