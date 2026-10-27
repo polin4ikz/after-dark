@@ -8,6 +8,7 @@
   const PROGRESS_STORAGE_KEY = "after-dark:venom-progress:v1";
   let activeFilmKey = "";
   let lastProgressWrite = 0;
+  let progressCleanup = null;
   const $ = (selector, root = document) => root.querySelector(selector);
   let playerPromise = null;
   let playerInstance = null;
@@ -42,6 +43,9 @@
       localStorage.setItem(storageKey, JSON.stringify({ time: Math.floor(time), duration: Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : 0, updatedAt: Date.now() }));
       return true;
     } catch (_) { return false; }
+  }
+  function resumeTimeFor(progress) {
+    return progress && progress.time > 10 && (!progress.duration || progress.time < progress.duration - 15) ? progress.time : 0;
   }
   function formatTime(value) {
     const seconds = Math.max(0, Math.floor(Number(value) || 0));
@@ -112,6 +116,8 @@
   }
   function stopPlayer() {
     try { playerInstance?.pause?.(); } catch (_) {}
+    try { progressCleanup?.(); } catch (_) {}
+    progressCleanup = null;
     try { playerInstance?.destroy?.(); } catch (_) {}
     playerInstance = null;
     activeStage = null;
@@ -158,7 +164,7 @@
         const VenomPlayer = await loadPlayer();
         if (!modal.classList.contains("is-open") || !container.isConnected || modal.dataset.venomRequestToken !== requestToken) return;
         const savedProgress = readProgress(key);
-        const resumeTime = savedProgress && savedProgress.time > 10 && (!savedProgress.duration || savedProgress.time < savedProgress.duration - 15) ? savedProgress.time : 0;
+        const resumeTime = resumeTimeFor(savedProgress);
         const mediaSource = source.kind === "hls" ? { hls: source.url }
           : source.kind === "dash" ? { dash: source.url }
           : { file: { 720: source.url } };
@@ -175,29 +181,35 @@
           autoLandscape: true,
           pip: true,
           trackProgress: 15,
-          doNotSaveProgress: false,
+          // Our own per-film key is authoritative; disable Venom's generic localStorage progress.
+          doNotSaveProgress: true,
           cssVars: {
             "color-primary": "#8b1d2c",
             "background-color-primary": "rgba(16, 14, 13, .96)"
           }
         });
         activeStage = stage;
-        if (playerInstance && typeof playerInstance.on === "function") {
-          const captureProgress = data => {
-            if (!key || activeFilmKey !== key) return;
-            const current = Number(data?.currentTime ?? data?.seconds ?? data?.time ?? data?.position ?? data?.target?.currentTime ?? data?.currentTarget?.currentTime ?? data?.detail?.currentTime);
-            const duration = Number(data?.duration ?? data?.totalTime ?? data?.target?.duration ?? data?.currentTarget?.duration ?? data?.detail?.duration);
-            if (!Number.isFinite(current) || current < 0) return;
-            const rounded = Math.floor(current);
-            if (rounded - lastProgressWrite >= 10) {
-              saveProgress(key, rounded, duration);
-              lastProgressWrite = rounded;
-            }
-          };
-          playerInstance.on("timeupdate", captureProgress);
-          playerInstance.on("viewProgress", captureProgress);
-          playerInstance.on("ended", () => { try { localStorage.removeItem(progressKey(key)); } catch (_) {} });
-        }
+        // Read progress from the actual HTMLMediaElement, not undocumented event payloads.
+        // Media events do not bubble, so capture phase is required on the player container.
+        const captureProgress = event => {
+          const media = event.target;
+          if (!key || activeFilmKey !== key || !media || typeof media.currentTime !== "number") return;
+          const current = media.currentTime;
+          const duration = Number(media.duration);
+          if (!Number.isFinite(current) || current < 0) return;
+          const rounded = Math.floor(current);
+          if (event.type === "ended") {
+            try { localStorage.removeItem(progressKey(key)); } catch (_) {}
+            return;
+          }
+          if (event.type !== "timeupdate" || rounded - lastProgressWrite >= 10) {
+            saveProgress(key, rounded, duration);
+            lastProgressWrite = rounded;
+          }
+        };
+        const progressEvents = ["timeupdate", "pause", "ended"];
+        progressEvents.forEach(name => container.addEventListener(name, captureProgress, true));
+        progressCleanup = () => progressEvents.forEach(name => container.removeEventListener(name, captureProgress, true));
         if (key) {
           const all = readSources();
           all[key] = source;
@@ -265,7 +277,7 @@
     const existing = $("#adWatchPlayer");
     if (existing) observeModal(existing);
   }
-  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeSource, filmKey, readProgress, saveProgress, formatTime, PROGRESS_STORAGE_KEY };
+  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeSource, filmKey, readProgress, saveProgress, formatTime, resumeTimeFor, PROGRESS_STORAGE_KEY };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
     else init();
