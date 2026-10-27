@@ -13,7 +13,7 @@
   function filmKey(film) {
     const id = film && (film.tmdbId ?? film.id);
     if (id == null || !String(id).trim()) return "";
-    const type = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
+    const type = film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
     return type + ":" + String(id);
   }
   function readSources() {
