@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100e0d">
+  <title>AFTER DARK — Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="venom-watch.css?v=20261026-progress1">
+</head>
+<body>
+  <main class="player-page">
+    <header class="player-header">
+      <a class="wordmark" href="index.html#archive">AFTER <em>DARK</em></a>
+      <span>PRIVATE CINEMA / PLAYER</span>
+      <a class="back-link" href="index.html#archive">← В АРХИВ</a>
+    </header>
+    <section class="player-content">
+      <div class="eyebrow">NOW PLAYING <span id="mediaType">PRIVATE SELECTION</span></div>
+      <h1 id="mediaTitle">Загрузка…</h1>
+      <p id="mediaMeta" class="media-meta"></p>
+      <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
+      <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
+      <section id="nativePlayerTools" class="native-player-tools" aria-label="Настройки воспроизведения">
+        <div class="track-controls">
+          <label for="audioTrack">ОЗВУЧКА</label>
+          <select id="audioTrack" disabled><option value="-1">Недоступно для этого источника</option></select>
+          <label for="subtitleTrack">СУБТИТРЫ</label>
+          <select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select>
+        </div>
+        <p id="streamStatus" class="source-note" role="status" aria-live="polite">У Stellar озвучка и субтитры выбираются внутри плеера. Качество также зависит от самого источника; отдельный переключатель After Dark доступен только для прямых HLS/DASH-потоков.</p>
+      </section>
+      <section class="source-discovery" aria-labelledby="sourceHeading">
+        <div class="source-heading" id="sourceHeading">ИСТОЧНИКИ ПРОСМОТРА</div>
+        <div id="sourceResults" class="source-results" aria-live="polite"></div>
+      </section>
+    </section>
+    <footer class="player-footer"><span>AFTER DARK / EST. 2026</span><span>FILMS · SERIES · ANIMATION</span></footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
+  <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
+  <script src="watch-progress.js?v=20261026-progress3"></script>
+  <script src="venom-watch-page.js?v=20261026-stellarfast3"></script>
+</body>
+</html>
