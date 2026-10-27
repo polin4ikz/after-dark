@@ -46,14 +46,24 @@ function extractPlayerUrl(html, pageUrl) {
       const u = new URL(value, pageUrl);
       if (!isPublicHttps(u.href, true) || isSearchOrIrrelevant(u.href)) return;
       const host = u.hostname.toLowerCase();
+      const pathname = u.pathname.toLowerCase();
       const path = (host + u.pathname + u.search).toLowerCase();
       if (/ads?|banner|tracker|analytics|doubleclick|pixel|statistic/i.test(path)) return;
-      if (host === new URL(pageUrl).hostname.toLowerCase() && !/player|embed|video|watch|stream/i.test(path)) return;
+
+      // Do not mistake poster art, thumbnails, scripts, or other assets for an embed.
+      // The word "player" can appear in image filenames (for example, ottstudioplayer.jpeg).
+      if (/\\.(?:avif|bmp|gif|jpe?g|png|svg|webp|ico|css|m?js|woff2?|ttf|otf|pdf)(?:$)/i.test(pathname)) return;
+      if (/\\/(?:icons?|images?|posters?|thumbnails?|thumbs?)\\//i.test(pathname)) return;
+
+      // A direct media URL is useful to the native/Venom player and outranks page assets.
+      const directMediaHint = /\\.(?:m3u8|mpd|mp4|m4v|webm)(?:$)/i.test(pathname);
+      if (host === new URL(pageUrl).hostname.toLowerCase() && !directMediaHint &&
+          !/player|embed|video|watch|stream/i.test(path)) return;
       // Generic URLs in page HTML are often navigation, ads, or redirects, not players.
-      // Accept explicit media/embed tags, or require a strong player-specific URL hint.
+      // Accept direct media, explicit media/embed tags, or strong player-specific URL hints.
       const explicitPlayerHint = /player|video|embed|stream|iframe|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback/i.test(path);
-      if (score < 4 && !explicitPlayerHint) return;
-      candidates.push({ url: u.href, score: score + (explicitPlayerHint ? 10 : 0) });
+      if (!directMediaHint && score < 4 && !explicitPlayerHint) return;
+      candidates.push({ url: u.href, score: score + (directMediaHint ? 30 : 0) + (explicitPlayerHint ? 10 : 0) });
     } catch (_) {}
   };
   const tags = String(html || "").match(/<(?:iframe|embed|video|source|object)\b[^>]*>/gi) || [];
