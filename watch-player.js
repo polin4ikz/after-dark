@@ -151,6 +151,7 @@
     });
     modal.addEventListener("submit", event => {
       const form = event.target.closest(".ad-watch-player__form");
+      if (form && form.classList.contains("ad-venom-panel")) return;
       if (!form) return;
       event.preventDefault();
       const film = modal._film;
