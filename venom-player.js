@@ -7,7 +7,6 @@
   const STORAGE_KEY = "after-dark:venom-source:v1";
   const PROGRESS_STORAGE_KEY = "after-dark:venom-progress:v1";
   let activeFilmKey = "";
-  let lastProgressWrite = 0;
   let progressCleanup = null;
   const $ = (selector, root = document) => root.querySelector(selector);
   let playerPromise = null;
