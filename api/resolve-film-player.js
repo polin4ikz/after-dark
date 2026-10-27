@@ -63,7 +63,7 @@ function extractPlayerUrl(html, pageUrl) {
       // Accept direct media, explicit media/embed tags, or strong player-specific URL hints.
       const explicitPlayerHint =
         /(?:^|[./_-])(?:player|embed|iframe|stream|nextembed|alloha|kodik|collaps|videocdn|hdvb|hls|m3u8|manifest|playback)(?:[./_-]|$)/i.test(u.pathname.toLowerCase()) ||
-        /(?:^|\\.)(?:player|embed|video|stream|alloha|kodik|collaps|videocdn|hdvb)\\./i.test(host);
+        /(?:^|\.)(?:player|embed|video|stream|alloha|kodik|collaps|videocdn|hdvb)\./i.test(host);
       // Tag type alone is insufficient: editorial pages and ad frames also contain iframes.
       if (!directMediaHint && !explicitPlayerHint) return;
       candidates.push({ url: u.href, score: score + (directMediaHint ? 30 : 0) + (explicitPlayerHint ? 10 : 0) });
