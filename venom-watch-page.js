@@ -10,13 +10,12 @@
   let lastProgressSavedAt = 0;
   let lastProgressSavedSecond = -1;
   let completionActionsShown = false;
-  let ignoreSavedProgressForThisSession = false;
+  let restartCurrentEpisode = false;
 
   function isSeriesFilm(film) {
     return !!film && (film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date));
   }
   function savedProgress(film) {
-    if (ignoreSavedProgressForThisSession) return null;
     return window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
   }
   function askResumeChoice(film) {
@@ -36,7 +35,11 @@
     title.textContent = "ТВОЙ ПРОСМОТР";
     const heading = document.createElement("h2");
     heading.id = "resumeDialogTitle";
-    heading.textContent = "Ты остановилась на " + (window.afterDarkProgress?.formatTime ? window.afterDarkProgress.formatTime(position) : Math.floor(position / 60) + " мин.");
+    const isSeries = isSeriesFilm(film);
+    const season = Number(saved.season_number || 0);
+    const episode = Number(saved.episode_number || 0);
+    const episodeLabel = isSeries && season > 0 && episode > 0 ? " · " + season + " сезон, " + episode + " серия" : "";
+    heading.textContent = "Ты остановилась" + episodeLabel + " — " + (window.afterDarkProgress?.formatTime ? window.afterDarkProgress.formatTime(position) : Math.floor(position / 60) + " мин.");
     const description = document.createElement("p");
     description.className = "resume-dialog__description";
     description.textContent = "Продолжить с сохранённого места или начать просмотр сначала?";
@@ -56,7 +59,7 @@
     document.body.appendChild(overlay);
     return new Promise(resolve => {
       const finish = restart => {
-        ignoreSavedProgressForThisSession = restart;
+        restartCurrentEpisode = restart;
         overlay.remove();
         resolve();
       };
@@ -663,9 +666,10 @@
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
     const isSeries = isSeriesFilm(film);
     const previousProgress = savedProgress(film);
-    const resumeAt = previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
+    const resumeAt = !restartCurrentEpisode && previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
     const season = Math.max(1, Math.floor(Number(previousProgress?.season_number) || 1));
     const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
+    restartCurrentEpisode = false;
 
     // Stellar is first: it has worked for real titles and documents progress events,
     // startAt resume, localized controls, and episode navigation.
@@ -673,7 +677,7 @@
     const candidates = [{
       name: "STELLAR",
       origin: "https://stellar.rip",
-      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&language=ru&lang=ru&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
       readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
       readyEvents: ["loadedmetadata", "play", "timeupdate"],
       errorEvents: ["error"]
@@ -685,7 +689,7 @@
     candidates.push({
       name: "VIDSCENE",
       origin: "https://player.vidscene.app",
-      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
+      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&language=ru&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
       readyTypes: ["VIDSCENE_PLAYER_EVENT"],
       readyEvents: ["loadedmetadata", "play", "timeupdate"],
       errorEvents: ["error"]
