@@ -88,7 +88,9 @@
       '<section class="ad-watch-player__window" role="dialog" aria-modal="true" aria-labelledby="adWatchTitle">',
       '<div class="ad-watch-player__topline"><span>PRIVATE CINEMA / PLAYER</span><button type="button" data-ad-watch-close>ЗАКРЫТЬ ×</button></div>',
       '<h2 id="adWatchTitle" class="ad-watch-player__title"></h2>',
-      '<p class="ad-watch-player__hint">Сначала проверь легальные варианты просмотра. Internet Archive — каталог, а совпадение названия не гарантирует наличие полного фильма.</p>',
+      '<p class="ad-watch-player__hint">Сначала проверь легальные варианты просмотра. Доступность зависит от страны и подписки.</p>',
+      '<div class="ad-watch-player__availability"><label for="adWatchRegion">СТРАНА</label><select id="adWatchRegion"><option value="RU">РОССИЯ</option><option value="DE">ГЕРМАНИЯ</option><option value="US">США</option><option value="GB">ВЕЛИКОБРИТАНИЯ</option><option value="CA">КАНАДА</option></select><button class="ad-watch-player__search" type="button" data-ad-watchmode-search>ГДЕ ПОСМОТРЕТЬ ↗</button></div>',
+      '<div class="ad-watch-player__availability-results" aria-live="polite"></div>',
       '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
@@ -100,7 +102,46 @@
     document.body.appendChild(modal);
     modal.addEventListener("click", async event => {
       const searchButton = event.target.closest("[data-ad-archive-search]");
+      const availabilityButton = event.target.closest("[data-ad-watchmode-search]");
       const resultButton = event.target.closest("[data-ad-archive-identifier]");
+      if (availabilityButton) {
+        const film = modal._film;
+        const id = Number(film && (film.tmdbId ?? film.id));
+        const type = film && (film.type === "series" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
+        const region = $("#adWatchRegion", modal)?.value || "RU";
+        const output = $(".ad-watch-player__availability-results", modal);
+        if (!Number.isSafeInteger(id) || id < 1 || !output) {
+          if (output) output.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ ID ФИЛЬМА В TMDB.";
+          return;
+        }
+        availabilityButton.disabled = true;
+        output.textContent = "ПРОВЕРЯЮ ДОСТУПНОСТЬ…";
+        try {
+          const response = await fetch("/api/watchmode?tmdbId=" + encodeURIComponent(String(id)) + "&type=" + type + "&region=" + encodeURIComponent(region), { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) {
+            if (data.error === "WATCHMODE_NOT_CONFIGURED") throw new Error("WATCHMODE_NOT_CONFIGURED");
+            if (data.error === "WATCHMODE_REGION_OR_TITLE_UNAVAILABLE") throw new Error("REGION_UNAVAILABLE");
+            throw new Error("AVAILABILITY_UNAVAILABLE");
+          }
+          const sources = Array.isArray(data.sources) ? data.sources : [];
+          if (!sources.length) {
+            output.textContent = "В ВЫБРАННОЙ СТРАНЕ ДОСТУПНЫЕ СЕРВИСЫ НЕ НАЙДЕНЫ.";
+          } else {
+            const labels = { sub: "ПОДПИСКА", rent: "АРЕНДА", buy: "ПОКУПКА", free: "БЕСПЛАТНО", tv: "ТВ" };
+            output.innerHTML = sources.map(source => '<a class="ad-watch-player__result" href="' + esc(source.webUrl) + '" target="_blank" rel="noopener noreferrer"><span class="ad-watch-player__result-title">' + esc(source.name) + '</span><span class="ad-watch-player__result-meta">' + esc(labels[source.type] || source.type.toUpperCase()) + (source.price ? " · " + esc(source.price) : "") + '</span>' + (source.format ? '<span class="ad-watch-player__result-description">' + esc(source.format) + '</span>' : '') + '</a>').join("");
+          }
+        } catch (error) {
+          output.textContent = error.message === "WATCHMODE_NOT_CONFIGURED"
+            ? "ПОИСК СЕРВИСОВ ЕЩЁ НЕ НАСТРОЕН: НУЖЕН WATCHMODE_API_KEY В VERCEL."
+            : error.message === "REGION_UNAVAILABLE"
+              ? "WATCHMODE НЕ ВЕРНУЛ ДАННЫЕ ДЛЯ ЭТОЙ СТРАНЫ. ПРОВЕРЬ ДОСТУПНЫЕ РЕГИОНЫ ТВОЕГО ТАРИФА."
+              : "НЕ УДАЛОСЬ ПОЛУЧИТЬ СПИСОК СЕРВИСОВ. ПОПРОБУЙ ПОЗЖЕ.";
+        } finally {
+          availabilityButton.disabled = false;
+        }
+        return;
+      }
       if (resultButton) {
         const identifier = resultButton.dataset.adArchiveIdentifier || "";
         if (!/^[A-Za-z0-9._-]{1,120}$/.test(identifier)) return;
@@ -196,6 +237,10 @@
     status.classList.remove("is-error");
     const results = $(".ad-watch-player__results", modal);
     if (results) results.replaceChildren();
+    const availabilityResults = $(".ad-watch-player__availability-results", modal);
+    if (availabilityResults) availabilityResults.replaceChildren();
+    const availabilityButton = $("[data-ad-watchmode-search]", modal);
+    if (availabilityButton) availabilityButton.disabled = false;
     const searchButton = $("[data-ad-archive-search]", modal);
     if (searchButton) searchButton.disabled = false;
     const cached = SOURCE_CACHE.get(filmKey(film));
