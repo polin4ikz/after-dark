@@ -3,7 +3,7 @@
 const ALLOWED_PATHS = [
   /^\/search\/multi$/,
   /^\/discover\/(movie|tv)$/,
-  /^\/(movie|tv)\/\d+(\/credits)?$/
+  /^\/(movie|tv)\/\d+(\/credits|\/watch\/providers)?$/
 ];
 
 module.exports = async function handler(req, res) {

@@ -75,6 +75,15 @@
     return type + ":" + String(id);
   }
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
+  function watchLabel(film) {
+    const progress = window.afterDarkProgress?.get(film);
+    if (progress?.status === "in_progress" && Number(progress.position_seconds) > 10) {
+      const episode = progress.media_type === "tv" && progress.season_number && progress.episode_number
+        ? " · S" + String(progress.season_number).padStart(2, "0") + " E" + String(progress.episode_number).padStart(2, "0") : "";
+      return "ПРОДОЛЖИТЬ" + episode + " · " + (window.afterDarkProgress?.formatTime(progress.position_seconds) || "");
+    }
+    return "СМОТРЕТЬ ↗";
+  }
 
   function ensureModal() {
     let modal = $("#adWatchPlayer");
@@ -226,12 +235,16 @@
   function injectButtons() {
     document.querySelectorAll(".archive-card").forEach(card => {
       const actions = $(".archive-actions", card);
-      if (!actions || actions.querySelector("[data-ad-watch-trigger]")) return;
+      if (!actions) return;
+      const primary = actions.querySelector("[data-action='watch']");
+      if (primary) { primary.textContent = watchLabel(getArchiveFilm(card.dataset.id)); return; }
+      const existing = actions.querySelector("[data-ad-watch-trigger]");
+      if (existing) { existing.textContent = watchLabel(getArchiveFilm(card.dataset.id)); return; }
       const button = document.createElement("button");
       button.type = "button";
       button.className = "archive-action ad-watch-trigger";
       button.dataset.adWatchTrigger = "archive";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel(getArchiveFilm(card.dataset.id));
       actions.appendChild(button);
     });
     const nightActions = $(".movie-night-final-actions");
@@ -240,7 +253,7 @@
       button.type = "button";
       button.className = "movie-night-action ad-watch-trigger";
       button.dataset.adWatchTrigger = "movie-night";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel(window.movieNight?.result);
       nightActions.appendChild(button);
     }
     const detailActions = $(".ad-film-detail-actions");
@@ -249,7 +262,7 @@
       button.type = "button";
       button.className = "ad-watch-detail-trigger ad-watch-trigger";
       button.dataset.adWatchTrigger = "detail";
-      button.textContent = "WATCH ↗";
+      button.textContent = watchLabel($("#afterDarkFilmDetail")?._film);
       detailActions.prepend(button);
     }
   }
@@ -272,12 +285,22 @@
       const card = button.closest(".archive-card");
       film = card ? getArchiveFilm(card.dataset.id) : null;
     }
-    if (film) openPlayer(film);
+    if (film) {
+      try {
+        // The dedicated page owns playback; keep the current modal implementation out of this flow.
+        localStorage.setItem("after-dark:venom-current-film:v1", JSON.stringify(film));
+        window.location.href = "venom-watch.html";
+      } catch (_) {
+        window.location.href = "venom-watch.html";
+      }
+    }
   }
   function init() {
     restoreSourceCache();
     document.addEventListener("click", onWatchClick, true);
     injectButtons();
+    window.afterDarkProgressReady?.then(injectButtons).catch(() => {});
+    window.addEventListener("afterdark:progress-updated", injectButtons);
     new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
     window.afterDarkWatchPlayer = { open: openPlayer, close: closePlayer, normalizeEmbedUrl };
   }

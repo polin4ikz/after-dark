@@ -338,3 +338,21 @@ window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));
   (document.body||document.documentElement).appendChild(script);
 });
+/* A completed film can deep-link straight into its rating modal after returning from the player. */
+(()=> {
+  const params = new URLSearchParams(window.location.search);
+  const id = Number(params.get("rate"));
+  if (!Number.isSafeInteger(id) || id <= 0) return;
+  window.afterDarkRatingsReady?.then(async () => {
+    // Archive hydration is asynchronous; wait for the completed title to enter the local film map.
+    for (let attempt = 0; attempt < 32; attempt++) {
+      if (window.afterDarkGetFilm?.(id)) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        window.openSupabaseRating?.(id);
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    console.warn("POST-WATCH RATING NOT OPENED: film metadata is not available in the archive yet", id);
+  }).catch(error => console.warn("POST-WATCH RATING OPEN FAILED", error));
+})();
