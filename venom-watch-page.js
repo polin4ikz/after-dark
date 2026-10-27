@@ -671,26 +671,27 @@
     const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
     restartCurrentEpisode = false;
 
-    // Stellar is first: it has worked for real titles and documents progress events,
-    // startAt resume, localized controls, and episode navigation.
-    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
-    const candidates = [{
-      name: "STELLAR",
-      origin: "https://stellar.rip",
-      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&language=ru&lang=ru&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
-      readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
-      readyEvents: ["loadedmetadata", "play", "timeupdate"],
-      errorEvents: ["error"]
-    }];
-
-    // Avoid a separate availability request before the main player starts.
-    // Try VidScene directly only if Stellar fails; this keeps startup latency low.
+    // Try VidScene first as an experiment for Russian-language playback.
+    // This is not a guarantee of Russian audio: languages= affects subtitle preference,
+    // while audio tracks are determined by the provider's actual stream.
     const vidScenePath = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
-    candidates.push({
+    const candidates = [{
       name: "VIDSCENE",
       origin: "https://player.vidscene.app",
       url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&language=ru&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
       readyTypes: ["VIDSCENE_PLAYER_EVENT"],
+      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      errorEvents: ["error"]
+    }];
+
+    // Keep Stellar as fallback. Its documented locale localizes the UI only;
+    // it cannot force Russian audio if the selected stream does not contain it.
+    const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
+    candidates.push({
+      name: "STELLAR",
+      origin: "https://stellar.rip",
+      url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
+      readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
       readyEvents: ["loadedmetadata", "play", "timeupdate"],
       errorEvents: ["error"]
     });
