@@ -1058,72 +1058,10 @@
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
-    const episodePicker = $("#episodePicker");
-    if (isSeries && episodePicker) {
-      episodePicker.hidden = false;
-      const seasonSelect = $("#episodeSeason");
-      const episodeSelect = $("#episodeNumber");
-      const applyButton = $("#episodeApply");
-      const saved = savedProgress(film) || {};
-      selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || 1));
-      selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || 1));
-      seasonSelect.replaceChildren(new Option("Загрузка…", ""));
-      episodeSelect.replaceChildren(new Option("—", ""));
-      seasonSelect.disabled = episodeSelect.disabled = applyButton.disabled = true;
-      const populateEpisodes = (count, desiredEpisode = 1) => {
-        const total = Math.max(0, Math.floor(Number(count) || 0));
-        episodeSelect.replaceChildren();
-        if (!total) {
-          episodeSelect.add(new Option("Нет данных", ""));
-          selectedEpisode = 1;
-          applyButton.disabled = true;
-          return;
-        }
-        for (let n = 1; n <= total; n++) episodeSelect.add(new Option(String(n).padStart(2, "0"), String(n)));
-        selectedEpisode = Math.min(total, Math.max(1, Math.floor(Number(desiredEpisode) || 1)));
-        episodeSelect.value = String(selectedEpisode);
-        episodeSelect.disabled = false;
-        applyButton.disabled = false;
-      };
-      fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + Number(film.tmdbId ?? film.id)) + "&language=ru-RU", { headers: { accept: "application/json" } })
-        .then(response => { if (!response.ok) throw new Error("TMDB seasons unavailable"); return response.json(); })
-        .then(details => {
-          const seasons = (Array.isArray(details.seasons) ? details.seasons : []).filter(season => Number(season.season_number) > 0 && Number(season.episode_count) > 0);
-          seasonSelect.replaceChildren();
-          seasons.forEach(season => seasonSelect.add(new Option("СЕЗОН " + season.season_number + " · " + season.episode_count + " сер.", String(season.season_number))));
-          if (!seasons.length) throw new Error("No season metadata");
-          const savedSeasonExists = seasons.some(season => Number(season.season_number) === selectedSeason);
-          if (!savedSeasonExists) selectedSeason = Number(seasons[0].season_number);
-          seasonSelect.value = String(selectedSeason);
-          const chosen = seasons.find(season => Number(season.season_number) === selectedSeason);
-          populateEpisodes(chosen?.episode_count, selectedEpisode);
-          seasonSelect.disabled = false;
-          seasonSelect.addEventListener("change", () => {
-            selectedSeason = Number(seasonSelect.value) || 1;
-            const selected = seasons.find(season => Number(season.season_number) === selectedSeason);
-            populateEpisodes(selected?.episode_count, 1);
-          });
-        })
-        .catch(error => {
-          console.warn("Season metadata unavailable:", error);
-          seasonSelect.replaceChildren(new Option("Сезоны недоступны", ""));
-          episodeSelect.replaceChildren(new Option("Серии недоступны", ""));
-          seasonSelect.disabled = episodeSelect.disabled = applyButton.disabled = true;
-          status("НЕ УДАЛОСЬ ЗАГРУЗИТЬ СПИСОК СЕЗОНОВ · ПОПРОБУЙ ПОЗЖЕ", true);
-        });
-      applyButton.addEventListener("click", async () => {
-        if (applyButton.disabled || seasonSelect.disabled || episodeSelect.disabled) return;
-        const season = Number(seasonSelect.value);
-        const episode = Number(episodeSelect.value);
-        if (!Number.isInteger(season) || !Number.isInteger(episode) || season < 1 || episode < 1) return;
-        selectedSeason = season; selectedEpisode = episode; restartCurrentEpisode = true;
-        const savedNow = savedProgress(currentFilm) || {};
-        await window.afterDarkProgress?.save?.({ tmdb_id: Number(currentFilm.tmdbId ?? currentFilm.id), title: currentFilm.title || currentFilm.name || "", media_type: "tv", position_seconds: 0, duration_seconds: 0, status: "in_progress", season_number: season, episode_number: episode, source_provider: savedNow.source_provider || "STELLAR" });
-        status("ПЕРЕКЛЮЧАЮ НА " + season + " СЕЗОН · " + episode + " СЕРИЯ");
-        await findSources(currentFilm);
-      });
-    }
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries && $("#episodePicker")) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); $("#episodeSeason").value = String(selectedSeason); $("#episodeNumber").value = String(selectedEpisode); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    const savedEpisodeProgress = savedProgress(film) || {};
+    selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
+    selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
