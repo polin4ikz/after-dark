@@ -35,3 +35,16 @@ test("handles missing or malformed track lists", () => {
   assert.equal(findRussianAudioTrackIndex(null), -1);
   assert.equal(findRussianAudioTrackIndex([null, {}, "ru"]), -1);
 });
+
+test("recognizes alternate language metadata used by external players", () => {
+  assert.equal(findRussianAudioTrackIndex([
+    { languageCode: "en", title: "English" },
+    { languageCode: "ru", title: "Dubbed version" }
+  ]), 1);
+  assert.equal(findRussianAudioTrackIndex([
+    { attrs: { NAME: "Русская дорожка" } }
+  ]), 0);
+  assert.equal(findRussianAudioTrackIndex([
+    { labels: [{ label: "Russian audio" }] }
+  ]), 0);
+});
