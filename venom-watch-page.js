@@ -11,6 +11,8 @@
   let lastProgressSavedSecond = -1;
   let completionActionsShown = false;
   let restartCurrentEpisode = false;
+  let selectedSeason = null;
+  let selectedEpisode = null;
 
   function isSeriesFilm(film) {
     return !!film && (film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date));
@@ -680,8 +682,8 @@
     const isSeries = isSeriesFilm(film);
     const previousProgress = savedProgress(film);
     const resumeAt = !restartCurrentEpisode && previousProgress?.status === "in_progress" ? Math.max(0, Math.floor(Number(previousProgress.position_seconds) || 0)) : 0;
-    const season = Math.max(1, Math.floor(Number(previousProgress?.season_number) || 1));
-    const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
+    const season = Math.max(1, Math.floor(Number(selectedSeason ?? previousProgress?.season_number) || 1));
+    const episode = Math.max(1, Math.floor(Number(selectedEpisode ?? previousProgress?.episode_number) || 1));
     restartCurrentEpisode = false;
 
     // Start with Stellar: it is the provider the user has confirmed works.
@@ -952,6 +954,24 @@
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
     const year = String(film.release_date || film.first_air_date || "").slice(0, 4);
     $("#mediaMeta").textContent = [year, film.original_title || film.original_name].filter(Boolean).join(" / ");
+    const episodePicker = $("#episodePicker");
+    if (isSeries && episodePicker) {
+      episodePicker.hidden = false;
+      const saved = savedProgress(film) || {};
+      selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || 1));
+      selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || 1));
+      $("#episodeSeason").value = String(selectedSeason);
+      $("#episodeNumber").value = String(selectedEpisode);
+      $("#episodeApply").addEventListener("click", async () => {
+        const season = Math.max(1, Math.min(99, Math.floor(Number($("#episodeSeason").value) || 1)));
+        const episode = Math.max(1, Math.min(999, Math.floor(Number($("#episodeNumber").value) || 1)));
+        selectedSeason = season; selectedEpisode = episode; restartCurrentEpisode = true;
+        const savedNow = savedProgress(currentFilm) || {};
+        await window.afterDarkProgress?.save?.({ tmdb_id: Number(currentFilm.tmdbId ?? currentFilm.id), title: currentFilm.title || currentFilm.name || "", media_type: "tv", position_seconds: 0, duration_seconds: 0, status: "in_progress", season_number: season, episode_number: episode, source_provider: savedNow.source_provider || "STELLAR" });
+        status("ПЕРЕКЛЮЧАЮ НА " + season + " СЕЗОН · " + episode + " СЕРИЯ");
+        await findSources(currentFilm);
+      });
+    }
     Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(() => askResumeChoice(film)).then(() => findSources(film));
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
