@@ -21,11 +21,15 @@
     return tracks.findIndex(track => {
       if (!track || typeof track !== "object") return false;
       const attrs = track.attrs && typeof track.attrs === "object" ? track.attrs : {};
-      const language = String(track.lang || track.language || attrs.LANGUAGE || "").trim();
+      const language = String(
+        track.lang || track.language || track.languageCode || track.langCode ||
+        track.audioTrack?.language || attrs.LANGUAGE || attrs.language || ""
+      ).trim();
       if (/^ru(?:[-_][a-z0-9]+)*$/i.test(language) || /^rus$/i.test(language)) return true;
       const labels = [
-        track.name, track.label,
-        ...(Array.isArray(track.labels) ? track.labels.map(item => item && item.text) : [])
+        track.name, track.label, track.title, track.displayName,
+        attrs.NAME, attrs.name,
+        ...(Array.isArray(track.labels) ? track.labels.map(item => item && (item.text || item.label || item.name)) : [])
       ].filter(Boolean).join(" ");
       return /русск|russian/i.test(labels);
     });
