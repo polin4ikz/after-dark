@@ -626,6 +626,31 @@
     const offers = ["flatrate", "free", "ads", "rent", "buy"].flatMap(key => Array.isArray(region[key]) ? region[key] : []);
     return [...new Set(offers.map(item => item && item.provider_name).filter(Boolean))];
   }
+  async function showWatchmodeProviders(film) {
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    if (!Number.isSafeInteger(id) || id <= 0 || $("#sourceResults .watchmode-attribution")) return;
+    const type = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
+    try {
+      const response = await fetch("/api/watchmode?tmdbId=" + encodeURIComponent(id) + "&type=" + type + "&region=RU", { headers: { accept: "application/json" } });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const sources = Array.isArray(payload.sources) ? payload.sources : [];
+      if (!sources.length) return;
+      const heading = document.createElement("p");
+      heading.className = "source-attribution watchmode-attribution";
+      heading.textContent = "ЕЩЁ ВАРИАНТЫ ПРОСМОТРА · WATCHMODE";
+      $("#sourceResults").appendChild(heading);
+      sources.forEach(source => {
+        if (!source || !source.webUrl || !/^https:\/\//i.test(source.webUrl)) return;
+        const link = document.createElement("a");
+        link.className = "source-result source-result--external";
+        link.href = source.webUrl; link.target = "_blank"; link.rel = "noopener noreferrer";
+        const details = [source.name, source.type === "sub" ? "подписка" : source.type === "free" ? "бесплатно" : source.type === "rent" ? "аренда" : source.type === "buy" ? "покупка" : ""].filter(Boolean);
+        link.textContent = "RU · " + details.join(" · ") + " ↗";
+        $("#sourceResults").appendChild(link);
+      });
+    } catch (_) {}
+  }
   async function showOfficialProviders(film) {
     if ($("#sourceResults .source-attribution")) return;
     const id = Number(film.tmdbId ?? film.id);
@@ -839,6 +864,7 @@
     try {
       if (await tryExternalPlayerFallback(film)) {
         await showOfficialProviders(film);
+        await showWatchmodeProviders(film);
         return;
       }
     } catch (error) {
@@ -847,6 +873,7 @@
 
     status("STELLAR НЕ ОТВЕТИЛ · ПОКАЗЫВАЮ ДОСТУПНЫЕ СЕРВИСЫ И ИЩУ ДРУГОЙ ИСТОЧНИК…");
     await showOfficialProviders(film);
+    await showWatchmodeProviders(film);
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
@@ -884,6 +911,7 @@
     }
     addExternalFallback(film);
     await showOfficialProviders(film);
+    await showWatchmodeProviders(film);
   }
   function init() {
     $("#audioTrack").addEventListener("change", () => {
