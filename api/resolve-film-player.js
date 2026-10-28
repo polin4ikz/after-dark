@@ -53,8 +53,7 @@ function extractPlayerUrl(html, pageUrl) {
       // Reject generic service manifests/config files that are not playable embeds.
       // Some Rutube pages expose static.rtbcdn.ru/static/manifest.json in their HTML;
       // treating it as a player makes After Dark report a false-positive source.
-      if (/\.(?:json|xml|m3u8|mpd)(?:$|\\?)/i.test(pathname) &&
-          !/\.(?:m3u8|mpd)$/i.test(pathname)) return;
+      if (/\.(?:json|xml)$/i.test(pathname)) return;
       if (host === "static.rtbcdn.ru" && /\/static\/manifest\.json$/i.test(pathname)) return;
 
       // Do not mistake poster art, thumbnails, scripts, or other assets for an embed.
