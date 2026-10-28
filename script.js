@@ -1,4 +1,4 @@
-const API="/api/tmdb",IMG="https://image.tmdb.org/t/p/w780";
+const API="/api/tmdb",IMG="/api/tmdb-image?size=w500&path=";
 
 const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
@@ -15,7 +15,7 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function titleOf(x){return x.title||x.name||"UNTITLED"}
 function yearOf(x){return(x.release_date||x.first_air_date||"").slice(0,4)||"—"}
 function typeOf(x){if((x.genre_ids||[]).map(Number).includes(16))return"animation";return x.media_type==="tv"||x.first_air_date?"series":"film"}
-function posterOf(x){return x.poster_path?IMG+x.poster_path:""}
+function posterOf(x){return x.poster_path?IMG+encodeURIComponent(x.poster_path):""}
 function tmdbUrl(x){const isSeries=x.media_type==="tv"||!!x.first_air_date;return`https://www.themoviedb.org/${isSeries?"tv":"movie"}/${x.tmdbId||x.id}`}
 async function tmdb(path,params={},signal){const u=new URL(API,window.location.origin);u.searchParams.set("path",path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=="")u.searchParams.set(k,v)});const r=await fetch(u,{signal,headers:{accept:"application/json"}});if(!r.ok)throw Error(`TMDB ${r.status}`);return r.json()}
 function initCursor(){if(!cursor)return;let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y;document.addEventListener("pointermove",e=>{x=e.clientX;y=e.clientY;cursor.classList.remove("is-hidden")},{passive:true});function tick(){cx+=(x-cx)*.18;cy+=(y-cy)*.18;cursor.style.setProperty("--cursor-x",cx+"px");cursor.style.setProperty("--cursor-y",cy+"px");const hit=document.elementFromPoint(x,y);cursor.classList.toggle("is-hover",!!hit?.closest("button,a,input,select,.archive-card,.search-result,.rating-card"));requestAnimationFrame(tick)}tick()}
