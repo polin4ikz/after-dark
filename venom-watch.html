@@ -26,6 +26,14 @@
       <div class="player-actions" aria-label="Playback actions"><button type="button" data-player-action="watched">MARK AS WATCHED</button><button type="button" data-player-action="rate">RATE</button></div>
       <section id="trackControls" class="track-controls" hidden aria-label="Настройки дорожек"><label>ОЗВУЧКА<select id="audioTrack" disabled><option value="-1">Источник не предоставляет выбор</option></select></label><label>СУБТИТРЫ<select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select></label></section>
       <p id="streamStatus" class="source-note stream-status" role="status" aria-live="polite">Озвучка, субтитры и качество настраиваются внутри самого плеера, если источник поддерживает эти функции.</p>
+      <form id="manualSourceForm" class="stream-form">
+        <label for="manualSourceUrl">СВОЙ ИСТОЧНИК · ССЫЛКА НА ВИДЕО ИЛИ ВСТРОЕННЫЙ ПЛЕЕР</label>
+        <div class="stream-form__row">
+          <input id="manualSourceUrl" name="sourceUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://… .m3u8 / .mpd / .mp4 или iframe URL" aria-describedby="manualSourceHint" required>
+          <button type="submit">ОТКРЫТЬ ИСТОЧНИК ↗</button>
+        </div>
+        <p id="manualSourceHint" class="source-note">Для выбора озвучки лучше всего подходит прямой HLS (.m3u8) или DASH (.mpd) поток с открытым доступом. Ссылка на обычную страницу не всегда подходит; iframe остаётся под управлением своего сайта. After Dark не обходит DRM или ограничения доступа.</p>
+      </form>
       <section class="source-discovery" aria-labelledby="sourceHeading">
         <div class="source-heading" id="sourceHeading">ИСТОЧНИКИ ПРОСМОТРА</div>
         <div id="sourceResults" class="source-results" aria-live="polite"></div>
@@ -36,6 +44,6 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
   <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
   <script src="watch-progress.js?v=20261028-step2-progress1"></script>
-  <script src="venom-watch-page.js?v=20261028-step17-standalone-player-link1"></script>
+  <script src="venom-watch-page.js?v=20261028-step18-manual-source-url1"></script>
 </body>
 </html>
