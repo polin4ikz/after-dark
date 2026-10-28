@@ -13,6 +13,22 @@
   let restartCurrentEpisode = false;
   let selectedSeason = null;
   let selectedEpisode = null;
+  let audioPreferenceApplied = false;
+
+  function findRussianAudioTrackIndex(tracks) {
+    if (!Array.isArray(tracks)) return -1;
+    return tracks.findIndex(track => {
+      if (!track || typeof track !== "object") return false;
+      const attrs = track.attrs && typeof track.attrs === "object" ? track.attrs : {};
+      const language = String(track.lang || track.language || attrs.LANGUAGE || "").trim();
+      if (/^ru(?:[-_][a-z0-9]+)*$/i.test(language) || /^rus$/i.test(language)) return true;
+      const labels = [
+        track.name, track.label,
+        ...(Array.isArray(track.labels) ? track.labels.map(item => item && item.text) : [])
+      ].filter(Boolean).join(" ");
+      return /русск|russian/i.test(labels);
+    });
+  }
 
   function isSeriesFilm(film) {
     return !!film && (film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date));
@@ -247,6 +263,7 @@
     area.append(toggle, panel);
   }
   function resetStreamEngines() {
+    audioPreferenceApplied = false;
     if (venomPlayerInstance) {
       try { venomPlayerInstance.destroy?.(); } catch (_) {}
       venomPlayerInstance = null;
@@ -277,11 +294,22 @@
   }
   function refreshHlsTracks() {
     if (!hls) return;
-    const audios = (hls.audioTracks || []).map((track, index) => ({
+    const tracks = hls.audioTracks || [];
+    const audios = tracks.map((track, index) => ({
       id: index,
       label: [track.name, track.lang, track.attrs && track.attrs["LANGUAGE"]].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
     }));
-    setOptions($("#audioTrack"), audios, hls.audioTrack, "В потоке нет аудиодорожек");
+    let selectedAudio = hls.audioTrack;
+    if (!audioPreferenceApplied && tracks.length) {
+      audioPreferenceApplied = true;
+      const russianIndex = findRussianAudioTrackIndex(tracks);
+      if (russianIndex >= 0) {
+        hls.audioTrack = russianIndex;
+        selectedAudio = russianIndex;
+        streamStatus("Автоматически выбрана русская озвучка.");
+      }
+    }
+    setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
     const subtitles = (hls.subtitleTracks || []).map((track, index) => ({
       id: index,
       label: [track.name, track.lang].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
@@ -292,7 +320,21 @@
   }
   function refreshDashTracks() {
     if (!dash) return;
-    const audios = (dash.getTracksFor("audio") || []).map((track, index) => ({
+    const audioTracks = dash.getTracksFor("audio") || [];
+    let selectedAudio = 0;
+    try {
+      const currentTrack = dash.getCurrentTrackFor && dash.getCurrentTrackFor("audio");
+      const currentIndex = audioTracks.findIndex(track => track === currentTrack || (track && currentTrack && track.id != null && track.id === currentTrack.id));
+      if (currentIndex >= 0) selectedAudio = currentIndex;
+    } catch (_) {}
+    if (!audioPreferenceApplied && audioTracks.length) {
+      audioPreferenceApplied = true;
+      const russianIndex = findRussianAudioTrackIndex(audioTracks);
+      if (russianIndex >= 0) {
+        try { dash.setCurrentTrack(audioTracks[russianIndex]); selectedAudio = russianIndex; streamStatus("Автоматически выбрана русская озвучка."); } catch (_) {}
+      }
+    }
+    const audios = audioTracks.map((track, index) => ({
       id: index,
       label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", "), track.codec].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
     }));
@@ -300,7 +342,7 @@
       id: index,
       label: [track.lang, track.labels && track.labels.map(x => x.text).filter(Boolean).join(", ")].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
     }));
-    setOptions($("#audioTrack"), audios, 0, "В потоке нет аудиодорожек");
+    setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
     streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
@@ -405,7 +447,14 @@
       video.src = url.href;
       video.addEventListener("loadedmetadata", () => {
         const tracks = video.audioTracks ? Array.from(video.audioTracks) : [];
-        setOptions($("#audioTrack"), tracks.map((track, i) => ({ id: i, label: track.label || track.language || ("Аудио " + (i + 1)) })), tracks.findIndex(track => track.enabled), "Браузер не предоставил аудиодорожки");
+        let selectedAudio = tracks.findIndex(track => track.enabled);
+        const russianIndex = findRussianAudioTrackIndex(tracks);
+        if (russianIndex >= 0) {
+          tracks.forEach((track, index) => { track.enabled = index === russianIndex; });
+          selectedAudio = russianIndex;
+          streamStatus("Автоматически выбрана русская озвучка.");
+        }
+        setOptions($("#audioTrack"), tracks.map((track, i) => ({ id: i, label: track.label || track.language || ("Аудио " + (i + 1)) })), selectedAudio, "Браузер не предоставил аудиодорожки");
         if (video.textTracks && video.textTracks.length) {
           const tracksText = Array.from(video.textTracks).map((track, i) => ({ id: i, label: track.label || track.language || ("Субтитры " + (i + 1)) }));
           setOptions($("#subtitleTrack"), tracksText, 0, "Нет субтитров");
@@ -1057,5 +1106,8 @@
       const frame = $("#playerStage iframe"); if (frame) frame.src = "about:blank";
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
+  if (typeof module !== "undefined" && module.exports) module.exports = { findRussianAudioTrackIndex };
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
+  }
 })();
