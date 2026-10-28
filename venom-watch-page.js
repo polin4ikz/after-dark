@@ -14,6 +14,7 @@
   let selectedSeason = null;
   let selectedEpisode = null;
   let audioPreferenceApplied = false;
+  let preferredRussianAudioSelected = false;
 
   function findRussianAudioTrackIndex(tracks) {
     if (!Array.isArray(tracks)) return -1;
@@ -264,6 +265,7 @@
   }
   function resetStreamEngines() {
     audioPreferenceApplied = false;
+    preferredRussianAudioSelected = false;
     if (venomPlayerInstance) {
       try { venomPlayerInstance.destroy?.(); } catch (_) {}
       venomPlayerInstance = null;
@@ -307,6 +309,7 @@
         hls.audioTrack = russianIndex;
         selectedAudio = russianIndex;
         russianSelected = true;
+        preferredRussianAudioSelected = true;
         audioPreferenceApplied = true;
       }
     }
@@ -317,7 +320,7 @@
     }));
     setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus(russianSelected ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function refreshDashTracks() {
     if (!dash) return;
@@ -336,6 +339,7 @@
           dash.setCurrentTrack(audioTracks[russianIndex]);
           selectedAudio = russianIndex;
           russianSelected = true;
+          preferredRussianAudioSelected = true;
           audioPreferenceApplied = true;
         } catch (_) {}
       }
@@ -365,6 +369,7 @@
           tracks.forEach((track, index) => { track.enabled = index === russianIndex; });
           selectedAudio = russianIndex;
           russianSelected = true;
+          preferredRussianAudioSelected = true;
           audioPreferenceApplied = true;
         } catch (_) {}
       }
@@ -383,7 +388,7 @@
     } catch (_) {}
     if (subtitles.length) setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(tracks.length > 1 || subtitles.length > 0);
-    streamStatus(russianSelected
+    streamStatus((russianSelected || preferredRussianAudioSelected)
       ? "Автоматически выбрана русская озвучка."
       : tracks.length > 1
         ? "Доступно несколько аудиодорожек."
