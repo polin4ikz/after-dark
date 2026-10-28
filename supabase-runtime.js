@@ -20,7 +20,7 @@ async function archiveSyncLoadShared(user){
       backdrop_path:row.backdrop_path||"",
       release_date:row.release_date||"",
       first_air_date:row.first_air_date||"",
-      type:row.type||"film",
+      type:(()=>{const raw=String(row.type||"film").toLowerCase();if(raw==="tv"||raw==="show")return"series";if(raw==="movie")return"film";return raw})(),
       vote_average:Number(row.vote_average||0),
       genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
