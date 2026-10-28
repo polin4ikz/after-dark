@@ -144,11 +144,40 @@
     return true;
   }
 
+  async function markWatched(input) {
+    const id = idOf(input);
+    if (!id) return false;
+    try {
+      const client = await getClient();
+      const { data: sessionData, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      const user = sessionData?.session?.user;
+      if (!user) throw new Error("No authenticated session");
+      const title = String(input.title || "Untitled");
+      const mediaType = String(input.media_type || "movie");
+      const { data: existing, error: readError } = await client.from("archive").select("tmdb_id").eq("tmdb_id", id).maybeSingle();
+      if (readError) throw readError;
+      if (existing) {
+        const { error } = await client.from("archive").update({ watched: true, in_watchlist: false, updated_at: new Date().toISOString() }).eq("tmdb_id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await client.from("archive").insert({ tmdb_id: id, title, type: mediaType === "tv" ? "series" : "film", watched: true, in_watchlist: false, added_by: user.id, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+      await syncFromCloud();
+      return true;
+    } catch (error) {
+      console.error("AFTER DARK MARK WATCHED FAILED", error?.message || error);
+      return false;
+    }
+  }
+
   readLocal();
   window.afterDarkProgress = {
     get: value => records.get(idOf(value)) || null,
     all: () => [...records.values()],
     save,
+    markWatched,
     sync: syncFromCloud,
     formatTime(seconds) {
       const n = Math.floor(safeNumber(seconds));
