@@ -124,7 +124,7 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "TMDB_EXTERNAL_IDS_UNAVAILABLE");
           const imdbId = String(data && data.imdb_id || "");
-          if (!/^tt\\d{5,12}$/.test(imdbId)) throw new Error("IMDB_ID_NOT_FOUND");
+          if (!/^tt\d{5,12}$/.test(imdbId)) throw new Error("IMDB_ID_NOT_FOUND");
           const target = "https://web.stremio.com/#/detail/" + (type === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
           window.open(target, "_blank", "noopener,noreferrer");
           if (status) status.textContent = "STREMIO ОТКРЫТ. ВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ ДОСТУПНЫХ ДОПОЛНЕНИЙ И ИСТОЧНИКОВ.";
