@@ -712,7 +712,7 @@
     const meta = document.createElement("span");
     meta.className = "source-result__meta";
     const minutes = Math.round(Number(source.durationSeconds || 0) / 60);
-    meta.textContent = "INTERNET ARCHIVE · " + minutes + " МИН. · " + (source.directUrl ? "ПРЯМОЙ ФАЙЛ" : "ВСТРОЕННЫЙ ПЛЕЕР") + " · ОТКРЫТАЯ ЛИЦЕНЗИЯ";
+    meta.textContent = "INTERNET ARCHIVE · " + minutes + " МИН. · " + (source.directUrl ? "ПРЯМОЙ ФАЙЛ" : "ВСТРОЕННЫЙ ПЛЕЕР") + " · ОТКРЫТАЯ ЛИЦЕНЗИЯ" + (source.russianAudioLikely ? " · ЕСТЬ МЕТАДАННЫЕ О РУССКОМ ЯЗЫКЕ" : " · РУССКАЯ ОЗВУЧКА НЕ ПОДТВЕРЖДЕНА");
     button.append(title, meta);
     button.addEventListener("click", () => playArchiveSource(source, true));
     $("#sourceResults").appendChild(button);
