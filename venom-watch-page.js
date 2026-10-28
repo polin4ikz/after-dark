@@ -997,45 +997,22 @@
   function addStremioFallback(film) {
     const area = $("#sourceResults");
     if (!area || area.querySelector("[data-ad-stremio-open]")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "source-result";
-    button.dataset.adStremioOpen = "1";
-    button.textContent = "ПОПРОБОВАТЬ STREMIO ↗";
-    button.addEventListener("click", async () => {
-      if (!film) return;
-      button.disabled = true;
-      button.textContent = "ОТКРЫВАЮ STREMIO…";
-      // Open synchronously during the click so browser popup blockers do not swallow it.
-      const tab = window.open("https://web.stremio.com/", "_blank", "noopener");
-      try {
-        const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
-        const mediaType = isSeriesFilm(film) ? "tv" : "movie";
-        if (!Number.isSafeInteger(id) || id <= 0) throw new Error("Не удалось определить ID фильма.");
-        const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/" + mediaType + "/" + id + "/external_ids"), {
-          headers: { accept: "application/json" }
-        });
-        if (!response.ok) throw new Error("TMDB временно не ответил.");
-        const ids = await response.json();
-        const imdbId = String(ids.imdb_id || "");
-        if (!/^tt\d{5,12}$/.test(imdbId)) throw new Error("Для этого фильма не найден IMDb ID.");
-        const target = "https://web.stremio.com/#/detail/" + (mediaType === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
-        if (tab && !tab.closed) tab.location.href = target;
-        else window.open(target, "_blank", "noopener");
-        streamStatus("Stremio открыт отдельно. Наличие фильма и русской озвучки зависит от установленных дополнений и доступных источников.");
-      } catch (error) {
-        if (tab && !tab.closed) tab.close();
-        streamStatus((error && error.message) || "Не удалось открыть карточку в Stremio.", true);
-        button.textContent = "ПОПРОБОВАТЬ STREMIO ↗";
-      } finally {
-        button.disabled = false;
-      }
-    });
-    area.prepend(button);
+
+    // Use a real anchor rather than window.open + an asynchronous TMDB request.
+    // The previous flow could be blocked by popup protection after the async request.
+    const link = document.createElement("a");
+    link.className = "source-result source-result--external";
+    link.dataset.adStremioOpen = "1";
+    link.href = "https://app.strem.io/shell-v4.4/";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "ОТКРЫТЬ STREMIO WEB ↗";
+    area.prepend(link);
+
     const note = document.createElement("p");
     note.className = "source-note";
-    note.textContent = "Внешний вариант поиска. Stremio не гарантирует наличие фильма или русской дорожки; результат зависит от дополнений.";
-    area.insertBefore(note, button.nextSibling);
+    note.textContent = "Открывает официальную веб-альфа-версию Stremio напрямую. Если она не загружается, проблема уже на стороне Stremio или сети; After Dark не может управлять её доступностью. Наличие фильма и русской озвучки не гарантировано.";
+    area.insertBefore(note, link.nextSibling);
   }
 
   async function findSources(film) {
