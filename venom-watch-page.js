@@ -738,7 +738,7 @@
           if (!provider.readyTypes.includes(data.type)) return;
           const payload = data.data && typeof data.data === "object" ? data.data : data;
           const eventName = String(payload.event || payload.name || "").toLowerCase();
-          if (provider.readyEvents.includes(eventName) || data.type === "MEDIA_DATA") finish("ready");
+          if (provider.readyEvents.includes(eventName)) finish("ready");
           else if (provider.errorEvents.includes(eventName)) finish("failed");
         };
         // Stellar should feel quick; don't wait the old 18 seconds before fallback.
