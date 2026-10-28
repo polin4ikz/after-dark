@@ -25,7 +25,8 @@ async function archiveSyncLoadShared(user){
       genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
       watched:!!row.watched,
-      inWatchlist:row.in_watchlist!==false
+      inWatchlist:row.in_watchlist!==false,
+      updatedAt:row.updated_at||null
     }));
 
     window.archiveSyncStatus="loaded";
