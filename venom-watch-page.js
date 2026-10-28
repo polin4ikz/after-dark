@@ -627,6 +627,7 @@
     return [...new Set(offers.map(item => item && item.provider_name).filter(Boolean))];
   }
   async function showOfficialProviders(film) {
+    if ($("#sourceResults .source-attribution")) return;
     const id = Number(film.tmdbId ?? film.id);
     if (!Number.isSafeInteger(id) || id <= 0) return;
     const mediaType = film.type === "series" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
@@ -844,7 +845,8 @@
       console.warn("Primary embedded players failed:", error);
     }
 
-    status("STELLAR НЕ ОТВЕТИЛ · ПРОВЕРЯЮ ДРУГИЕ ИСТОЧНИКИ…");
+    status("STELLAR НЕ ОТВЕТИЛ · ПОКАЗЫВАЮ ДОСТУПНЫЕ СЕРВИСЫ И ИЩУ ДРУГОЙ ИСТОЧНИК…");
+    await showOfficialProviders(film);
     try {
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
