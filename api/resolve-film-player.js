@@ -41,7 +41,7 @@ function extractPlayerUrl(html, pageUrl) {
   const candidates = [];
   const add = (raw, score = 0) => {
     if (!raw || typeof raw !== "string") return;
-    const value = decodeHtml(raw.trim()).replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+    const value = decodeHtml(raw.trim()).replace(/\\u0026/g, "&").replace(/\\//g, "/");
     try {
       const u = new URL(value, pageUrl);
       if (!isPublicHttps(u.href, true) || isSearchOrIrrelevant(u.href)) return;
@@ -53,9 +53,9 @@ function extractPlayerUrl(html, pageUrl) {
       // Reject generic service manifests/config files that are not playable embeds.
       // Some Rutube pages expose static.rtbcdn.ru/static/manifest.json in their HTML;
       // treating it as a player makes After Dark report a false-positive source.
-      if (/\\.(?:json|xml|m3u8|mpd)(?:$|\\?)/i.test(pathname) &&
-          !/\\.(?:m3u8|mpd)$/i.test(pathname)) return;
-      if (host === "static.rtbcdn.ru" && /\\/static\\/manifest\\.json$/i.test(pathname)) return;
+      if (/\.(?:json|xml|m3u8|mpd)(?:$|\\?)/i.test(pathname) &&
+          !/\.(?:m3u8|mpd)$/i.test(pathname)) return;
+      if (host === "static.rtbcdn.ru" && /\/static\/manifest\.json$/i.test(pathname)) return;
 
       // Do not mistake poster art, thumbnails, scripts, or other assets for an embed.
       // The word "player" can appear in image filenames (for example, ottstudioplayer.jpeg).
@@ -93,7 +93,7 @@ function extractPlayerUrl(html, pageUrl) {
     }
   }
   // Inspect common player configuration snippets and escaped URLs embedded in scripts.
-  const normalized = String(html || "").replaceAll("\\/", "/").replace(/\\u0026/gi, "&").replace(/\\u003d/gi, "=");
+  const normalized = String(html || "").replaceAll("\/", "/").replace(/\\u0026/gi, "&").replace(/\\u003d/gi, "=");
   for (const match of normalized.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) add(match[0], 1);
   for (const match of normalized.matchAll(/(?:file|src|source|embedUrl|iframeUrl|playerUrl|videoUrl)\s*[:=]\s*["']([^"']{8,1000})["']/gi)) {
     add(match[1], 7);
@@ -132,7 +132,7 @@ async function fetchText(rawUrl, options = {}) {
 }
 function extractSearchLinks(html, baseUrl) {
   const found = [];
-  const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/").replaceAll("\\/", "/");
+  const markup = String(html || "").replace(/&amp;/gi, "&").replace(/&#x2f;/gi, "/").replaceAll("\/", "/");
   const hrefs = [...markup.matchAll(/href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
     .map(match => decodeHtml(match[1] || match[2] || match[3] || ""));
   for (let href of hrefs) {
@@ -162,7 +162,7 @@ function extractSearchLinks(html, baseUrl) {
     if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
   }
   // Fallback: some search engines put destinations in escaped HTML/JSON rather than href attributes.
-  const decodedMarkup = markup.replace(/\\u0026/gi, "&").replace(/\\\//g, "/");
+  const decodedMarkup = markup.replace(/\\u0026/gi, "&").replace(/\\//g, "/");
   for (const match of decodedMarkup.matchAll(/https?:\/\/[^\s"'<>\\]+/gi)) {
     const link = decodeHtml(match[0]).replace(/[),;]+$/g, "");
     if (isPublicHttps(link) && !isSearchOrIrrelevant(link) && !found.includes(link)) found.push(link);
