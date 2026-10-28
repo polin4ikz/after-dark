@@ -2670,3 +2670,21 @@ body {
     overflow-y: auto !important;
   }
 }
+
+
+/* AFTER DARK / 28 OCT — library status + archive meta rhythm */
+.archive-controls{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;flex-wrap:wrap!important}
+.archive-status-filters{display:flex;align-items:center;gap:4px;flex-wrap:wrap;border:1px solid rgba(232,221,200,.17);padding:4px}
+.archive-status-filter{appearance:none;border:1px solid transparent;background:transparent;color:rgba(232,221,200,.58);padding:10px 13px;font:500 8px/1 "Geist Mono",monospace;letter-spacing:.09em;white-space:nowrap;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.archive-status-filter:hover{border-color:rgba(232,221,200,.25);color:var(--milk)}
+.archive-status-filter.active{background:var(--milk);color:#171214;border-color:var(--milk)}
+.ad-archive-meta{width:100%;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0!important;margin:18px 0 0!important;padding:0!important;border-top:1px solid rgba(232,221,200,.15);border-bottom:1px solid rgba(232,221,200,.15);white-space:normal!important;letter-spacing:normal!important}
+.ad-archive-meta-item{display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0;padding:14px 18px 14px 0;border-right:1px solid rgba(232,221,200,.12)}
+.ad-archive-meta-item+.ad-archive-meta-item{padding-left:18px}
+.ad-archive-meta-item:last-child{border-right:0}
+.ad-archive-meta-item small{color:rgba(232,221,200,.42);font:500 8px/1.3 "Geist Mono",monospace;letter-spacing:.14em;text-transform:uppercase}
+.ad-archive-meta-item strong{display:block;min-width:0;color:rgba(232,221,200,.82);font:500 11px/1.3 "Geist Mono",monospace;letter-spacing:.05em;overflow-wrap:anywhere}
+.ad-archive-meta-item strong i{font-style:normal;color:rgba(232,221,200,.5);font-size:9px}
+.ad-detail-watch{background:#171214!important;color:#eee7dc!important;border-color:#171214!important}
+.ad-film-detail-actions .ad-detail-watch:hover{background:#791522!important;border-color:#791522!important;color:#eee7dc!important}
+@media(max-width:700px){.archive-controls{align-items:flex-start!important}.archive-status-filters{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.archive-status-filter{padding:11px 5px;font-size:7px}.ad-archive-meta{grid-template-columns:1fr!important}.ad-archive-meta-item,.ad-archive-meta-item+.ad-archive-meta-item{padding:11px 0;border-right:0;border-bottom:1px solid rgba(232,221,200,.1)}.ad-archive-meta-item:last-child{border-bottom:0}}
