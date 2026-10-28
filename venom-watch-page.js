@@ -300,13 +300,14 @@
       label: [track.name, track.lang, track.attrs && track.attrs["LANGUAGE"]].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
     }));
     let selectedAudio = hls.audioTrack;
+    let russianSelected = false;
     if (!audioPreferenceApplied && tracks.length) {
       audioPreferenceApplied = true;
       const russianIndex = findRussianAudioTrackIndex(tracks);
       if (russianIndex >= 0) {
         hls.audioTrack = russianIndex;
         selectedAudio = russianIndex;
-        streamStatus("Автоматически выбрана русская озвучка.");
+        russianSelected = true;
       }
     }
     setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
@@ -316,7 +317,7 @@
     }));
     setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus(russianSelected ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function refreshDashTracks() {
     if (!dash) return;
@@ -327,11 +328,12 @@
       const currentIndex = audioTracks.findIndex(track => track === currentTrack || (track && currentTrack && track.id != null && track.id === currentTrack.id));
       if (currentIndex >= 0) selectedAudio = currentIndex;
     } catch (_) {}
+    let russianSelected = false;
     if (!audioPreferenceApplied && audioTracks.length) {
       audioPreferenceApplied = true;
       const russianIndex = findRussianAudioTrackIndex(audioTracks);
       if (russianIndex >= 0) {
-        try { dash.setCurrentTrack(audioTracks[russianIndex]); selectedAudio = russianIndex; streamStatus("Автоматически выбрана русская озвучка."); } catch (_) {}
+        try { dash.setCurrentTrack(audioTracks[russianIndex]); selectedAudio = russianIndex; russianSelected = true; } catch (_) {}
       }
     }
     const audios = audioTracks.map((track, index) => ({
@@ -345,8 +347,47 @@
     setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus(audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus(russianSelected ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
+  function configureNativeAudioTracks(video, sourceLabel) {
+    let tracks = [];
+    try { tracks = video.audioTracks ? Array.from(video.audioTracks) : []; } catch (_) {}
+    let selectedAudio = tracks.findIndex(track => track && track.enabled);
+    let russianSelected = false;
+    if (!audioPreferenceApplied && tracks.length) {
+      audioPreferenceApplied = true;
+      const russianIndex = findRussianAudioTrackIndex(tracks);
+      if (russianIndex >= 0) {
+        try {
+          tracks.forEach((track, index) => { track.enabled = index === russianIndex; });
+          selectedAudio = russianIndex;
+          russianSelected = true;
+        } catch (_) {}
+      }
+    }
+    setOptions($("#audioTrack"), tracks.map((track, index) => ({
+      id: index,
+      label: [track.label, track.language, track.lang].filter(Boolean).join(" · ") || ("Аудио " + (index + 1))
+    })), selectedAudio, "Браузер не предоставил аудиодорожки");
+
+    let subtitles = [];
+    try {
+      subtitles = video.textTracks ? Array.from(video.textTracks).map((track, index) => ({
+        id: index,
+        label: [track.label, track.language].filter(Boolean).join(" · ") || ("Субтитры " + (index + 1))
+      })) : [];
+    } catch (_) {}
+    if (subtitles.length) setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
+    $("#trackControls").hidden = !(tracks.length > 1 || subtitles.length > 0);
+    streamStatus(russianSelected
+      ? "Автоматически выбрана русская озвучка."
+      : tracks.length > 1
+        ? "Доступно несколько аудиодорожек."
+        : tracks.length === 1
+          ? "В потоке одна аудиодорожка."
+          : sourceLabel + " открыт нативным плеером. Если список озвучек не появился, браузер не передал After Dark данные о дорожках — проверь меню самого плеера.");
+  }
+
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
     let url;
     try { url = new URL(extractSubmittedUrl(rawUrl)); } catch (error) {
@@ -445,23 +486,7 @@
     attachNativeProgress(video, currentFilm, "NATIVE");
     if (kind === "file") {
       video.src = url.href;
-      video.addEventListener("loadedmetadata", () => {
-        const tracks = video.audioTracks ? Array.from(video.audioTracks) : [];
-        let selectedAudio = tracks.findIndex(track => track.enabled);
-        const russianIndex = findRussianAudioTrackIndex(tracks);
-        if (russianIndex >= 0) {
-          tracks.forEach((track, index) => { track.enabled = index === russianIndex; });
-          selectedAudio = russianIndex;
-          streamStatus("Автоматически выбрана русская озвучка.");
-        }
-        setOptions($("#audioTrack"), tracks.map((track, i) => ({ id: i, label: track.label || track.language || ("Аудио " + (i + 1)) })), selectedAudio, "Браузер не предоставил аудиодорожки");
-        if (video.textTracks && video.textTracks.length) {
-          const tracksText = Array.from(video.textTracks).map((track, i) => ({ id: i, label: track.label || track.language || ("Субтитры " + (i + 1)) }));
-          setOptions($("#subtitleTrack"), tracksText, 0, "Нет субтитров");
-        }
-        $("#trackControls").hidden = !(tracks.length > 1 || (video.textTracks && video.textTracks.length > 0));
-        streamStatus(tracks.length > 1 ? "Доступно несколько аудиодорожек." : "У этого файла или браузера может не быть доступного переключения озвучки.");
-      }, { once: true });
+      video.addEventListener("loadedmetadata", () => configureNativeAudioTracks(video, "Видео"), { once: true });
       video.addEventListener("error", () => streamStatus("Видео не загрузилось. Источник может запрещать доступ с другого сайта или иметь неподдерживаемый формат.", true), { once: true });
       status("ПРЯМОЙ ВИДЕОФАЙЛ ПОДКЛЮЧЁН");
       return;
@@ -469,7 +494,7 @@
     if (kind === "hls") {
       if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = url.href;
-        video.addEventListener("loadedmetadata", () => streamStatus("HLS открыт встроенным плеером браузера. Список озвучек зависит от поддержки браузера."), { once: true });
+        video.addEventListener("loadedmetadata", () => configureNativeAudioTracks(video, "HLS"), { once: true });
       } else if (window.Hls && window.Hls.isSupported()) {
         hls = new window.Hls();
         hls.loadSource(url.href);
