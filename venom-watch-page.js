@@ -1018,7 +1018,7 @@
         if (!response.ok) throw new Error("TMDB временно не ответил.");
         const ids = await response.json();
         const imdbId = String(ids.imdb_id || "");
-        if (!/^tt\\d{5,12}$/.test(imdbId)) throw new Error("Для этого фильма не найден IMDb ID.");
+        if (!/^tt\d{5,12}$/.test(imdbId)) throw new Error("Для этого фильма не найден IMDb ID.");
         const target = "https://web.stremio.com/#/detail/" + (mediaType === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
         if (tab && !tab.closed) tab.location.href = target;
         else window.open(target, "_blank", "noopener");
