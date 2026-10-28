@@ -625,6 +625,7 @@
             if (video && !video.dataset.afterDarkProgressBound) {
               video.dataset.afterDarkProgressBound = "true";
               attachNativeProgress(video, currentFilm, "VENOM");
+              activeVideo = video;
               // Venom may expose native audio/text tracks on supported browsers.
               // Reuse the Russian-first selector whenever those tracks are available.
               const refreshVenomNativeTracks = () => {
@@ -746,7 +747,7 @@
       if (!sources.length) return;
       const heading = document.createElement("p");
       heading.className = "source-attribution watchmode-attribution";
-      heading.textContent = "ЕЩЁ ВАРИАНТЫ ПРОСМОТРА · WATCHMODE";
+      heading.textContent = "ГДЕ ДОСТУПЕН ФИЛЬМ · WATCHMODE";
       $("#sourceResults").appendChild(heading);
       sources.forEach(source => {
         if (!source || !source.webUrl || !/^https:\/\//i.test(source.webUrl)) return;
@@ -754,9 +755,13 @@
         link.className = "source-result source-result--external";
         link.href = source.webUrl; link.target = "_blank"; link.rel = "noopener noreferrer";
         const details = [source.name, source.type === "sub" ? "подписка" : source.type === "free" ? "бесплатно" : source.type === "rent" ? "аренда" : source.type === "buy" ? "покупка" : ""].filter(Boolean);
-        link.textContent = "RU · " + details.join(" · ") + " ↗";
+        link.textContent = details.join(" · ") + " ↗";
         $("#sourceResults").appendChild(link);
       });
+      const languageNote = document.createElement("p");
+      languageNote.className = "source-attribution";
+      languageNote.textContent = "Список показывает доступность сервиса в выбранном регионе, но не подтверждает наличие русской аудиодорожки. Язык нужно проверить в карточке фильма или в меню самого сервиса.";
+      $("#sourceResults").appendChild(languageNote);
     } catch (_) {}
   }
   async function showOfficialProviders(film) {
