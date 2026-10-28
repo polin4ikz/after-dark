@@ -92,7 +92,7 @@
       '<div class="ad-watch-player__availability"><label for="adWatchRegion">СТРАНА</label><select id="adWatchRegion"><option value="RU">РОССИЯ</option><option value="DE">ГЕРМАНИЯ</option><option value="US">США</option><option value="GB">ВЕЛИКОБРИТАНИЯ</option><option value="CA">КАНАДА</option></select><button class="ad-watch-player__search" type="button" data-ad-watchmode-search>ГДЕ ПОСМОТРЕТЬ ↗</button></div>',
       '<div class="ad-watch-player__availability-results" aria-live="polite"></div>',
       '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
-      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>
+      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>'',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
