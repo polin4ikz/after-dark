@@ -684,7 +684,7 @@
       origin: "https://player.vidscene.app",
       url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&language=ru&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
       readyTypes: ["VIDSCENE_PLAYER_EVENT"],
-      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      readyEvents: ["play", "timeupdate"],
       errorEvents: ["error"]
     }];
 
@@ -696,7 +696,7 @@
       origin: "https://stellar.rip",
       url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
       readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
-      readyEvents: ["loadedmetadata", "play", "timeupdate"],
+      readyEvents: ["play", "timeupdate"],
       errorEvents: ["error"]
     });
 
