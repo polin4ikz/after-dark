@@ -320,7 +320,7 @@
     }));
     setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(tracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function refreshDashTracks() {
     if (!dash) return;
@@ -355,7 +355,7 @@
     setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus(russianSelected ? "Автоматически выбрана русская озвучка." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(audioTracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function configureNativeAudioTracks(video, sourceLabel) {
     let tracks = [];
@@ -390,11 +390,13 @@
     $("#trackControls").hidden = !(tracks.length > 1 || subtitles.length > 0);
     streamStatus((russianSelected || preferredRussianAudioSelected)
       ? "Автоматически выбрана русская озвучка."
-      : tracks.length > 1
-        ? "Доступно несколько аудиодорожек."
-        : tracks.length === 1
-          ? "В потоке одна аудиодорожка."
-          : sourceLabel + " открыт нативным плеером. Если список озвучек не появился, браузер не передал After Dark данные о дорожках — проверь меню самого плеера.");
+      : tracks.length && findRussianAudioTrackIndex(tracks) < 0
+        ? "Русская озвучка в этом потоке не найдена. Проверь меню самого плеера или выбери другой источник."
+        : tracks.length > 1
+          ? "Доступно несколько аудиодорожек."
+          : tracks.length === 1
+            ? "В потоке одна аудиодорожка."
+            : sourceLabel + " открыт нативным плеером. Если список озвучек не появился, браузер не передал After Dark данные о дорожках — проверь меню самого плеера.");
   }
 
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
