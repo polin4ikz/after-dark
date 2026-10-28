@@ -122,3 +122,27 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 @keyframes cinema-loader-twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.35)}}
 @keyframes cinema-loader-progress{0%{transform:translateX(-120%)}100%{transform:translateX(340%)}}
 @media(prefers-reduced-motion:reduce){.cinema-loader__orbit,.cinema-loader__reel,.cinema-loader__spark,.cinema-loader__progress span,.cinema-loader::after{animation:none!important}.cinema-loader__progress span{width:70%;margin-left:15%}}
+
+/* After Dark cinematic loading screen — eclipse, not a monogram */
+.cinema-loader{isolation:isolate;gap:clamp(7px,1.4vw,13px);background:radial-gradient(ellipse at 50% 52%,rgba(99,14,31,.24),transparent 35%),radial-gradient(ellipse at 16% 82%,rgba(78,9,22,.2),transparent 34%),linear-gradient(115deg,#080606 0%,#110809 48%,#080606 100%);min-height:0}
+.cinema-loader::before{width:min(76%,650px);border-color:rgba(232,221,200,.045);box-shadow:0 0 100px rgba(90,10,25,.12),inset 0 0 80px rgba(90,10,25,.06)}
+.cinema-loader::after{width:min(60%,500px);border-style:solid;border-color:rgba(155,40,57,.11);filter:blur(.2px)}
+.cinema-loader:focus{outline:none}
+.cinema-loader__masthead{position:absolute;top:clamp(14px,3.2vw,34px);left:clamp(14px,3.5vw,38px);display:flex;flex-direction:column;gap:5px;text-align:left;font:clamp(8px,1vw,10px) "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.8)}
+.cinema-loader__masthead small{font-size:7px;letter-spacing:.3em;color:rgba(232,221,200,.45)}
+.cinema-loader__edition{position:absolute;top:clamp(18px,3.5vw,36px);right:clamp(14px,3.5vw,38px);font:7px "Geist Mono",monospace;letter-spacing:.32em;color:rgba(232,221,200,.45)}
+.cinema-loader__art{width:clamp(150px,25%,250px);height:auto;aspect-ratio:1;margin:0 0 8px;filter:drop-shadow(0 0 35px rgba(120,16,39,.2))}
+.cinema-loader__orbit{inset:7%;border-color:rgba(232,221,200,.22);border-top-color:#b85a6a;border-right-color:rgba(184,90,106,.4);box-shadow:0 0 22px rgba(121,21,34,.16)}
+.cinema-loader__orbit--inner{inset:19%;border-style:solid;border-color:rgba(184,90,106,.22);border-left-color:rgba(232,221,200,.38);animation-duration:11s}
+.cinema-loader__orbit--tilt{inset:14% -4%;border-color:rgba(232,221,200,.16);border-top-color:rgba(232,221,200,.42);transform:rotate(-24deg) scaleY(.42);animation:cinema-loader-spin 19s linear infinite reverse}
+.cinema-loader__planet{position:absolute;width:31%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(122,31,49,.38),rgba(14,8,10,.92) 58%,#050404 76%);box-shadow:inset -8px -2px 16px rgba(0,0,0,.75),inset 2px 0 9px rgba(191,75,95,.22),0 0 28px rgba(116,15,36,.19);border:1px solid rgba(232,221,200,.17);animation:cinema-loader-pulse 5s ease-in-out infinite}
+.cinema-loader__planet::after{content:"";position:absolute;inset:8% -13%;border-radius:50%;border:1px solid rgba(191,75,95,.2);transform:rotate(-30deg) scaleY(.35)}
+.cinema-loader__spark--one{top:18%;right:17%;width:4px;height:4px;background:#f0c4bd;box-shadow:0 0 15px 3px rgba(230,133,143,.6)}
+.cinema-loader__spark--two{bottom:23%;left:13%;background:#d18a91;box-shadow:0 0 12px rgba(230,133,143,.65)}
+.cinema-loader__message{margin-top:0;font:clamp(8px,1vw,10px) "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.78)}
+.cinema-loader__provider{font:7px "Geist Mono",monospace;letter-spacing:.2em;color:rgba(232,221,200,.38)}
+.cinema-loader__progress{width:clamp(110px,32%,260px);height:2px;margin-top:5px;background:rgba(232,221,200,.1)}
+.cinema-loader__progress span{width:28%;background:linear-gradient(90deg,transparent,#a53b51,#e8b7b4,transparent);animation:cinema-loader-progress 2.1s cubic-bezier(.45,0,.55,1) infinite}
+.cinema-loader__edge{position:absolute;right:clamp(14px,3.5vw,38px);bottom:clamp(14px,3.5vw,30px);writing-mode:vertical-rl;font:6px "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.28)}
+@media(max-width:520px){.cinema-loader__art{width:clamp(120px,42%,190px)}.cinema-loader__masthead{top:12px;left:12px}.cinema-loader__edition{top:15px;right:12px}.cinema-loader__edge{display:none}.cinema-loader__message{letter-spacing:.16em}}
+@media(prefers-reduced-motion:reduce){.cinema-loader__planet{animation:none!important}}
