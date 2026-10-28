@@ -926,12 +926,13 @@
           return;
         }
         if (action === "resume") { restartCurrentEpisode = false; await findSources(currentFilm); return; }
+        if (action === "rate") { window.location.href = "index.html?rate=" + encodeURIComponent(String(id)) + "#ratings"; return; }
         if (action === "watched") {
           button.disabled = true;
           try {
             const ok = await window.afterDarkProgress?.save?.({ tmdb_id: id, title: currentFilm.title || currentFilm.name || "", media_type: isSeriesFilm(currentFilm) ? "tv" : "movie", position_seconds: Number(saved.position_seconds || 0), duration_seconds: Number(saved.duration_seconds || 0), status: "completed", season_number: saved.season_number ?? null, episode_number: saved.episode_number ?? null, source_provider: saved.source_provider || "manual" });
-            if (ok) { button.textContent = "ПРОСМОТРЕННО ✓"; status("ПРОСМОТР ОТМЕЧЕН · СТАТУС СОХРАНЁН"); }
-            else status("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА", true);
+            if (ok) { button.textContent = "MARKED AS WATCHED ✓"; status("WATCH STATUS SAVED"); }
+            else status("COULD NOT SAVE WATCH STATUS", true);
           } catch (error) { console.error("MARK WATCHED FAILED", error); status("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА", true); }
           finally { button.disabled = false; }
         }
