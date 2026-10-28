@@ -32,23 +32,33 @@ module.exports = async function handler(req, res) {
   // Watchmode accepts TMDB-form identifiers directly, so no extra title-search call is needed.
   const titleId = (type === "tv" ? "tv-" : "movie-") + rawId;
   const upstreamUrl = new URL("https://api.watchmode.com/v1/title/" + titleId + "/sources/");
-  upstreamUrl.searchParams.set("regions", region);
+  if (region) upstreamUrl.searchParams.set("regions", region);
 
   try {
-    const upstream = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: { "X-API-Key": apiKey, accept: "application/json" }
-    });
+    const requestSources = async (includeRegion) => {
+      const target = new URL(upstreamUrl);
+      if (!includeRegion) target.searchParams.delete("regions");
+      return fetch(target, {
+        method: "GET",
+        headers: { "X-API-Key": apiKey, accept: "application/json" }
+      });
+    };
+    let upstream = await requestSources(true);
+    // A developer plan may only enable a subset of regions. Retry once without the
+    // region filter, then return only rows explicitly marked with the requested region.
+    if (upstream.status === 400) {
+      upstream = await requestSources(false);
+    }
     const body = await upstream.json().catch(() => null);
     if (!upstream.ok) {
-      // Do not leak provider response bodies or credentials to the browser.
       console.error("Watchmode upstream returned", upstream.status);
-      return res.status(upstream.status === 400 ? 400 : upstream.status === 401 || upstream.status === 403 ? 502 : 502)
-        .json({ error: upstream.status === 400 ? "WATCHMODE_REGION_OR_TITLE_UNAVAILABLE" : "WATCHMODE_UPSTREAM_UNAVAILABLE" });
+      return res.status(upstream.status === 400 ? 200 : 502)
+        .json({ region, sources: [], unavailable: upstream.status === 400 ? "REGION_OR_TITLE_UNAVAILABLE" : "WATCHMODE_UPSTREAM_UNAVAILABLE" });
     }
 
     const rows = Array.isArray(body) ? body : Array.isArray(body?.sources) ? body.sources : [];
     const sources = rows.filter(item => item && typeof item.name === "string")
+      .filter(item => String(item.region || "").toUpperCase() === region)
       .map(item => {
         let link = "";
         try {
