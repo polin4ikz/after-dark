@@ -2,6 +2,7 @@
 // Configure TMDB_BEARER_TOKEN as a server-side environment variable. Never commit it.
 const ALLOWED_PATHS = [
   /^\/search\/multi$/,
+  /^\/search\/(movie|tv)$/,
   /^\/discover\/(movie|tv)$/,
   /^\/(movie|tv)\/\d+$/,
   /^\/(movie|tv)\/\d+\/watch\/providers$/
