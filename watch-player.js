@@ -118,6 +118,9 @@
           return;
         }
         stremioButton.disabled = true;
+        // Open the tab synchronously inside the click gesture to avoid popup blockers.
+        const popup = window.open("about:blank", "_blank");
+        if (popup) popup.opener = null;
         if (status) status.textContent = "ПОЛУЧАЮ IMDb ID ДЛЯ STREMIO…";
         try {
           const response = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(id)) + "/external_ids", { headers: { accept: "application/json" } });
@@ -126,12 +129,16 @@
           const imdbId = String(data && data.imdb_id || "");
           if (!/^tt\d{5,12}$/.test(imdbId)) throw new Error("IMDB_ID_NOT_FOUND");
           const target = "https://web.stremio.com/#/detail/" + (type === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
-          window.open(target, "_blank", "noopener,noreferrer");
+          if (popup) popup.location.replace(target);
+          else throw new Error("POPUP_BLOCKED");
           if (status) status.textContent = "STREMIO ОТКРЫТ. ВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ ДОСТУПНЫХ ДОПОЛНЕНИЙ И ИСТОЧНИКОВ.";
         } catch (error) {
+          if (popup) popup.close();
           if (status) status.textContent = error.message === "IMDB_ID_NOT_FOUND"
             ? "У ЭТОГО НАЗВАНИЯ НЕТ IMDb ID ДЛЯ ПОИСКА В STREMIO."
-            : "НЕ УДАЛОСЬ ОТКРЫТЬ STREMIO. ПРОВЕРЬ TMDB ИЛИ ПОПРОБУЙ ПОЗЖЕ.";
+            : error.message === "POPUP_BLOCKED"
+              ? "БРАУЗЕР ЗАБЛОКИРОВАЛ НОВУЮ ВКЛАДКУ. РАЗРЕШИ ВСПЛЫВАЮЩИЕ ОКНА И ПОВТОРИ."
+              : "НЕ УДАЛОСЬ ОТКРЫТЬ STREMIO. ПРОВЕРЬ TMDB ИЛИ ПОПРОБУЙ ПОЗЖЕ.";
         } finally {
           stremioButton.disabled = false;
         }
