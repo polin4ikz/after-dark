@@ -625,6 +625,19 @@
             if (video && !video.dataset.afterDarkProgressBound) {
               video.dataset.afterDarkProgressBound = "true";
               attachNativeProgress(video, currentFilm, "VENOM");
+              // Venom may expose native audio/text tracks on supported browsers.
+              // Reuse the Russian-first selector whenever those tracks are available.
+              const refreshVenomNativeTracks = () => {
+                if (mount.isConnected && activeVideo === video) configureNativeAudioTracks(video, "Venom");
+              };
+              refreshVenomNativeTracks();
+              video.addEventListener("loadedmetadata", refreshVenomNativeTracks);
+              video.addEventListener("loadeddata", refreshVenomNativeTracks);
+              try {
+                if (video.audioTracks && typeof video.audioTracks.addEventListener === "function") {
+                  video.audioTracks.addEventListener("addtrack", refreshVenomNativeTracks);
+                }
+              } catch (_) {}
               video.addEventListener("error", () => {
                 if (mount.isConnected) playArchiveEmbedFallback(source);
               }, { once: true });
@@ -1027,6 +1040,13 @@
         tracks.forEach((track, i) => { track.enabled = i === index; });
       }
       preferredRussianAudioSelected = selectedTrack ? findRussianAudioTrackIndex([selectedTrack]) === 0 : false;
+      const trackLanguage = selectedTrack && String(selectedTrack.lang || selectedTrack.language || selectedTrack.languageCode || "").trim();
+      const trackName = selectedTrack && String(selectedTrack.name || selectedTrack.label || selectedTrack.title || "").trim();
+      streamStatus(preferredRussianAudioSelected
+        ? "Выбрана русская озвучка."
+        : selectedTrack
+          ? "Выбрана дорожка: " + (trackName || trackLanguage || ("Аудио " + (index + 1))) + ". Русская озвучка не выбрана."
+          : "Не удалось определить выбранную аудиодорожку.");
     });
     $("#subtitleTrack").addEventListener("change", () => {
       const index = Number($("#subtitleTrack").value);
