@@ -302,12 +302,12 @@
     let selectedAudio = hls.audioTrack;
     let russianSelected = false;
     if (!audioPreferenceApplied && tracks.length) {
-      audioPreferenceApplied = true;
       const russianIndex = findRussianAudioTrackIndex(tracks);
       if (russianIndex >= 0) {
         hls.audioTrack = russianIndex;
         selectedAudio = russianIndex;
         russianSelected = true;
+        audioPreferenceApplied = true;
       }
     }
     setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
@@ -330,10 +330,14 @@
     } catch (_) {}
     let russianSelected = false;
     if (!audioPreferenceApplied && audioTracks.length) {
-      audioPreferenceApplied = true;
       const russianIndex = findRussianAudioTrackIndex(audioTracks);
       if (russianIndex >= 0) {
-        try { dash.setCurrentTrack(audioTracks[russianIndex]); selectedAudio = russianIndex; russianSelected = true; } catch (_) {}
+        try {
+          dash.setCurrentTrack(audioTracks[russianIndex]);
+          selectedAudio = russianIndex;
+          russianSelected = true;
+          audioPreferenceApplied = true;
+        } catch (_) {}
       }
     }
     const audios = audioTracks.map((track, index) => ({
@@ -355,13 +359,13 @@
     let selectedAudio = tracks.findIndex(track => track && track.enabled);
     let russianSelected = false;
     if (!audioPreferenceApplied && tracks.length) {
-      audioPreferenceApplied = true;
       const russianIndex = findRussianAudioTrackIndex(tracks);
       if (russianIndex >= 0) {
         try {
           tracks.forEach((track, index) => { track.enabled = index === russianIndex; });
           selectedAudio = russianIndex;
           russianSelected = true;
+          audioPreferenceApplied = true;
         } catch (_) {}
       }
     }
@@ -487,6 +491,9 @@
     if (kind === "file") {
       video.src = url.href;
       video.addEventListener("loadedmetadata", () => configureNativeAudioTracks(video, "Видео"), { once: true });
+      if (video.audioTracks && typeof video.audioTracks.addEventListener === "function") {
+        video.audioTracks.addEventListener("addtrack", () => configureNativeAudioTracks(video, "Видео"));
+      }
       video.addEventListener("error", () => streamStatus("Видео не загрузилось. Источник может запрещать доступ с другого сайта или иметь неподдерживаемый формат.", true), { once: true });
       status("ПРЯМОЙ ВИДЕОФАЙЛ ПОДКЛЮЧЁН");
       return;
@@ -495,6 +502,9 @@
       if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = url.href;
         video.addEventListener("loadedmetadata", () => configureNativeAudioTracks(video, "HLS"), { once: true });
+        if (video.audioTracks && typeof video.audioTracks.addEventListener === "function") {
+          video.audioTracks.addEventListener("addtrack", () => configureNativeAudioTracks(video, "HLS"));
+        }
       } else if (window.Hls && window.Hls.isSupported()) {
         hls = new window.Hls();
         hls.loadSource(url.href);
@@ -991,6 +1001,7 @@
     $("#audioTrack").addEventListener("change", () => {
       const index = Number($("#audioTrack").value);
       if (index < 0) return;
+      audioPreferenceApplied = true;
       if (hls) hls.audioTrack = index;
       else if (dash) {
         const tracks = dash.getTracksFor("audio") || [];
