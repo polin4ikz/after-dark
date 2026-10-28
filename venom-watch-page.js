@@ -665,6 +665,15 @@
     }
     return [...found.values()];
   }
+  function createCinemaLoader(providerName) {
+    const loader = document.createElement("div");
+    loader.className = "cinema-loader";
+    loader.setAttribute("role", "status");
+    loader.setAttribute("aria-live", "polite");
+    loader.innerHTML = '<div class="cinema-loader__art" aria-hidden="true"><span class="cinema-loader__orbit cinema-loader__orbit--outer"></span><span class="cinema-loader__orbit cinema-loader__orbit--inner"></span><span class="cinema-loader__reel">AD</span><span class="cinema-loader__spark cinema-loader__spark--one"></span><span class="cinema-loader__spark cinema-loader__spark--two"></span></div><p class="cinema-loader__brand">AFTER <em>DARK</em></p><p class="cinema-loader__message">НАСТРАИВАЕМ КИНОЗАЛ</p><span class="cinema-loader__provider">' + providerName + ' / ПОДКЛЮЧЕНИЕ</span><div class="cinema-loader__progress"><span></span></div>';
+    return loader;
+  }
+
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
@@ -675,31 +684,9 @@
     const episode = Math.max(1, Math.floor(Number(previousProgress?.episode_number) || 1));
     restartCurrentEpisode = false;
 
-    // Try VidScene first as an experiment for Russian-language playback.
-    // This is not a guarantee of Russian audio: languages= affects subtitle preference,
-    // while audio tracks are determined by the provider's actual stream.
-    const vidScenePath = isSeries ? "/tv/" + id + "/" + season + "/" + episode : "/movie/" + id;
-    const candidates = [{
-      name: "VIDSCENE",
-      origin: "https://player.vidscene.app",
-      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&languages=ru,en&capSize=110&capColor=F2E9DC&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
-      readyTypes: ["VIDSCENE_PLAYER_EVENT"],
-      readyEvents: ["play", "timeupdate"],
-      errorEvents: ["error"]
-    }];
-
-    // Check whether VidScene actually has this title/episode before waiting on its iframe.
-    // A negative result skips directly to the next provider; transient API failures do not block playback.
-    try {
-      const availabilityUrl = isSeries
-        ? "https://api.vidscene.app/v1/tv/" + id + "/" + season + "/" + episode
-        : "https://api.vidscene.app/v1/movie/" + id;
-      const response = await fetch(availabilityUrl, { signal: AbortSignal.timeout(2500) });
-      if (response.ok) {
-        const availability = await response.json();
-        if (availability.available === false) candidates.shift();
-      }
-    } catch (_) {}
+    // Start with Stellar: it is the provider the user has confirmed works.
+    // Do not flash a known-bad VidScene iframe before the working player.
+    const candidates = [];
 
     // Keep Stellar as fallback. Its documented locale localizes the UI only;
     // it cannot force Russian audio if the selected stream does not contain it.
@@ -717,6 +704,8 @@
       const stage = $("#playerStage");
       resetStreamEngines();
       stage.replaceChildren();
+      const loader = createCinemaLoader(provider.name);
+      stage.appendChild(loader);
       const frame = document.createElement("iframe");
       frame.src = provider.url;
       frame.title = "AFTER DARK — " + provider.name;
@@ -726,7 +715,8 @@
       frame.loading = "eager";
       stage.appendChild(frame);
       attachFrameProgress(frame, film, provider.name, provider.origin);
-      status("ПРОВЕРЯЮ ВСТРОЕННЫЙ ПЛЕЕР · " + provider.name);
+      status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
+      streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
       streamStatus(provider.name === "STELLAR"
         ? "Сначала проверяю Stellar по TMDB ID. Озвучку, субтитры и доступные настройки качества выбирай внутри самого плеера."
         : "VidScene не подтвердил готовность видео; автоматически проверяю резервный источник.");
@@ -761,6 +751,8 @@
       });
 
       if (outcome === "ready") {
+        loader.classList.add("is-done");
+        setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
         streamStatus(provider.name === "STELLAR"
           ? "Плеер загрузился и ответил, но After Dark не может подтвердить, что видео действительно воспроизводится или содержит русскую дорожку."
@@ -768,6 +760,7 @@
         addNote("Автоматически выбран плеер: " + provider.name + ".");
         return true;
       }
+      loader.classList.add("is-done");
       frame.src = "about:blank";
       stage.replaceChildren();
       status("ИСТОЧНИК НЕ ОТВЕТИЛ · ПРОБУЮ СЛЕДУЮЩИЙ");
