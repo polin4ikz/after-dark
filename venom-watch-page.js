@@ -320,7 +320,7 @@
     }));
     setOptions($("#subtitleTrack"), subtitles, hls.subtitleTrack, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(tracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(tracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function refreshDashTracks() {
     if (!dash) return;
@@ -355,7 +355,7 @@
     setOptions($("#audioTrack"), audios, selectedAudio, "В потоке нет аудиодорожек");
     setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(audios.length > 1 || subtitles.length > 0);
-    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Автоматически выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(audioTracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
+    streamStatus((russianSelected || preferredRussianAudioSelected) ? "Выбрана русская озвучка." : audios.length && findRussianAudioTrackIndex(audioTracks) < 0 ? "Русская озвучка в этом потоке не найдена. Доступные дорожки можно выбрать ниже." : audios.length > 1 ? "Найдено несколько аудиодорожек — можно переключать." : audios.length === 1 ? "В потоке одна аудиодорожка." : "Поток пока не передал список аудиодорожек.");
   }
   function configureNativeAudioTracks(video, sourceLabel) {
     let tracks = [];
@@ -389,7 +389,7 @@
     if (subtitles.length) setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(tracks.length > 1 || subtitles.length > 0);
     streamStatus((russianSelected || preferredRussianAudioSelected)
-      ? "Автоматически выбрана русская озвучка."
+      ? "Выбрана русская озвучка."
       : tracks.length && findRussianAudioTrackIndex(tracks) < 0
         ? "Русская озвучка в этом потоке не найдена. Проверь меню самого плеера или выбери другой источник."
         : tracks.length > 1
@@ -1009,13 +1009,20 @@
       const index = Number($("#audioTrack").value);
       if (index < 0) return;
       audioPreferenceApplied = true;
-      if (hls) hls.audioTrack = index;
-      else if (dash) {
+      let selectedTrack = null;
+      if (hls) {
+        selectedTrack = (hls.audioTracks || [])[index] || null;
+        hls.audioTrack = index;
+      } else if (dash) {
         const tracks = dash.getTracksFor("audio") || [];
-        if (tracks[index]) dash.setCurrentTrack(tracks[index]);
+        selectedTrack = tracks[index] || null;
+        if (selectedTrack) dash.setCurrentTrack(selectedTrack);
       } else if (activeVideo && activeVideo.audioTracks && activeVideo.audioTracks[index]) {
-        Array.from(activeVideo.audioTracks).forEach((track, i) => { track.enabled = i === index; });
+        const tracks = Array.from(activeVideo.audioTracks);
+        selectedTrack = tracks[index] || null;
+        tracks.forEach((track, i) => { track.enabled = i === index; });
       }
+      preferredRussianAudioSelected = selectedTrack ? findRussianAudioTrackIndex([selectedTrack]) === 0 : false;
     });
     $("#subtitleTrack").addEventListener("change", () => {
       const index = Number($("#subtitleTrack").value);
