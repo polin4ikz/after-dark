@@ -2766,3 +2766,65 @@ body {
   .ad-archive-meta-item:last-child { border-bottom: 0 !important; }
   .hero-topline .hero-category { display: none !important; }
 }
+
+
+/* AFTER DARK — focused polish pass 2026-10-28 */
+.ad-film-detail-actions button.ad-detail-watch,
+.ad-film-detail-actions button[data-ad-watch-trigger="detail"]{
+  background:var(--red,#6e1c2d)!important;
+  color:var(--milk,#eee7dc)!important;
+  border:1px solid var(--red,#6e1c2d)!important;
+  box-shadow:0 7px 20px rgba(84,19,31,.14)!important;
+}
+.ad-film-detail-actions button.ad-detail-watch:hover,
+.ad-film-detail-actions button[data-ad-watch-trigger="detail"]:hover{
+  background:#3c111b!important;color:var(--milk,#eee7dc)!important;border-color:#3c111b!important;
+}
+.movie-night-modal-window #movieNightOpen{display:none!important}
+#ratingsList .rating-card{
+  display:grid!important;
+  grid-template-columns:28px 72px minmax(0,1fr) auto auto!important;
+  align-items:center!important;
+  gap:16px!important;
+  min-width:0!important;
+}
+#ratingsList .rating-poster{width:72px!important;height:100px!important;overflow:hidden!important;flex:0 0 72px!important}
+#ratingsList .rating-poster img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+#ratingsList .rating-main{min-width:0!important}
+#ratingsList .rating-title{overflow-wrap:anywhere!important;line-height:1.1!important}
+#ratingsList .rating-scores{display:flex!important;gap:14px!important;align-items:center!important;flex-wrap:wrap!important}
+#ratingsList .rating-score{min-width:54px!important}
+#ratingsList .rating-open-file{display:none!important}
+@media(max-width:700px){
+  .movie-night{width:100%!important;max-width:100%!important;margin:0!important;padding:48px 18px!important;box-sizing:border-box!important;overflow:hidden!important}
+  .movie-night-layout{width:100%!important;max-width:100%!important;margin:0!important;position:relative!important;left:auto!important;right:auto!important;transform:none!important;box-sizing:border-box!important}
+  .movie-night-intro,.movie-night-settings{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;box-sizing:border-box!important}
+  .movie-night-settings{padding:0!important}
+  .movie-night-modal{padding:10px!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important}
+  .movie-night-modal-window{width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;height:auto!important;max-height:calc(100svh - 20px)!important;overflow-y:auto!important;overflow-x:hidden!important;margin:0 auto!important;left:auto!important;right:auto!important;transform:none!important;box-sizing:border-box!important}
+  .movie-night-final{width:100%!important;max-width:100%!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
+  .movie-night-final-poster{width:100%!important;max-height:34svh!important;aspect-ratio:16/9!important;overflow:hidden!important}
+  .movie-night-final-poster img{width:100%!important;height:100%!important;object-fit:cover!important}
+  .movie-night-final-content{min-width:0!important;width:100%!important;padding:20px!important;box-sizing:border-box!important}
+  .movie-night-final-content h3{font-size:clamp(26px,8vw,42px)!important;line-height:.95!important;overflow-wrap:anywhere!important}
+  .movie-night-final-overview{max-height:7.5em!important;overflow:auto!important}
+  .movie-night-final-actions{display:grid!important;grid-template-columns:1fr!important;width:100%!important;gap:8px!important}
+  .movie-night-final-actions .movie-night-action{width:100%!important;min-height:46px!important}
+  #ratingsList .rating-card{grid-template-columns:22px 64px minmax(0,1fr)!important;gap:10px!important;padding:16px 0!important}
+  #ratingsList .rating-poster{grid-column:2;grid-row:1 / span 2;width:64px!important;height:90px!important;flex-basis:64px!important}
+  #ratingsList .rating-main{grid-column:3;grid-row:1;align-self:end!important}
+  #ratingsList .rating-title{font-size:clamp(16px,4.8vw,22px)!important;line-height:1.05!important}
+  #ratingsList .rating-info{display:flex!important;gap:8px!important;flex-wrap:wrap!important;font-size:8px!important}
+  #ratingsList .rating-scores{grid-column:3;grid-row:2;gap:12px!important;align-self:start!important}
+  #ratingsList .rating-score{min-width:0!important}
+  #ratingsList .rating-score strong{font-size:16px!important}
+  #ratingsList .rating-delete{grid-column:1;grid-row:1;align-self:start!important}
+}
+@media(max-width:380px){
+  .movie-night{padding-left:14px!important;padding-right:14px!important}
+  .movie-night-modal{padding:7px!important}
+  .movie-night-modal-window{width:calc(100vw - 14px)!important;max-width:calc(100vw - 14px)!important;max-height:calc(100svh - 14px)!important}
+  .movie-night-final-content{padding:16px!important}
+  #ratingsList .rating-card{grid-template-columns:18px 56px minmax(0,1fr)!important;gap:8px!important}
+  #ratingsList .rating-poster{width:56px!important;height:80px!important;flex-basis:56px!important}
+}
