@@ -1061,7 +1061,7 @@
           openDirectStream(rawSource);
           status("РУЧНОЙ ИСТОЧНИК ПОДКЛЮЧЁН");
           const sourceUrl = extractSubmittedUrl(rawSource);
-          const sourceHost = new URL(sourceUrl).hostname.replace(/^www\\./i, "");
+          const sourceHost = new URL(sourceUrl).hostname.replace(/^www[.]/i, "");
           streamStatus("Подключён источник " + sourceHost + ". Если это HLS/DASH с несколькими аудиодорожками, After Dark покажет их и автоматически выберет русскую, когда язык указан в потоке. Для стороннего iframe дорожками управляет сам сайт.");
           manualSourceInput.blur();
         } catch (error) {
