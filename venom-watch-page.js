@@ -1045,6 +1045,30 @@
     await showWatchmodeProviders(film);
   }
   function init() {
+    const manualSourceForm = $("#manualSourceForm");
+    const manualSourceInput = $("#manualSourceUrl");
+    if (manualSourceForm && manualSourceInput && !manualSourceForm.dataset.bound) {
+      manualSourceForm.dataset.bound = "1";
+      manualSourceForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const rawSource = manualSourceInput.value.trim();
+        if (!rawSource) {
+          streamStatus("Вставь HTTPS-ссылку на прямой видеопоток или код iframe.", true);
+          manualSourceInput.focus();
+          return;
+        }
+        try {
+          openDirectStream(rawSource);
+          status("РУЧНОЙ ИСТОЧНИК ПОДКЛЮЧЁН");
+          const sourceUrl = extractSubmittedUrl(rawSource);
+          const sourceHost = new URL(sourceUrl).hostname.replace(/^www\\./i, "");
+          streamStatus("Подключён источник " + sourceHost + ". Если это HLS/DASH с несколькими аудиодорожками, After Dark покажет их и автоматически выберет русскую, когда язык указан в потоке. Для стороннего iframe дорожками управляет сам сайт.");
+          manualSourceInput.blur();
+        } catch (error) {
+          streamStatus(error && error.message ? error.message : "Не удалось открыть источник. Проверь ссылку.", true);
+        }
+      });
+    }
     $("#audioTrack").addEventListener("change", () => {
       const index = Number($("#audioTrack").value);
       if (index < 0) return;
