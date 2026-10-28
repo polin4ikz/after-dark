@@ -92,7 +92,9 @@
       '<div class="ad-watch-player__availability"><label for="adWatchRegion">СТРАНА</label><select id="adWatchRegion"><option value="RU">РОССИЯ</option><option value="DE">ГЕРМАНИЯ</option><option value="US">США</option><option value="GB">ВЕЛИКОБРИТАНИЯ</option><option value="CA">КАНАДА</option></select><button class="ad-watch-player__search" type="button" data-ad-watchmode-search>ГДЕ ПОСМОТРЕТЬ ↗</button></div>',
       '<div class="ad-watch-player__availability-results" aria-live="polite"></div>',
       '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
-      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>
+      '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
+      '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>'',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
       '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://archive.org/embed/…" autocomplete="url"><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
@@ -105,6 +107,36 @@
       const searchButton = event.target.closest("[data-ad-archive-search]");
       const availabilityButton = event.target.closest("[data-ad-watchmode-search]");
       const resultButton = event.target.closest("[data-ad-archive-identifier]");
+      const stremioButton = event.target.closest("[data-ad-stremio-open]");
+      if (stremioButton) {
+        const film = modal._film;
+        const id = Number(film && (film.tmdbId ?? film.id));
+        const type = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
+        const status = $(".ad-watch-player__status", modal);
+        if (!Number.isSafeInteger(id) || id < 1) {
+          if (status) status.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ ID ФИЛЬМА.";
+          return;
+        }
+        stremioButton.disabled = true;
+        if (status) status.textContent = "ПОЛУЧАЮ IMDb ID ДЛЯ STREMIO…";
+        try {
+          const response = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(id)) + "/external_ids", { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "TMDB_EXTERNAL_IDS_UNAVAILABLE");
+          const imdbId = String(data && data.imdb_id || "");
+          if (!/^tt\\d{5,12}$/.test(imdbId)) throw new Error("IMDB_ID_NOT_FOUND");
+          const target = "https://web.stremio.com/#/detail/" + (type === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
+          window.open(target, "_blank", "noopener,noreferrer");
+          if (status) status.textContent = "STREMIO ОТКРЫТ. ВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ ДОСТУПНЫХ ДОПОЛНЕНИЙ И ИСТОЧНИКОВ.";
+        } catch (error) {
+          if (status) status.textContent = error.message === "IMDB_ID_NOT_FOUND"
+            ? "У ЭТОГО НАЗВАНИЯ НЕТ IMDb ID ДЛЯ ПОИСКА В STREMIO."
+            : "НЕ УДАЛОСЬ ОТКРЫТЬ STREMIO. ПРОВЕРЬ TMDB ИЛИ ПОПРОБУЙ ПОЗЖЕ.";
+        } finally {
+          stremioButton.disabled = false;
+        }
+        return;
+      }
       if (availabilityButton) {
         const film = modal._film;
         const id = Number(film && (film.tmdbId ?? film.id));
