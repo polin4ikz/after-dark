@@ -815,6 +815,23 @@
     return loader;
   }
 
+  function addStandalonePlayerLink(playerUrl, providerName) {
+    const area = $("#sourceResults");
+    if (!area || !/^https:\/\//i.test(String(playerUrl || ""))) return;
+    area.querySelectorAll(".standalone-player-link").forEach(link => link.remove());
+    const link = document.createElement("a");
+    link.className = "source-result source-result--external standalone-player-link";
+    link.href = playerUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "ОТКРЫТЬ " + String(providerName || "ПЛЕЕР") + " ОТДЕЛЬНО ↗";
+    area.prepend(link);
+    const note = document.createElement("p");
+    note.className = "source-note standalone-player-note";
+    note.textContent = "Отдельное окно помогает проверить все элементы управления плеера. Оно не добавляет аудиодорожки: русская озвучка доступна только если она есть в самом видеопотоке.";
+    area.insertBefore(note, link.nextSibling);
+  }
+
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
@@ -855,6 +872,7 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
+      addStandalonePlayerLink(provider.url, provider.name);
       attachFrameProgress(frame, film, provider.name, provider.origin);
       status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
       streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
