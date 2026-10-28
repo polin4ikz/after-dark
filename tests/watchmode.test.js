@@ -60,9 +60,10 @@ test("Watchmode proxy uses TMDB IDs server-side and returns only HTTPS provider 
         ok: true,
         status: 200,
         json: async () => [
-          { name: "Example Stream", type: "sub", web_url: "https://stream.example/watch/123", price: null, format: "HD" },
-          { name: "Bad link", type: "free", web_url: "javascript:alert(1)" },
-          { name: "Missing link", type: "rent" }
+          { name: "Example Stream", type: "sub", region: "DE", web_url: "https://stream.example/watch/123", price: null, format: "HD" },
+          { name: "Bad link", type: "free", region: "DE", web_url: "javascript:alert(1)" },
+          { name: "Wrong region", type: "free", region: "US", web_url: "https://stream.example/us" },
+          { name: "Missing link", type: "rent", region: "DE" }
         ]
       };
     };
