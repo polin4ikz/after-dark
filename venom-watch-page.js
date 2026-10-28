@@ -1018,8 +1018,10 @@
       const results = await searchOpenArchive(film);
       const exactRussian = chooseRussianArchiveCandidate(results);
       if (exactRussian) {
-        playArchiveSource(exactRussian, true);
-        addNote("Найдено точное совпадение с открытой лицензией и подсказкой о русском языке в метаданных. Это не гарантирует язык фактической аудиодорожки.");
+        status("НАЙДЕН КАНДИДАТ С РУССКОЯЗЫЧНЫМИ МЕТАДАННЫМИ");
+        addNote("Найдено точное совпадение с открытой лицензией и подсказкой о русском языке в метаданных. Это не подтверждает фактическую озвучку — нажми на источник, чтобы проверить его.");
+        renderCandidate(exactRussian);
+        addExternalFallback(film);
         return;
       }
       const exactWithoutConfirmedRussian = (Array.isArray(results) ? results : [])
