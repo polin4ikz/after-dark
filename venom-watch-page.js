@@ -688,6 +688,19 @@
       errorEvents: ["error"]
     }];
 
+    // Check whether VidScene actually has this title/episode before waiting on its iframe.
+    // A negative result skips directly to the next provider; transient API failures do not block playback.
+    try {
+      const availabilityUrl = isSeries
+        ? "https://api.vidscene.app/v1/tv/" + id + "/" + season + "/" + episode
+        : "https://api.vidscene.app/v1/movie/" + id;
+      const response = await fetch(availabilityUrl, { signal: AbortSignal.timeout(2500) });
+      if (response.ok) {
+        const availability = await response.json();
+        if (availability.available === false) candidates.shift();
+      }
+    } catch (_) {}
+
     // Keep Stellar as fallback. Its documented locale localizes the UI only;
     // it cannot force Russian audio if the selected stream does not contain it.
     const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
@@ -932,7 +945,7 @@
           try {
             const progressSaved = await window.afterDarkProgress?.save?.({ tmdb_id: id, title: currentFilm.title || currentFilm.name || "", media_type: isSeriesFilm(currentFilm) ? "tv" : "movie", position_seconds: Number(saved.position_seconds || 0), duration_seconds: Number(saved.duration_seconds || 0), status: "completed", season_number: saved.season_number ?? null, episode_number: saved.episode_number ?? null, source_provider: saved.source_provider || "manual" });
             const archiveSaved = typeof window.archiveSyncWatch === "function" ? await window.archiveSyncWatch(id, true) : false;
-            if (progressSaved && archiveSaved) { button.textContent = "MARKED AS WATCHED ✓"; status("WATCH STATUS SAVED"); }
+            if (archiveSaved) { button.textContent = "MARKED AS WATCHED ✓"; status(progressSaved ? "WATCH STATUS SAVED" : "ARCHIVE STATUS SAVED"); }
             else status("COULD NOT SAVE WATCH STATUS — CHECK CONNECTION", true);
           } catch (error) { console.error("MARK WATCHED FAILED", error); status("COULD NOT SAVE WATCH STATUS", true); }
           finally { button.disabled = false; }
