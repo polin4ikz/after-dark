@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { findRussianAudioTrackIndex } = require("../venom-watch-page.js");
+const { findRussianAudioTrackIndex, chooseRussianArchiveCandidate } = require("../venom-watch-page.js");
 
 test("prefers Russian audio tracks by language code", () => {
   assert.equal(findRussianAudioTrackIndex([
@@ -47,4 +47,21 @@ test("recognizes alternate language metadata used by external players", () => {
   assert.equal(findRussianAudioTrackIndex([
     { labels: [{ label: "Russian audio" }] }
   ]), 0);
+});
+
+
+test("only auto-selects a unique exact archive result with a Russian-language hint", () => {
+  const russian = { identifier: "ru-film", confidence: "high", russianAudioLikely: true };
+  const unknown = { identifier: "unknown-audio", confidence: "high", russianAudioLikely: false };
+  assert.equal(chooseRussianArchiveCandidate([unknown, russian]), russian);
+  assert.equal(chooseRussianArchiveCandidate([unknown]), null);
+  assert.equal(chooseRussianArchiveCandidate([{ ...russian, confidence: "review" }]), null);
+});
+
+test("does not auto-select when multiple exact Russian-hinted archive results exist", () => {
+  assert.equal(chooseRussianArchiveCandidate([
+    { identifier: "one", confidence: "high", russianAudioLikely: true },
+    { identifier: "two", confidence: "high", russianAudioLikely: true }
+  ]), null);
+  assert.equal(chooseRussianArchiveCandidate(null), null);
 });
