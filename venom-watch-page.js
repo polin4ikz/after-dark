@@ -910,6 +910,33 @@
       return;
     }
     currentFilm = film;
+    const playerActions = document.querySelector(".player-actions");
+    if (playerActions && !playerActions.dataset.bound) {
+      playerActions.dataset.bound = "1";
+      playerActions.addEventListener("click", async event => {
+        const button = event.target.closest("[data-player-action]");
+        if (!button || !currentFilm) return;
+        const action = button.dataset.playerAction;
+        const id = currentFilm.tmdbId ?? currentFilm.id;
+        const saved = savedProgress(currentFilm) || {};
+        if (action === "restart") {
+          restartCurrentEpisode = true;
+          await window.afterDarkProgress?.save?.({ tmdb_id: id, title: currentFilm.title || currentFilm.name || "", media_type: isSeriesFilm(currentFilm) ? "tv" : "movie", position_seconds: 0, duration_seconds: Number(saved.duration_seconds || 0), status: "in_progress", season_number: saved.season_number ?? 1, episode_number: saved.episode_number ?? 1, source_provider: saved.source_provider || "unknown" });
+          await findSources(currentFilm);
+          return;
+        }
+        if (action === "resume") { restartCurrentEpisode = false; await findSources(currentFilm); return; }
+        if (action === "watched") {
+          button.disabled = true;
+          try {
+            const ok = await window.afterDarkProgress?.save?.({ tmdb_id: id, title: currentFilm.title || currentFilm.name || "", media_type: isSeriesFilm(currentFilm) ? "tv" : "movie", position_seconds: Number(saved.position_seconds || 0), duration_seconds: Number(saved.duration_seconds || 0), status: "completed", season_number: saved.season_number ?? null, episode_number: saved.episode_number ?? null, source_provider: saved.source_provider || "manual" });
+            if (ok) { button.textContent = "ПРОСМОТРЕННО ✓"; status("ПРОСМОТР ОТМЕЧЕН · СТАТУС СОХРАНЁН"); }
+            else status("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА", true);
+          } catch (error) { console.error("MARK WATCHED FAILED", error); status("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА", true); }
+          finally { button.disabled = false; }
+        }
+      });
+    }
     $("#mediaTitle").textContent = String(film.title || film.name || "Без названия");
     const isSeries = film.type === "series" || film.media_type === "tv" || Boolean(film.first_air_date);
     $("#mediaType").textContent = isSeries ? "СЕРИАЛ" : "ФИЛЬМ";
