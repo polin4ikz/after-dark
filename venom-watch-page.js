@@ -670,7 +670,7 @@
     loader.className = "cinema-loader";
     loader.setAttribute("role", "status");
     loader.setAttribute("aria-live", "polite");
-    loader.innerHTML = '<div class="cinema-loader__art" aria-hidden="true"><span class="cinema-loader__orbit cinema-loader__orbit--outer"></span><span class="cinema-loader__orbit cinema-loader__orbit--inner"></span><span class="cinema-loader__reel">AD</span><span class="cinema-loader__spark cinema-loader__spark--one"></span><span class="cinema-loader__spark cinema-loader__spark--two"></span></div><p class="cinema-loader__brand">AFTER <em>DARK</em></p><p class="cinema-loader__message">НАСТРАИВАЕМ КИНОЗАЛ</p><span class="cinema-loader__provider">' + providerName + ' / ПОДКЛЮЧЕНИЕ</span><div class="cinema-loader__progress"><span></span></div>';
+    loader.innerHTML = '<div class="cinema-loader__masthead"><span>AFTER DARK</span><small>PRIVATE CINEMA</small></div><span class="cinema-loader__edition">EST. 2026</span><div class="cinema-loader__art" aria-hidden="true"><span class="cinema-loader__orbit cinema-loader__orbit--outer"></span><span class="cinema-loader__orbit cinema-loader__orbit--inner"></span><span class="cinema-loader__orbit cinema-loader__orbit--tilt"></span><span class="cinema-loader__planet"></span><span class="cinema-loader__spark cinema-loader__spark--one"></span><span class="cinema-loader__spark cinema-loader__spark--two"></span></div><p class="cinema-loader__message">ПОДКЛЮЧАЕМ ПЛЕЕР</p><span class="cinema-loader__provider">' + providerName + ' / ПОДКЛЮЧЕНИЕ</span><div class="cinema-loader__progress"><span></span></div><span class="cinema-loader__edge">A F T E R&nbsp; D A R K</span>';
     return loader;
   }
 
@@ -916,6 +916,8 @@
       return;
     }
     currentFilm = film;
+    const initialStage = $("#playerStage");
+    if (initialStage && !initialStage.querySelector(".cinema-loader")) initialStage.replaceChildren(createCinemaLoader("STELLAR"));
     const playerActions = document.querySelector(".player-actions");
     if (playerActions && !playerActions.dataset.bound) {
       playerActions.dataset.bound = "1";
