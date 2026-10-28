@@ -2828,3 +2828,50 @@ body {
   #ratingsList .rating-card{grid-template-columns:18px 56px minmax(0,1fr)!important;gap:8px!important}
   #ratingsList .rating-poster{width:56px!important;height:80px!important;flex-basis:56px!important}
 }
+
+
+/* AFTER DARK — focused fixes 2026-10-28 / no-scroll result + ratings */
+.ad-film-detail-actions button[data-ad-watch-trigger="detail"]{
+  background:#791522!important;color:#eee7dc!important;border-color:#791522!important;
+}
+.ad-film-detail-actions button[data-ad-watch-trigger="detail"]:hover{
+  background:#4b111e!important;border-color:#4b111e!important;
+}
+.movie-night-modal-window{overflow:hidden!important}
+.movie-night-final-overview{
+  display:-webkit-box!important;-webkit-box-orient:vertical!important;
+  -webkit-line-clamp:3!important;overflow:hidden!important;max-height:none!important;
+}
+.movie-night-final-actions{margin-top:8px!important}
+.movie-night-final-actions .movie-night-action{min-height:42px!important;padding-top:9px!important;padding-bottom:9px!important}
+.movie-night-final-content{padding-top:16px!important;padding-bottom:14px!important}
+#ratingsList .rating-card{
+  grid-template-columns:28px 72px minmax(150px,1fr) minmax(200px,auto) 32px!important;
+  gap:14px!important;padding:18px 0!important;align-items:center!important;
+}
+#ratingsList .rating-scores{
+  display:grid!important;grid-template-columns:repeat(3,minmax(54px,1fr))!important;
+  gap:10px!important;min-width:0!important;align-items:center!important;
+}
+#ratingsList .rating-score{min-width:0!important;text-align:center!important}
+#ratingsList .rating-score-label{display:block!important;font-size:8px!important;white-space:nowrap!important}
+#ratingsList .rating-score strong{display:block!important;font-size:17px!important;white-space:nowrap!important}
+#ratingsList .rating-score strong small{font-size:9px!important}
+@media(max-width:700px){
+  .movie-night-modal-window{height:auto!important;max-height:calc(100svh - 20px)!important;overflow:hidden!important}
+  .movie-night-final-poster{max-height:25svh!important;aspect-ratio:16/7!important}
+  .movie-night-final-content{padding:14px 16px 12px!important}
+  .movie-night-final-content h3{font-size:clamp(24px,7vw,34px)!important}
+  .movie-night-final-overview{-webkit-line-clamp:2!important;font-size:10px!important;line-height:1.25!important}
+  .movie-night-final-actions{margin-top:6px!important;gap:6px!important}
+  .movie-night-final-actions .movie-night-action{min-height:38px!important;padding:7px 10px!important}
+  #ratingsList .rating-card{grid-template-columns:18px 58px minmax(0,1fr)!important;gap:8px!important;padding:14px 0!important}
+  #ratingsList .rating-poster{grid-column:2;grid-row:1;width:58px!important;height:82px!important;flex-basis:58px!important}
+  #ratingsList .rating-main{grid-column:3;grid-row:1;align-self:center!important}
+  #ratingsList .rating-title{font-size:clamp(15px,4.5vw,20px)!important}
+  #ratingsList .rating-scores{grid-column:2 / 4;grid-row:2;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;padding-top:9px!important}
+  #ratingsList .rating-score{text-align:left!important}
+  #ratingsList .rating-score-label{font-size:7px!important}
+  #ratingsList .rating-score strong{font-size:15px!important}
+  #ratingsList .rating-delete{grid-column:1;grid-row:1;align-self:start!important}
+}
