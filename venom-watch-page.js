@@ -223,6 +223,15 @@
     const titles = [...new Set([film.title, film.name, film.original_title, film.original_name].map(value => String(value || "").trim()).filter(Boolean))];
     return { titles, year, primary: titles[0] || "фильм" };
   }
+  function chooseRussianArchiveCandidate(results) {
+    if (!Array.isArray(results)) return null;
+    const exact = results.filter(item => item && item.confidence === "high");
+    const russianExact = exact.filter(item => item.russianAudioLikely === true);
+    // Never auto-start a merely exact title match when its audio language is unknown.
+    // A metadata hint is not proof of the actual soundtrack, so the user still confirms playback.
+    return russianExact.length === 1 ? russianExact[0] : null;
+  }
+
   function addExternalFallback(filmOrTitle) {
     const area = $("#sourceResults");
     const { titles, year, primary } = filmSearchTerms(filmOrTitle);
@@ -1007,10 +1016,19 @@
     await showWatchmodeProviders(film);
     try {
       const results = await searchOpenArchive(film);
-      const exact = results.filter(item => item && item.confidence === "high");
-      if (exact.length === 1) {
-        playArchiveSource(exact[0], true);
-        addNote("Найдено точное совпадение с открытой лицензией. Если воспроизведение не началось автоматически, нажми Play.");
+      const exactRussian = chooseRussianArchiveCandidate(results);
+      if (exactRussian) {
+        playArchiveSource(exactRussian, true);
+        addNote("Найдено точное совпадение с открытой лицензией и подсказкой о русском языке в метаданных. Это не гарантирует язык фактической аудиодорожки.");
+        return;
+      }
+      const exactWithoutConfirmedRussian = (Array.isArray(results) ? results : [])
+        .filter(item => item && item.confidence === "high");
+      if (exactWithoutConfirmedRussian.length === 1) {
+        status("ИСТОЧНИК НАЙДЕН · ЯЗЫК ОЗВУЧКИ НЕ ПОДТВЕРЖДЁН");
+        addNote("Нашлось точное совпадение с открытой лицензией, но метаданные не подтверждают русскую озвучку. Не запускаю его автоматически, чтобы не выбрать случайно неподходящую дорожку.");
+        renderCandidate(exactWithoutConfirmedRussian[0]);
+        addExternalFallback(film);
         return;
       }
       const { titles: providerTitles, year: providerYear } = filmSearchTerms(film);
@@ -1165,7 +1183,7 @@
       const frame = $("#playerStage iframe"); if (frame) frame.src = "about:blank";
     });
   }
-  if (typeof module !== "undefined" && module.exports) module.exports = { findRussianAudioTrackIndex };
+  if (typeof module !== "undefined" && module.exports) module.exports = { findRussianAudioTrackIndex, chooseRussianArchiveCandidate };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
   }
