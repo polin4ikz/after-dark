@@ -682,7 +682,7 @@
     const candidates = [{
       name: "VIDSCENE",
       origin: "https://player.vidscene.app",
-      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&language=ru&languages=ru,en&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
+      url: "https://player.vidscene.app" + vidScenePath + "?theme=7B1E2D&autoplay=true&languages=ru,en&capSize=110&capColor=F2E9DC&episodeSelector=true&persistProgress=false" + (resumeAt > 0 ? "&progress=" + encodeURIComponent(String(resumeAt)) : ""),
       readyTypes: ["VIDSCENE_PLAYER_EVENT"],
       readyEvents: ["play", "timeupdate"],
       errorEvents: ["error"]
@@ -716,7 +716,7 @@
       status("ПРОВЕРЯЮ ВСТРОЕННЫЙ ПЛЕЕР · " + provider.name);
       streamStatus(provider.name === "STELLAR"
         ? "Сначала проверяю Stellar по TMDB ID. Озвучку, субтитры и доступные настройки качества выбирай внутри самого плеера."
-        : "Stellar не подтвердил готовность видео; автоматически проверяю резервный источник.");
+        : "VidScene не подтвердил готовность видео; автоматически проверяю резервный источник.");
 
       const outcome = await new Promise(resolve => {
         let settled = false;
