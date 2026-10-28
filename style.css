@@ -2688,3 +2688,81 @@ body {
 .ad-detail-watch{background:#171214!important;color:#eee7dc!important;border-color:#171214!important}
 .ad-film-detail-actions .ad-detail-watch:hover{background:#791522!important;border-color:#791522!important;color:#eee7dc!important}
 @media(max-width:700px){.archive-controls{align-items:flex-start!important}.archive-status-filters{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.archive-status-filter{padding:11px 5px;font-size:7px}.ad-archive-meta{grid-template-columns:1fr!important}.ad-archive-meta-item,.ad-archive-meta-item+.ad-archive-meta-item{padding:11px 0;border-right:0;border-bottom:1px solid rgba(232,221,200,.1)}.ad-archive-meta-item:last-child{border-bottom:0}}
+
+
+/* AFTER DARK — MOBILE LAYOUT PASS 1
+   Preserve the desktop editorial composition; reflow only where the screen requires it. */
+@media (max-width: 700px) {
+  :root { --pad: 18px; }
+  html, body { width: 100%; max-width: 100%; overflow-x: clip !important; }
+  .site-header { padding: 15px 18px !important; gap: 12px; }
+  .header-meta { gap: 10px !important; font-size: 8px; }
+  .header-meta > span:first-child { display: none; }
+  .index-trigger { width: 38px !important; height: 38px !important; }
+  .hero { min-height: min(740px, 92svh) !important; padding: 18px !important; }
+  .hero-topline, .hero-bottom { gap: 8px !important; font-size: 8px !important; }
+  .hero-title { left: 18px !important; right: 18px !important; }
+  .hero-after, .hero-dark { font-size: clamp(68px, 20vw, 120px) !important; }
+  .hero-side-note { right: 18px !important; bottom: 78px !important; max-width: 175px; }
+  .hero-side-note p { font-size: 12px !important; line-height: 1.35 !important; }
+  .search-section, .archive-section, .movie-night, .ratings-section { padding-left: 18px !important; padding-right: 18px !important; }
+  .search-head { margin-top: 28px !important; margin-bottom: 22px !important; }
+  .search-head h2, .archive-title-wrap h2, .ratings-header > div:nth-child(2) h2 { font-size: clamp(54px, 15vw, 92px) !important; line-height: .84 !important; }
+  .search-box { min-height: 58px !important; }
+  .search-box input { min-width: 0 !important; width: 100% !important; font-size: 14px !important; }
+  .search-box button { flex: 0 0 48px !important; width: 48px !important; }
+  .search-info { gap: 8px !important; flex-wrap: wrap; font-size: 7px !important; }
+  .search-results { max-height: 52svh !important; overflow-y: auto !important; }
+  .search-result { grid-template-columns: 20px 54px minmax(0,1fr) !important; gap: 10px !important; min-height: 84px !important; padding-right: 2px !important; }
+  .search-result-poster, .search-result-poster img { width: 54px !important; min-width: 54px !important; max-width: 54px !important; height: 70px !important; min-height: 70px !important; max-height: 70px !important; }
+  .search-result-info h3 { font-size: 18px !important; line-height: 1.05 !important; }
+  .search-result-add { grid-column: 3; justify-self: start; margin: 0 0 8px !important; padding: 9px 11px !important; font-size: 8px !important; }
+  .archive-title-wrap { margin-top: 26px !important; }
+  .archive-description { max-width: 32ch; font-size: 13px !important; line-height: 1.45 !important; }
+  .archive-controls { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+  .filter-group { display: grid !important; grid-template-columns: repeat(4, minmax(0,1fr)) !important; gap: 4px !important; width: 100% !important; }
+  .filter-group .filter { min-width: 0 !important; padding: 10px 3px !important; font-size: 7px !important; letter-spacing: .02em !important; }
+  .archive-status-filters { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; width: 100% !important; gap: 3px !important; padding: 3px !important; }
+  .archive-status-filter { min-width: 0 !important; padding: 12px 2px !important; font-size: 7px !important; letter-spacing: 0 !important; line-height: 1.25 !important; white-space: normal !important; }
+  .archive-track { gap: 12px !important; padding-top: 15px !important; }
+  .archive-card { flex: 0 0 min(43vw, 205px) !important; width: min(43vw, 205px) !important; min-width: min(43vw, 205px) !important; }
+  .archive-card-poster { aspect-ratio: 2 / 3; overflow: hidden; }
+  .archive-card-poster img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+  .archive-card h3 { font-size: 15px !important; line-height: 1.1 !important; min-height: 34px !important; height: auto !important; }
+  .archive-carousel-ui { display: flex !important; align-items: center !important; gap: 12px !important; }
+  .archive-carousel-button { width: 42px !important; min-width: 42px !important; height: 42px !important; }
+  .movie-night { min-height: 0 !important; padding-top: 54px !important; padding-bottom: 55px !important; }
+  .movie-night-layout { display: grid !important; grid-template-columns: minmax(0,1fr) !important; gap: 28px !important; }
+  .movie-night-intro { min-width: 0 !important; }
+  .movie-night-title { font-size: clamp(54px, 15vw, 88px) !important; line-height: .85 !important; }
+  .movie-night-description { max-width: 34ch; font-size: 10px !important; line-height: 1.5 !important; }
+  .movie-night-settings { transform: none !important; min-width: 0 !important; width: 100% !important; }
+  .movie-night-filter { padding: 16px 0 !important; }
+  .movie-night-options, .movie-night-options-wide { display: flex !important; width: 100% !important; max-width: 100% !important; flex-wrap: wrap !important; gap: 6px !important; overflow: visible !important; }
+  .movie-night-option { min-height: 38px !important; padding: 9px 11px !important; font-size: 9px !important; }
+  .movie-night-check label { white-space: normal !important; align-items: flex-start !important; }
+  .decide-button { width: 100% !important; min-height: 76px !important; }
+  .ratings-header { display: grid !important; grid-template-columns: minmax(0,1fr) auto !important; gap: 18px 10px !important; align-items: end !important; }
+  .ratings-header > .section-marker { grid-column: 1 / -1 !important; }
+  .auth-button { max-width: 150px !important; min-height: 42px !important; padding: 9px !important; font-size: 8px !important; }
+  .ratings-controls { margin-top: 22px !important; }
+  .rating-filters { display: grid !important; grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 4px !important; }
+  .rating-filter { min-width: 0 !important; padding: 10px 3px !important; font-size: 7px !important; }
+  .ratings-section .ratings-list, #ratingsList { height: auto !important; max-height: 65svh !important; overflow-y: auto !important; }
+  #ratingsList .rating-card { display: grid !important; grid-template-columns: 24px minmax(0,1fr) auto !important; gap: 8px !important; padding: 14px 0 !important; }
+  #ratingsList .rating-card .rating-info { grid-column: 2 / -1 !important; display: flex !important; flex-wrap: wrap !important; gap: 8px 14px !important; font-size: 8px !important; }
+  #ratingsList .rating-card .rating-score, #ratingsList .rating-card .rating-average { font-size: 11px !important; }
+  .site-footer { padding-left: 18px !important; padding-right: 18px !important; }
+  .footer-bottom { gap: 10px !important; flex-wrap: wrap !important; font-size: 8px !important; }
+  .ad-archive-meta { grid-template-columns: repeat(3,minmax(0,1fr)) !important; }
+  .ad-archive-meta-item, .ad-archive-meta-item + .ad-archive-meta-item { padding: 11px 7px !important; border-right: 1px solid rgba(232,221,200,.1) !important; border-bottom: 0 !important; }
+  .ad-archive-meta-item small { font-size: 7px !important; }
+  .ad-archive-meta-item strong { font-size: 9px !important; }
+}
+@media (max-width: 380px) {
+  .archive-card { flex-basis: 48vw !important; width: 48vw !important; min-width: 48vw !important; }
+  .ad-archive-meta { grid-template-columns: 1fr !important; }
+  .ad-archive-meta-item, .ad-archive-meta-item + .ad-archive-meta-item { padding: 10px 0 !important; border-right: 0 !important; border-bottom: 1px solid rgba(232,221,200,.1) !important; }
+  .ad-archive-meta-item:last-child { border-bottom: 0 !important; }
+  .hero-topline .hero-category { display: none !important; }
+}
