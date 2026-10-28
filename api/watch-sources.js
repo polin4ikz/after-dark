@@ -29,6 +29,19 @@ function normalizeTitle(value) {
     .replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
+function hasRussianAudioHint(metadata, file) {
+  const values = [
+    metadata && metadata.language,
+    metadata && metadata.languages,
+    metadata && metadata.audio_language,
+    metadata && metadata.audio_languages,
+    file && file.language,
+    file && file.languages,
+    file && file.name
+  ].flat(Infinity).filter(value => typeof value === "string").join(" ").toLowerCase();
+  return /(^|[^a-z])(ru|rus|russian)([^a-z]|$)|русск/i.test(values);
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { headers: { accept: "application/json" } });
   if (!response.ok) throw new Error("UPSTREAM_UNAVAILABLE");
@@ -53,6 +66,7 @@ async function resolveCandidate(item) {
   const title = String(metadata.title || item.title || "").slice(0, 300);
   const year = String(metadata.year || item.year || "").slice(0, 4);
   const duration = parseDuration(playable.length || playable.runtime || playable.duration || metadata.runtime);
+  const russianAudioLikely = hasRussianAudioHint(metadata, playable);
   const wanted = normalizeTitle(item._wantedTitle);
   const actual = normalizeTitle(title);
   const requestedYear = String(item._wantedYear || "").slice(0, 4);
@@ -71,6 +85,8 @@ async function resolveCandidate(item) {
     embedUrl: "https://archive.org/embed/" + encodeURIComponent(item.identifier),
     directUrl: "https://archive.org/download/" + encodeURIComponent(item.identifier) + "/" + playable.name.split("/").map(encodeURIComponent).join("/"),
     format: String(playable.format || "").slice(0, 80),
+    russianAudioLikely,
+    audioLanguageNote: russianAudioLikely ? "Russian language metadata found; confirm the actual audio track during playback." : "Russian audio not confirmed by metadata.",
     confidence: exactTitle && (!requestedYear || !year || requestedYear === year) ? "high" : "review"
   };
 }
@@ -107,7 +123,7 @@ module.exports = async function handler(req, res) {
     const settled = await Promise.allSettled(candidates.map(resolveCandidate));
     const results = settled.filter(item => item.status === "fulfilled" && item.value)
       .map(item => item.value)
-      .sort((a, b) => (a.confidence === "high" ? 0 : 1) - (b.confidence === "high" ? 0 : 1));
+      .sort((a, b) => Number(b.russianAudioLikely) - Number(a.russianAudioLikely) || (a.confidence === "high" ? 0 : 1) - (b.confidence === "high" ? 0 : 1));
     return res.status(200).json({ results, checked: candidates.length });
   } catch (error) {
     console.error("Internet Archive source resolution failed", error);
@@ -118,3 +134,4 @@ module.exports = async function handler(req, res) {
 module.exports.parseDuration = parseDuration;
 module.exports.hasOpenLicense = hasOpenLicense;
 module.exports.normalizeTitle = normalizeTitle;
+module.exports.hasRussianAudioHint = hasRussianAudioHint;
