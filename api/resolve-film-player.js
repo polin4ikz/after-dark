@@ -50,6 +50,13 @@ function extractPlayerUrl(html, pageUrl) {
       const path = (host + u.pathname + u.search).toLowerCase();
       if (/ads?|banner|tracker|analytics|doubleclick|pixel|statistic/i.test(path)) return;
 
+      // Reject generic service manifests/config files that are not playable embeds.
+      // Some Rutube pages expose static.rtbcdn.ru/static/manifest.json in their HTML;
+      // treating it as a player makes After Dark report a false-positive source.
+      if (/\\.(?:json|xml|m3u8|mpd)(?:$|\\?)/i.test(pathname) &&
+          !/\\.(?:m3u8|mpd)$/i.test(pathname)) return;
+      if (host === "static.rtbcdn.ru" && /\\/static\\/manifest\\.json$/i.test(pathname)) return;
+
       // Do not mistake poster art, thumbnails, scripts, or other assets for an embed.
       // The word "player" can appear in image filenames (for example, ottstudioplayer.jpeg).
       if (/\.(?:avif|bmp|gif|jpe?g|png|svg|webp|ico|css|m?js|woff2?|ttf|otf|pdf)(?:$)/i.test(pathname)) return;
