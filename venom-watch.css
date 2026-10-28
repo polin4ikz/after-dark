@@ -82,3 +82,13 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .track-controls select{width:100%;min-height:42px;padding:8px 10px;border:1px solid rgba(232,221,200,.22);border-radius:3px;background:#191312;color:#f2e9dc;font:13px Arial,sans-serif}
 .track-controls select:disabled{opacity:.72}
 @media(max-width:520px){.track-controls{grid-template-columns:1fr;gap:14px}}
+
+
+/* AFTER DARK / PLAYER ACTIONS */
+.player-actions{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:12px 0 24px;padding:12px 0 18px;border-bottom:1px solid var(--line)}
+.player-actions button{flex:1 1 190px;min-height:46px;padding:12px 15px;border:1px solid var(--line);background:transparent;color:var(--milk);font:500 9px/1.4 "Geist Mono",monospace;letter-spacing:.08em;text-align:center;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.player-actions button:first-child{color:var(--muted)}
+.player-actions button[data-player-action="resume"]{background:var(--red);border-color:var(--red);color:var(--milk)}
+.player-actions button:hover{background:var(--milk);border-color:var(--milk);color:#171214}
+.player-actions button:disabled{opacity:.55;cursor:wait}
+@media(max-width:600px){.player-actions{display:grid;grid-template-columns:1fr}.player-actions button{min-height:44px;width:100%;font-size:9px}}
