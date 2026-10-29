@@ -1,0 +1,58 @@
+name: Player lab smoke test
+
+on:
+  push:
+    branches:
+      - fix/integrate-venom-into-watch-modal
+    paths:
+      - "player-lab.html"
+      - ".github/workflows/player-lab-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shaka-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --save-dev playwright
+          npx playwright install --with-deps chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/after-dark-http.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl --fail http://127.0.0.1:4173/player-lab.html >/dev/null && break
+            sleep 1
+          done
+      - name: Verify Shaka loads and demo stream initializes
+        run: node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage();
+          const errors = [];
+          page.on('pageerror', error => errors.push(error.message));
+          await page.goto('http://127.0.0.1:4173/player-lab.html', { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'ЗАГРУЗИТЬ ДЕМО SHAKA' }).click();
+          await page.waitForFunction(() => {
+            const status = document.querySelector('#status')?.textContent || '';
+            return status.includes('ПОТОК ЗАГРУЖЕН') || status.includes('НЕ УДАЛОСЬ') || status.includes('ОШИБКА SHAKA') || status.includes('SHAKA НЕ ЗАГРУЗИЛАСЬ');
+          }, { timeout: 60000 });
+          const status = await page.locator('#status').innerText();
+          const log = await page.locator('#log').innerText();
+          console.log('Player lab status:', status);
+          console.log('Diagnostics:', log);
+          if (!status.includes('ПОТОК ЗАГРУЖЕН')) throw new Error('Shaka demo did not initialize: ' + status);
+          if (errors.length) throw new Error('Browser errors: ' + errors.join('; '));
+          await browser.close();
+          NODE
