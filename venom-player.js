@@ -207,7 +207,8 @@
     else setStatus(form.closest("#adWatchPlayer"), tracks.some(track => track.lang || track.name) ? "РУССКАЯ ДОРОЖКА НЕ ЗАЯВЛЕНА В МЕТАДАННЫХ" : "ЯЗЫКИ ДОРОЖЕК НЕ УКАЗАНЫ ИСТОЧНИКОМ", false);
   }
   async function tryMattebox(modal, form, stage, source, requestToken) {
-    if (!["hls", "dash"].includes(source.kind) || form.dataset.disableMatteboxOnce === "1") return false;
+    if (!["hls", "dash"].includes(source.kind)) return false;
+    if (form.dataset.disableMatteboxOnce === "1") { delete form.dataset.disableMatteboxOnce; return false; }
     const video = document.createElement("video");
     video.controls = true;
     video.playsInline = true;
