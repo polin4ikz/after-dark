@@ -20,12 +20,13 @@ async function archiveSyncLoadShared(user){
       backdrop_path:row.backdrop_path||"",
       release_date:row.release_date||"",
       first_air_date:row.first_air_date||"",
-      type:row.type||"film",
+      type:(()=>{const raw=String(row.type||"film").toLowerCase();if(raw==="tv"||raw==="show")return"series";if(raw==="movie")return"film";return raw})(),
       vote_average:Number(row.vote_average||0),
       genre_ids:Array.isArray(row.genre_ids)?row.genre_ids:[],
       originCountries:Array.isArray(row.origin_countries)?row.origin_countries:[],
       watched:!!row.watched,
-      inWatchlist:row.in_watchlist!==false
+      inWatchlist:row.in_watchlist!==false,
+      updatedAt:row.updated_at||null
     }));
 
     window.archiveSyncStatus="loaded";
@@ -332,7 +333,7 @@ document.querySelector("#movieNightAdd")?.addEventListener("click",async e=>{
 window.afterDarkRatingsReady=new Promise((resolve,reject)=>{
   if(typeof window.openSupabaseRating==="function"){resolve();return}
   const script=document.createElement("script");
-  script.src="supabase-ratings.js?v=20261021-ratings-fail-state1";
+  script.src="supabase-ratings.js?v=20261028-rated-only1";
   script.async=false;
   script.onload=()=>{if(typeof window.openSupabaseRating==="function")resolve();else reject(new Error("RATINGS MODULE LOADED WITHOUT OPEN FUNCTION"))};
   script.onerror=()=>reject(new Error("RATINGS MODULE FAILED TO LOAD"));

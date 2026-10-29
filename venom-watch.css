@@ -1,0 +1,152 @@
+:root{color-scheme:dark;--milk:#e8ddc8;--muted:rgba(232,221,200,.58);--line:rgba(232,221,200,.18);--red:#791522;--bg:#100e0d}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0,rgba(121,21,34,.17),transparent 52%),var(--bg);color:var(--milk);font-family:Arial,sans-serif}
+a{color:inherit;text-decoration:none}
+.player-page{width:min(1440px,100%);min-height:100vh;margin:0 auto;padding:clamp(18px,4vw,56px);display:flex;flex-direction:column}
+.player-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding-bottom:20px;border-bottom:1px solid var(--line);font:10px "Geist Mono",monospace;letter-spacing:.12em}
+.wordmark{font-size:15px;letter-spacing:.04em}.wordmark em{font-family:"Instrument Serif",serif;font-weight:400;font-size:22px}
+.player-header>span{text-align:center;color:var(--muted)}
+.back-link{justify-self:end;color:var(--muted)}.back-link:hover{color:var(--milk)}
+.player-content{width:100%;max-width:1120px;margin:clamp(32px,7vh,78px) auto 48px}
+.eyebrow{display:flex;justify-content:space-between;gap:20px;font:10px "Geist Mono",monospace;letter-spacing:.14em;color:var(--muted)}
+h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spacing:-.06em;line-height:.95;overflow-wrap:anywhere}
+.media-meta{min-height:18px;color:var(--muted);font:10px "Geist Mono",monospace;letter-spacing:.08em}
+.player-status{min-height:20px;margin:22px 0 10px;color:var(--muted);font:10px "Geist Mono",monospace;letter-spacing:.07em}.player-status.is-error{color:#f0a4a4}
+.player-stage{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:16/9;max-height:72vh;overflow:hidden;background:#050505;border:1px solid var(--line)}
+.player-stage:empty{display:grid}.player-stage>div{width:100%;height:100%}.player-stage iframe,.player-stage video{width:100%;height:100%;border:0}
+.player-stage video{display:block;background:#000;object-fit:contain}
+.player-placeholder{display:grid;place-content:center;text-align:center;color:rgba(232,221,200,.18);font:clamp(20px,4vw,42px) "Geist Mono",monospace;letter-spacing:.15em}.player-placeholder em{font-family:"Instrument Serif",serif;font-size:1.5em;font-weight:400}
+.native-player-tools{margin-top:14px;padding:18px;background:rgba(232,221,200,.025);border:1px solid var(--line)}
+.stream-form label,.track-controls label{display:block;margin-bottom:8px;color:var(--muted);font:10px "Geist Mono",monospace;letter-spacing:.1em}
+.stream-form__row{display:flex;gap:8px}
+.stream-form input,.track-controls select{min-width:0;width:100%;padding:12px;background:#171311;border:1px solid var(--line);border-radius:0;color:var(--milk);font:13px Arial,sans-serif}
+.stream-form button{padding:0 18px;border:1px solid var(--line);background:var(--red);color:var(--milk);font:10px "Geist Mono",monospace;letter-spacing:.08em;cursor:pointer}
+.track-controls{display:grid;grid-template-columns:90px minmax(0,1fr) 90px minmax(0,1fr);align-items:center;gap:10px;margin-top:14px}
+.track-controls label{margin:0}.track-controls select:disabled{opacity:.65}
+.source-discovery{margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}
+.source-heading{margin-bottom:12px;color:var(--muted);font:10px "Geist Mono",monospace;letter-spacing:.12em}
+.source-results{display:grid;gap:8px}
+.source-result{display:flex;flex-direction:column;align-items:flex-start;gap:7px;width:100%;padding:15px 16px;background:rgba(232,221,200,.035);border:1px solid var(--line);color:var(--milk);text-align:left;cursor:pointer;font:inherit}
+.source-result:hover,.source-result:focus-visible{border-color:rgba(232,221,200,.62);background:rgba(232,221,200,.07);outline:none}
+.source-result__title{font-size:15px;line-height:1.35}.source-result__meta{color:var(--muted);font:9px "Geist Mono",monospace;letter-spacing:.06em}
+.source-result--external{display:inline-flex;width:auto;max-width:100%;margin-top:10px;color:var(--milk);background:var(--red);font:10px "Geist Mono",monospace;letter-spacing:.08em}
+.source-note{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.55}.source-attribution{margin:18px 0 0;color:rgba(232,221,200,.42);font-size:10px;line-height:1.5}.source-attribution a{text-decoration:underline;text-underline-offset:3px}
+.player-footer{margin-top:auto;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:rgba(232,221,200,.36);font:9px "Geist Mono",monospace;letter-spacing:.1em}
+@media(max-width:650px){.player-page{padding:18px}.player-header{grid-template-columns:1fr auto}.player-header>span{display:none}.player-stage{aspect-ratio:16/10;max-height:none}.player-footer{font-size:8px;flex-wrap:wrap}.source-result{padding:16px}.source-result__title{font-size:16px}.stream-form__row{flex-direction:column}.stream-form button{min-height:42px}.track-controls{grid-template-columns:1fr;gap:8px}.track-controls label:not(:first-child){margin-top:8px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Source discovery: keep primary providers clear and tuck search fallbacks away. */
+.source-discovery{margin-top:30px}
+.source-heading{margin-bottom:14px}
+.source-results{gap:10px}
+.source-result--external{display:flex;align-items:center;justify-content:space-between;width:100%;margin:0;padding:15px 16px;background:rgba(121,21,34,.18);border:1px solid rgba(232,221,200,.16);font:10px "Geist Mono",monospace;letter-spacing:.055em;line-height:1.5}
+.source-result--external:hover,.source-result--external:focus-visible{border-color:rgba(232,221,200,.5);background:rgba(121,21,34,.32)}
+.source-search-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;padding:14px 16px;background:transparent;border:1px solid var(--line);color:var(--muted);font:10px "Geist Mono",monospace;letter-spacing:.08em;text-align:left;cursor:pointer}
+.source-search-toggle:hover,.source-search-toggle:focus-visible{color:var(--milk);border-color:rgba(232,221,200,.5);outline:none}
+.source-search-panel{display:grid;gap:7px;margin-top:8px;padding:10px;border:1px solid rgba(232,221,200,.09);background:rgba(0,0,0,.14)}
+.source-search-panel[hidden]{display:none}
+.source-search-panel .source-result--external{padding:12px 13px;background:rgba(232,221,200,.025);font-size:9px}
+.source-note{max-width:760px}
+@media(max-width:650px){.source-result--external{padding:15px 12px;font-size:9px;overflow-wrap:anywhere}.source-search-toggle{min-height:46px}.source-search-panel{padding:7px}}
+
+.watch-completion-actions{display:grid;gap:9px;margin-top:14px;padding:18px;border:1px solid var(--line);background:rgba(121,21,34,.12)}
+.watch-completion-actions p{margin:0 0 4px;color:var(--milk);font:11px/1.5 "Geist Mono",monospace;letter-spacing:.04em}
+.watch-completion-actions .source-result--external{margin:0}
+
+/* Resume choice + refined manual source controls */
+.stream-status{margin:16px 0 0;padding:12px 15px;border:1px solid rgba(232,221,200,.11);background:rgba(232,221,200,.025);font-size:12px;line-height:1.5}
+.stream-form{margin-top:18px;padding:18px;border:1px solid rgba(232,221,200,.14);background:linear-gradient(135deg,rgba(121,21,34,.13),rgba(232,221,200,.025));}
+.stream-form label{margin-bottom:10px;font:10px "Geist Mono",monospace;letter-spacing:.12em;color:var(--muted)}
+.stream-form__row{display:flex;gap:10px;align-items:stretch}
+.stream-form input{min-height:48px;padding:0 15px;border-radius:5px;border-color:rgba(232,221,200,.2);background:rgba(5,5,5,.72);outline:none;transition:border-color .18s,box-shadow .18s}
+.stream-form input:focus{border-color:rgba(174,49,67,.9);box-shadow:0 0 0 3px rgba(121,21,34,.18)}
+.stream-form button{min-height:48px;padding:0 20px;border-radius:5px;border-color:rgba(173,57,73,.7);background:linear-gradient(135deg,#842032,#5f1420);font-size:10px;white-space:nowrap;transition:filter .18s,transform .18s}
+.stream-form button:hover{filter:brightness(1.15)}
+.resume-dialog-backdrop{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:22px;background:rgba(5,4,4,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.resume-dialog{width:min(470px,100%);padding:clamp(24px,5vw,38px);border:1px solid rgba(232,221,200,.22);border-radius:8px;background:radial-gradient(ellipse at top left,rgba(121,21,34,.28),transparent 70%),#151110;box-shadow:0 24px 90px rgba(0,0,0,.6)}
+.resume-dialog__eyebrow{margin:0 0 14px;color:#c48a91;font:10px "Geist Mono",monospace;letter-spacing:.15em}
+.resume-dialog h2{margin:0;font-size:clamp(23px,4vw,30px);font-weight:500;letter-spacing:-.035em;line-height:1.15;color:#f2e9dc}
+.resume-dialog__description{margin:12px 0 24px;color:rgba(232,221,200,.66);font-size:14px;line-height:1.55}
+.resume-dialog__actions{display:flex;gap:10px;flex-wrap:wrap}
+.resume-dialog__actions button{min-height:46px;padding:0 18px;border:1px solid rgba(232,221,200,.22);border-radius:5px;font:12px Arial,sans-serif;cursor:pointer;transition:background .18s,border-color .18s}
+.resume-dialog__continue{background:#e8ddc8;color:#17110f;border-color:#e8ddc8!important;font-weight:700}
+.resume-dialog__continue:hover{background:#fff4e3}
+.resume-dialog__restart{background:rgba(232,221,200,.045);color:var(--milk)}
+.resume-dialog__restart:hover{background:rgba(232,221,200,.1);border-color:rgba(232,221,200,.5)}
+@media(max-width:520px){.stream-form{padding:14px}.stream-form__row{flex-direction:column}.stream-form button{min-height:46px}.resume-dialog__actions{flex-direction:column}.resume-dialog__actions button{width:100%}}
+
+.track-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0;padding:16px;border:1px solid rgba(232,221,200,.14);background:rgba(232,221,200,.025)}
+.track-controls[hidden]{display:none}
+.track-controls label{display:flex;flex-direction:column;gap:8px;color:rgba(232,221,200,.65);font:10px "Geist Mono",monospace;letter-spacing:.1em}
+.track-controls select{width:100%;min-height:42px;padding:8px 10px;border:1px solid rgba(232,221,200,.22);border-radius:3px;background:#191312;color:#f2e9dc;font:13px Arial,sans-serif}
+.track-controls select:disabled{opacity:.72}
+@media(max-width:520px){.track-controls{grid-template-columns:1fr;gap:14px}}
+
+
+/* AFTER DARK / PLAYER ACTIONS */
+.player-actions{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:12px 0 24px;padding:12px 0 18px;border-bottom:1px solid var(--line)}
+.player-actions button{flex:1 1 190px;min-height:46px;padding:12px 15px;border:1px solid var(--line);background:transparent;color:var(--milk);font:500 9px/1.4 "Geist Mono",monospace;letter-spacing:.08em;text-align:center;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.player-actions button:first-child{color:var(--muted)}
+.player-actions button[data-player-action="resume"]{background:var(--red);border-color:var(--red);color:var(--milk)}
+.player-actions button:hover{background:var(--milk);border-color:var(--milk);color:#171214}
+.player-actions button:disabled{opacity:.55;cursor:wait}
+@media(max-width:600px){.player-actions{display:grid;grid-template-columns:1fr}.player-actions button{min-height:44px;width:100%;font-size:9px}}
+
+
+/* AFTER DARK cinematic loading animation — orbiting film reels in the house palette. */
+.player-stage{isolation:isolate}
+.cinema-loader{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(121,21,34,.3),transparent 44%),rgba(8,7,7,.97);color:var(--milk);transition:opacity .38s ease,visibility .38s ease}
+.cinema-loader::before,.cinema-loader::after{position:absolute;content:"";width:min(60vw,560px);aspect-ratio:1;border:1px solid rgba(232,221,200,.055);border-radius:50%;pointer-events:none}
+.cinema-loader::after{width:min(42vw,390px);border-style:dashed;border-color:rgba(121,21,34,.25);animation:cinema-loader-drift 28s linear infinite reverse}
+.cinema-loader.is-done{opacity:0;visibility:hidden;pointer-events:none}
+.cinema-loader__art{position:relative;display:grid;place-items:center;width:112px;height:112px;margin-bottom:6px}
+.cinema-loader__orbit{position:absolute;inset:0;border:1px solid rgba(232,221,200,.18);border-radius:50%;animation:cinema-loader-spin 4s linear infinite}
+.cinema-loader__orbit--outer{border-top-color:#c06b78;border-right-color:rgba(192,107,120,.35);box-shadow:0 0 26px rgba(121,21,34,.16)}
+.cinema-loader__orbit--inner{inset:13px;border-style:dashed;border-color:rgba(232,221,200,.36);animation-duration:7s;animation-direction:reverse}
+.cinema-loader__reel{position:relative;display:grid;place-items:center;width:55px;height:55px;border:1px solid rgba(232,221,200,.55);border-radius:50%;background:radial-gradient(circle at 35% 25%,rgba(121,21,34,.8),#17100f 72%);box-shadow:0 0 32px rgba(121,21,34,.28),inset 0 0 0 5px rgba(232,221,200,.035);font:14px "Geist Mono",monospace;letter-spacing:-.08em;animation:cinema-loader-pulse 2.4s ease-in-out infinite}
+.cinema-loader__reel::before,.cinema-loader__reel::after{position:absolute;content:"";width:5px;height:5px;border:1px solid rgba(232,221,200,.45);border-radius:50%}
+.cinema-loader__reel::before{top:7px;left:9px}.cinema-loader__reel::after{right:8px;bottom:8px}
+.cinema-loader__spark{position:absolute;width:4px;height:4px;border-radius:50%;background:#e8ddc8;box-shadow:0 0 12px rgba(232,221,200,.8)}
+.cinema-loader__spark--one{top:8px;right:19px;animation:cinema-loader-twinkle 1.8s ease-in-out infinite}
+.cinema-loader__spark--two{bottom:13px;left:14px;width:3px;height:3px;animation:cinema-loader-twinkle 1.8s ease-in-out .8s infinite}
+.cinema-loader__brand{margin:0;font:clamp(15px,2vw,20px) "Geist Mono",monospace;letter-spacing:.19em}
+.cinema-loader__brand em{font-family:"Instrument Serif",serif;font-weight:400;font-size:1.45em;letter-spacing:.02em}
+.cinema-loader__message{margin:3px 0 0;color:rgba(232,221,200,.82);font:9px "Geist Mono",monospace;letter-spacing:.19em}
+.cinema-loader__provider{margin-top:2px;color:rgba(232,221,200,.42);font:8px "Geist Mono",monospace;letter-spacing:.1em}
+.cinema-loader__progress{width:clamp(100px,18vw,170px);height:1px;margin-top:9px;overflow:hidden;background:rgba(232,221,200,.12)}
+.cinema-loader__progress span{display:block;width:35%;height:100%;background:linear-gradient(90deg,transparent,#b74b5c,#e8ddc8,transparent);animation:cinema-loader-progress 1.65s ease-in-out infinite}
+@keyframes cinema-loader-spin{to{transform:rotate(360deg)}}
+@keyframes cinema-loader-drift{to{transform:rotate(360deg)}}
+@keyframes cinema-loader-pulse{0%,100%{transform:scale(.96);box-shadow:0 0 24px rgba(121,21,34,.2),inset 0 0 0 5px rgba(232,221,200,.035)}50%{transform:scale(1.04);box-shadow:0 0 38px rgba(121,21,34,.42),inset 0 0 0 5px rgba(232,221,200,.07)}}
+@keyframes cinema-loader-twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.35)}}
+@keyframes cinema-loader-progress{0%{transform:translateX(-120%)}100%{transform:translateX(340%)}}
+@media(prefers-reduced-motion:reduce){.cinema-loader__orbit,.cinema-loader__reel,.cinema-loader__spark,.cinema-loader__progress span,.cinema-loader::after{animation:none!important}.cinema-loader__progress span{width:70%;margin-left:15%}}
+
+/* After Dark cinematic loading screen — eclipse, not a monogram */
+.cinema-loader{isolation:isolate;gap:clamp(7px,1.4vw,13px);background:radial-gradient(ellipse at 50% 52%,rgba(99,14,31,.24),transparent 35%),radial-gradient(ellipse at 16% 82%,rgba(78,9,22,.2),transparent 34%),linear-gradient(115deg,#080606 0%,#110809 48%,#080606 100%);min-height:0}
+.cinema-loader::before{width:min(76%,650px);border-color:rgba(232,221,200,.045);box-shadow:0 0 100px rgba(90,10,25,.12),inset 0 0 80px rgba(90,10,25,.06)}
+.cinema-loader::after{width:min(60%,500px);border-style:solid;border-color:rgba(155,40,57,.11);filter:blur(.2px)}
+.cinema-loader:focus{outline:none}
+.cinema-loader__masthead{position:absolute;top:clamp(14px,3.2vw,34px);left:clamp(14px,3.5vw,38px);display:flex;flex-direction:column;gap:5px;text-align:left;font:clamp(8px,1vw,10px) "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.8)}
+.cinema-loader__masthead small{font-size:7px;letter-spacing:.3em;color:rgba(232,221,200,.45)}
+.cinema-loader__edition{position:absolute;top:clamp(18px,3.5vw,36px);right:clamp(14px,3.5vw,38px);font:7px "Geist Mono",monospace;letter-spacing:.32em;color:rgba(232,221,200,.45)}
+.cinema-loader__art{width:clamp(150px,25%,250px);height:auto;aspect-ratio:1;margin:0 0 8px;filter:drop-shadow(0 0 35px rgba(120,16,39,.2))}
+.cinema-loader__orbit{inset:7%;border-color:rgba(232,221,200,.22);border-top-color:#b85a6a;border-right-color:rgba(184,90,106,.4);box-shadow:0 0 22px rgba(121,21,34,.16)}
+.cinema-loader__orbit--inner{inset:19%;border-style:solid;border-color:rgba(184,90,106,.22);border-left-color:rgba(232,221,200,.38);animation-duration:11s}
+.cinema-loader__orbit--tilt{inset:14% -4%;border-color:rgba(232,221,200,.16);border-top-color:rgba(232,221,200,.42);transform:rotate(-24deg) scaleY(.42);animation:cinema-loader-spin 19s linear infinite reverse}
+.cinema-loader__planet{position:absolute;width:31%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(122,31,49,.38),rgba(14,8,10,.92) 58%,#050404 76%);box-shadow:inset -8px -2px 16px rgba(0,0,0,.75),inset 2px 0 9px rgba(191,75,95,.22),0 0 28px rgba(116,15,36,.19);border:1px solid rgba(232,221,200,.17);animation:cinema-loader-pulse 5s ease-in-out infinite}
+.cinema-loader__planet::after{content:"";position:absolute;inset:8% -13%;border-radius:50%;border:1px solid rgba(191,75,95,.2);transform:rotate(-30deg) scaleY(.35)}
+.cinema-loader__spark--one{top:18%;right:17%;width:4px;height:4px;background:#f0c4bd;box-shadow:0 0 15px 3px rgba(230,133,143,.6)}
+.cinema-loader__spark--two{bottom:23%;left:13%;background:#d18a91;box-shadow:0 0 12px rgba(230,133,143,.65)}
+.cinema-loader__message{margin-top:0;font:clamp(8px,1vw,10px) "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.78)}
+.cinema-loader__provider{font:7px "Geist Mono",monospace;letter-spacing:.2em;color:rgba(232,221,200,.38)}
+.cinema-loader__progress{width:clamp(110px,32%,260px);height:2px;margin-top:5px;background:rgba(232,221,200,.1)}
+.cinema-loader__progress span{width:28%;background:linear-gradient(90deg,transparent,#a53b51,#e8b7b4,transparent);animation:cinema-loader-progress 2.1s cubic-bezier(.45,0,.55,1) infinite}
+.cinema-loader__edge{position:absolute;right:clamp(14px,3.5vw,38px);bottom:clamp(14px,3.5vw,30px);writing-mode:vertical-rl;font:6px "Geist Mono",monospace;letter-spacing:.28em;color:rgba(232,221,200,.28)}
+@media(max-width:520px){.cinema-loader__art{width:clamp(120px,42%,190px)}.cinema-loader__masthead{top:12px;left:12px}.cinema-loader__edition{top:15px;right:12px}.cinema-loader__edge{display:none}.cinema-loader__message{letter-spacing:.16em}}
+@media(prefers-reduced-motion:reduce){.cinema-loader__planet{animation:none!important}}
+
+
+/* Visible audio-source state for the active WATCH page. */
+.audio-source-state{margin:8px 0 0;padding:10px 12px;border:1px solid rgba(232,221,200,.18);background:rgba(121,21,34,.12);color:rgba(232,221,200,.76);font:9px/1.5 "Geist Mono",monospace;letter-spacing:.07em;text-transform:uppercase}.audio-source-state[hidden]{display:none!important}.audio-source-state.is-russian{border-color:rgba(163,177,162,.55);color:#cbd8c8;background:rgba(163,177,162,.08)}.audio-source-state.is-error{border-color:rgba(220,90,100,.5);color:#ffb7bd}
