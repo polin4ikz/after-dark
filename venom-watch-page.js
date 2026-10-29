@@ -981,12 +981,22 @@
     const episode = Math.max(1, Math.floor(Number(selectedEpisode ?? previousProgress?.episode_number) || 1));
     restartCurrentEpisode = false;
 
-    // Start with Stellar: it is the provider the user has confirmed works.
-    // Do not flash a known-bad VidScene iframe before the working player.
+    // Try a provider that explicitly advertises multi-language audio first.
+    // NHD's embed includes its own audio/subtitle menus; its public docs do not
+    // expose parent-page playback events, so we must not claim synced progress.
     const candidates = [];
+    if (!film._forceStellar) candidates.push({
+      name: "NHD",
+      origin: "https://nhdapi.com",
+      url: isSeries
+        ? "https://nhdapi.com/tv/" + id + "/" + season + "/" + episode
+        : "https://nhdapi.com/movie/" + id,
+      readyTypes: [],
+      readyEvents: [],
+      errorEvents: []
+    });
 
-    // Keep Stellar as fallback. Its documented locale localizes the UI only;
-    // it cannot force Russian audio if the selected stream does not contain it.
+    // Keep the currently working Stellar embed as a fallback.
     const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
     candidates.push({
       name: "STELLAR",
@@ -1014,8 +1024,8 @@
       attachFrameProgress(frame, film, provider.name, provider.origin);
       status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
       streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
-      streamStatus(provider.name === "STELLAR"
-        ? "Видео встроено прямо в After Dark. Важно: мы не можем добавить дорожку, которой нет в потоке Stellar; если русской озвучки нет в меню плеера, для этого тайтла нужен другой источник."
+      streamStatus(provider.name === "NHD"
+        ? "ПРОБУЮ NHD: этот источник заявляет переключение озвучек и субтитры. Проверь меню Audio внутри плеера; наличие русской дорожки зависит от конкретного фильма."
         : "Источник не подтвердил готовность видео; автоматически проверяю резервный источник.");
 
       const outcome = await new Promise(resolve => {
@@ -1045,16 +1055,34 @@
         const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 7500 : 9000);
         window.addEventListener("message", onMessage);
         frame.addEventListener("error", () => finish("failed"), { once: true });
+        // NHD documents no postMessage readiness event. The iframe load only
+        // confirms its page loaded, not that the requested video is playable.
+        if (provider.name === "NHD") frame.addEventListener("load", () => finish("loaded"), { once: true });
       });
 
       if (outcome === "ready") {
         loader.classList.add("is-done");
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
-        streamStatus(provider.name === "STELLAR"
-          ? "Плеер встроен в After Dark, но язык аудио зависит от самого видеопотока. Если русской дорожки нет в меню, этот источник её не предоставляет."
-          : "Источник готов. Возможность сохранять позицию и менять дорожки зависит от API этого плеера.");
-        addNote("Автоматически выбран плеер: " + provider.name + ".");
+        streamStatus(provider.name === "NHD"
+          ? "NHD загружен. Открой настройки плеера и проверь Audio/озвучку: русский будет доступен только если источник нашёл такую дорожку. У NHD нет документированной синхронизации прогресса с After Dark."
+          : "Плеер Stellar запущен. Его язык интерфейса не задаёт язык аудио; дорожки определяются самим потоком.");
+        addNote(provider.name === "NHD"
+          ? "Пробный источник NHD: заявлены несколько озвучек и субтитры, но доступность русского и воспроизведение этого тайтла нужно проверить вручную."
+          : "Резервный плеер Stellar.");
+        if (provider.name === "NHD") {
+          const switchButton = document.createElement("button");
+          switchButton.type = "button";
+          switchButton.className = "source-result";
+          switchButton.textContent = "НЕ РАБОТАЕТ? ОТКРЫТЬ В STELLAR";
+          switchButton.addEventListener("click", () => {
+            const stageNow = $("#playerStage");
+            resetStreamEngines();
+            stageNow.replaceChildren();
+            void tryExternalPlayerFallback({ ...film, _forceStellar: true });
+          });
+          $("#sourceResults").prepend(switchButton);
+        }
         return true;
       }
       loader.classList.add("is-done");
