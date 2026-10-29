@@ -459,7 +459,7 @@
       try { matteboxInstance.tracks.select(tracks[russianIndex].id); audioPreferenceApplied = true; preferredRussianAudioSelected = true; } catch (_) {}
     }
     const active = matteboxInstance.tracks.active("audio");
-    const options = tracks.map(track => ({ id: track.id, label: [track.lang || "", track.name || "", track.channels ? track.channels + " каналов" : ""].filter(Boolean).join(" · ") || "Аудио" }));
+    const options = tracks.map((track, index) => ({ id: index, label: [track.lang || "", track.name || "", track.channels ? track.channels + " каналов" : ""].filter(Boolean).join(" · ") || "Аудио" }));
     setOptions($("#audioTrack"), options, Math.max(0, tracks.findIndex(track => active && String(track.id) === String(active.id))), "В потоке нет аудиодорожек");
     $("#trackControls").hidden = tracks.length < 2;
     streamStatus(audioTrackStatus(tracks, preferredRussianAudioSelected, tracks.length));
@@ -483,6 +483,16 @@
       status("MATTEBOX · " + kind.toUpperCase() + " ПОДКЛЮЧЁН");
       streamStatus("Проверяю языки аудиодорожек. Русская озвучка выбирается автоматически, только если источник объявляет её в потоке.");
       window.setTimeout(() => { if (matteboxInstance === engine) matteboxTracksChanged(); }, 1800);
+      window.setTimeout(() => {
+        if (matteboxInstance !== engine) return;
+        if (video.readyState === 0 && !(engine.tracks?.available || []).length) {
+          try { engine.unload(); engine.detach(); } catch (_) {}
+          matteboxInstance = null;
+          matteboxFallbackUrl = url.href;
+          streamStatus("Поток не ответил вовремя. Возвращаюсь к стандартному плееру.", true);
+          openDirectStream(url.href);
+        }
+      }, 12000);
       return true;
     } catch (_) {
       if (matteboxInstance) { try { matteboxInstance.unload(); matteboxInstance.detach(); } catch (_) {} matteboxInstance = null; }
@@ -686,6 +696,20 @@
 
     const stage = $("#playerStage");
     if (!stage) return false;
+    if (new URLSearchParams(window.location.search).get("mattebox") === "1" && (kind === "hls" || kind === "dash")) {
+      resetStreamEngines();
+      stage.replaceChildren();
+      const video = document.createElement("video");
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.setAttribute("aria-label", "AFTER DARK video player");
+      stage.appendChild(video);
+      activeVideo = video;
+      attachNativeProgress(video, currentFilm, "MATTEBOX");
+      void tryMatteboxDirectStream(url, kind, video);
+      return true;
+    }
     resetStreamEngines();
     stage.replaceChildren();
     const mount = document.createElement("div");
