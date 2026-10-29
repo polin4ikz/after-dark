@@ -1262,8 +1262,7 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
-    if (isSeries) initEpisodePicker(film);
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); initEpisodePicker(film); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
