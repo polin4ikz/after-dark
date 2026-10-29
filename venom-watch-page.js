@@ -307,6 +307,10 @@
       try { venomPlayerInstance.destroy?.(); } catch (_) {}
       venomPlayerInstance = null;
     }
+    if (matteboxInstance) {
+      try { matteboxInstance.unload(); matteboxInstance.detach(); } catch (_) {}
+      matteboxInstance = null;
+    }
     if (hls) { hls.destroy(); hls = null; }
     if (dash) { try { dash.reset(); } catch (_) {} dash = null; }
     activeVideo = null;
@@ -430,6 +434,64 @@
       : sourceLabel + " открыт нативным плеером. Браузер не передал After Dark список аудиодорожек — это не доказывает отсутствие русского звука. Проверь меню самого плеера.");
   }
 
+  const MATTEBOX_CDN = "https://cdn.jsdelivr.net/npm/mattebox@0.15.0/dist/cdn/mattebox.min.js";
+  let matteboxScriptPromise = null;
+  let matteboxInstance = null;
+  let matteboxFallbackUrl = "";
+  function loadMatteboxEngine() {
+    if (window.mattebox && typeof window.mattebox.preset === "function") return Promise.resolve(window.mattebox);
+    if (matteboxScriptPromise) return matteboxScriptPromise;
+    matteboxScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = MATTEBOX_CDN;
+      script.async = true;
+      script.onload = () => window.mattebox && typeof window.mattebox.preset === "function" ? resolve(window.mattebox) : reject(new Error("Mattebox загрузился без API."));
+      script.onerror = () => reject(new Error("Не удалось загрузить Mattebox CDN."));
+      document.head.appendChild(script);
+    }).catch(error => { matteboxScriptPromise = null; throw error; });
+    return matteboxScriptPromise;
+  }
+  function matteboxTracksChanged() {
+    if (!matteboxInstance) return;
+    const tracks = (matteboxInstance.tracks?.available || []).filter(track => track.contentType === "audio" && matteboxInstance.tracks.selectable(track.id));
+    const russianIndex = findRussianAudioTrackIndex(tracks);
+    if (!audioPreferenceApplied && russianIndex >= 0) {
+      try { matteboxInstance.tracks.select(tracks[russianIndex].id); audioPreferenceApplied = true; preferredRussianAudioSelected = true; } catch (_) {}
+    }
+    const active = matteboxInstance.tracks.active("audio");
+    const options = tracks.map(track => ({ id: track.id, label: [track.lang || "", track.name || "", track.channels ? track.channels + " каналов" : ""].filter(Boolean).join(" · ") || "Аудио" }));
+    setOptions($("#audioTrack"), options, Math.max(0, tracks.findIndex(track => active && String(track.id) === String(active.id))), "В потоке нет аудиодорожек");
+    $("#trackControls").hidden = tracks.length < 2;
+    streamStatus(audioTrackStatus(tracks, preferredRussianAudioSelected, tracks.length));
+  }
+  async function tryMatteboxDirectStream(url, kind, video) {
+    try {
+      await loadMatteboxEngine();
+      const engine = window.mattebox.preset();
+      matteboxInstance = engine;
+      engine.on("tracks:changed", matteboxTracksChanged);
+      engine.on("tracks:selected", matteboxTracksChanged);
+      engine.on("error", () => {
+        if (matteboxInstance !== engine) return;
+        matteboxInstance = null;
+        try { engine.unload(); engine.detach(); } catch (_) {}
+        matteboxFallbackUrl = url.href;
+        openDirectStream(url.href);
+      });
+      await engine.attach(video);
+      engine.load(url.href);
+      status("MATTEBOX · " + kind.toUpperCase() + " ПОДКЛЮЧЁН");
+      streamStatus("Проверяю языки аудиодорожек. Русская озвучка выбирается автоматически, только если источник объявляет её в потоке.");
+      window.setTimeout(() => { if (matteboxInstance === engine) matteboxTracksChanged(); }, 1800);
+      return true;
+    } catch (_) {
+      if (matteboxInstance) { try { matteboxInstance.unload(); matteboxInstance.detach(); } catch (_) {} matteboxInstance = null; }
+      matteboxFallbackUrl = url.href;
+      openDirectStream(url.href);
+      return true;
+    }
+  }
+
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
     let url;
     try { url = new URL(extractSubmittedUrl(rawUrl)); } catch (error) {
@@ -489,6 +551,23 @@
       return;
     }
     const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
+    const matteboxEnabled = new URLSearchParams(window.location.search).get("mattebox") === "1";
+    if (matteboxEnabled && matteboxFallbackUrl !== url.href && (kind === "hls" || kind === "dash")) {
+      resetStreamEngines();
+      const matteboxStage = $("#playerStage");
+      matteboxStage.replaceChildren();
+      const matteboxVideo = document.createElement("video");
+      matteboxVideo.controls = true;
+      matteboxVideo.playsInline = true;
+      matteboxVideo.preload = "metadata";
+      matteboxVideo.setAttribute("aria-label", "AFTER DARK video player");
+      matteboxStage.appendChild(matteboxVideo);
+      activeVideo = matteboxVideo;
+      attachNativeProgress(matteboxVideo, currentFilm, "MATTEBOX");
+      void tryMatteboxDirectStream(url, kind, matteboxVideo);
+      return;
+    }
+    if (matteboxFallbackUrl === url.href) matteboxFallbackUrl = "";
     if (kind === "unknown") {
       // Do not put an ordinary film webpage inside the video viewport.
       if (/^(?:www\.)?(?:google\.[^/]+|yandex\.[^/]+|bing\.com|duckduckgo\.com)$/i.test(host)) {
