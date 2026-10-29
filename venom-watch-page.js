@@ -221,8 +221,34 @@
   }
   function streamStatus(message, error) {
     const el = $("#streamStatus");
+    if (!el) return;
     el.textContent = message;
     el.classList.toggle("is-error", Boolean(error));
+    const stage = $("#playerStage");
+    if (stage) {
+      let indicator = $("#audioSourceState");
+      if (!indicator) {
+        indicator = document.createElement("p");
+        indicator.id = "audioSourceState";
+        indicator.className = "audio-source-state";
+        indicator.setAttribute("role", "status");
+        indicator.setAttribute("aria-live", "polite");
+        stage.insertAdjacentElement("afterend", indicator);
+      }
+      const text = String(message || "");
+      const isEmbedded = /Stellar|встроенн|iframe|сторонн/i.test(text);
+      const isRussian = /выбрана русская озвучка|русская дорожка выбрана/i.test(text);
+      indicator.textContent = isRussian
+        ? "ЗВУК · РУССКАЯ ДОРОЖКА ВЫБРАНА"
+        : isEmbedded
+          ? "ЗВУК · УПРАВЛЯЕТСЯ ВНЕШНИМ ПЛЕЕРОМ"
+          : /дорожк|аудио|озвучк|поток/i.test(text)
+            ? "ЗВУК · " + text.toLocaleUpperCase("ru-RU")
+            : "";
+      indicator.hidden = !indicator.textContent;
+      indicator.classList.toggle("is-error", Boolean(error));
+      indicator.classList.toggle("is-russian", isRussian);
+    }
   }
   function addNote(text) {
     const note = document.createElement("p");
