@@ -352,6 +352,8 @@
       try {
         const usedMattebox = await tryMattebox(modal, form, stage, source, requestToken);
         if (usedMattebox) return;
+        // Mattebox may have mounted a temporary video before failing; restore the Venom mount.
+        stage.replaceChildren(container);
         const VenomPlayer = await loadPlayer();
         if (!modal.classList.contains("is-open") || !container.isConnected || modal.dataset.venomRequestToken !== requestToken) return;
         const savedProgress = readProgress(key);
