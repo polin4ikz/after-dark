@@ -1137,7 +1137,14 @@
         selectedSeason=Number(seasonSelect.value); selectedEpisode=Number(episodeSelect.value);
         if (!(selectedSeason>0&&selectedEpisode>0)) return;
         restartCurrentEpisode=true;
-        await window.afterDarkProgress?.save?.({tmdb_id:id,title:film.title||film.name||"",media_type:"tv",position_seconds:0,duration_seconds:0,status:"in_progress",season_number:selectedSeason,episode_number:selectedEpisode,source_provider:"manual-selection"});
+        // The progress helper writes to local storage synchronously before cloud sync.
+        // Do not block playback on a slow or unavailable Supabase connection.
+        try {
+          const saveTask = window.afterDarkProgress?.save?.({tmdb_id:id,title:film.title||film.name||"",media_type:"tv",position_seconds:0,duration_seconds:0,status:"in_progress",season_number:selectedSeason,episode_number:selectedEpisode,source_provider:"manual-selection"});
+          Promise.resolve(saveTask).catch(error => console.warn("Episode selection progress sync failed:", error));
+        } catch (error) {
+          console.warn("Episode selection progress save failed:", error);
+        }
         await findSources(film);
       });
       await loadEpisodes(selectedSeason,desiredEpisode);
