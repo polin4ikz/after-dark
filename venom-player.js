@@ -12,6 +12,9 @@
   let playerPromise = null;
   let playerInstance = null;
   let activeStage = null;
+  let matteboxPromise = null;
+  let matteboxInstance = null;
+  let matteboxRequestToken = "";
 
   function filmKey(film) {
     const id = film && (film.tmdbId ?? film.id);
@@ -126,6 +129,146 @@
     });
     return playerPromise;
   }
+  function loadMattebox() {
+    if (window.mattebox && typeof window.mattebox.preset === "function") return Promise.resolve(window.mattebox);
+    if (matteboxPromise) return matteboxPromise;
+    matteboxPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      const timer = setTimeout(() => finish(new Error("Mattebox CDN timeout")), 12000);
+      let settled = false;
+      function finish(error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        script.onload = script.onerror = null;
+        if (error) { matteboxPromise = null; reject(error); }
+        else resolve(window.mattebox);
+      }
+      script.onload = () => window.mattebox?.preset ? finish() : finish(new Error("Mattebox API missing"));
+      script.onerror = () => finish(new Error("Mattebox CDN failed"));
+      script.src = "https://cdn.jsdelivr.net/npm/mattebox@0.15.0/dist/cdn/mattebox.min.js";
+      script.async = true;
+      document.head.appendChild(script);
+    });
+    return matteboxPromise;
+  }
+  function isRussianTrack(track) {
+    const lang = String(track?.lang || track?.language || "").trim();
+    const name = String(track?.name || track?.label || "").trim();
+    return /^ru(?:[-_][a-z0-9]+)*$/i.test(lang) || /^rus$/i.test(lang) || /русск|russian/i.test(name);
+  }
+  function mountMatteboxTrackControls(form, engine) {
+    let panel = $(".ad-mattebox-audio", form);
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "ad-mattebox-audio";
+      const label = document.createElement("label");
+      label.textContent = "ЗВУКОВАЯ ДОРОЖКА";
+      const select = document.createElement("select");
+      select.className = "ad-mattebox-audio__select";
+      select.setAttribute("aria-label", "Звуковая дорожка");
+      panel.append(label, select);
+      form.appendChild(panel);
+      select.addEventListener("change", () => {
+        if (matteboxInstance !== engine) return;
+        const tracks = (engine.tracks?.available || []).filter(track => track.contentType === "audio" && engine.tracks.selectable(track.id));
+        const track = tracks[Number(select.value)];
+        if (track) {
+          engine.tracks.select(track.id);
+          setStatus(form.closest("#adWatchPlayer"), isRussianTrack(track) ? "ВЫБРАНА РУССКАЯ ОЗВУЧКА" : "ВЫБРАНА ДОРОЖКА: " + (track.name || track.lang || "аудио"), false);
+        }
+      });
+    }
+    const select = $(".ad-mattebox-audio__select", panel);
+    const tracks = (engine.tracks?.available || []).filter(track => track.contentType === "audio" && engine.tracks.selectable(track.id));
+    if (!tracks.length) {
+      select.replaceChildren(new Option("Источник не предоставил список дорожек", "-1"));
+      select.disabled = true;
+      panel.hidden = false;
+      return;
+    }
+    let russianIndex = tracks.findIndex(isRussianTrack);
+    if (russianIndex >= 0 && !engine.__afterDarkRussianSelected) {
+      try {
+        engine.tracks.select(tracks[russianIndex].id);
+        engine.__afterDarkRussianSelected = true;
+      } catch (_) {}
+    }
+    const active = engine.tracks.active("audio");
+    const activeIndex = tracks.findIndex(track => active && String(track.id) === String(active.id));
+    select.replaceChildren();
+    tracks.forEach((track, index) => {
+      const label = [track.lang || "язык не указан", track.name || "", track.channels ? track.channels + " каналов" : ""].filter(Boolean).join(" · ");
+      select.add(new Option(label || "Аудио " + (index + 1), String(index), false, index === activeIndex || (activeIndex < 0 && index === russianIndex)));
+    });
+    select.disabled = tracks.length < 2;
+    panel.hidden = false;
+    if (russianIndex >= 0) setStatus(form.closest("#adWatchPlayer"), "РУССКАЯ ДОРОЖКА НАЙДЕНА · ВЫБИРАЮ АВТОМАТИЧЕСКИ", false);
+    else setStatus(form.closest("#adWatchPlayer"), tracks.some(track => track.lang || track.name) ? "РУССКАЯ ДОРОЖКА НЕ ЗАЯВЛЕНА В МЕТАДАННЫХ" : "ЯЗЫКИ ДОРОЖЕК НЕ УКАЗАНЫ ИСТОЧНИКОМ", false);
+  }
+  async function tryMattebox(modal, form, stage, source, requestToken) {
+    if (!["hls", "dash"].includes(source.kind) || form.dataset.disableMatteboxOnce === "1") return false;
+    const video = document.createElement("video");
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.setAttribute("aria-label", "AFTER DARK video player");
+    const mount = document.createElement("div");
+    mount.className = "ad-mattebox-mount";
+    mount.appendChild(video);
+    stage.replaceChildren(mount);
+    setStatus(modal, "ПРОБУЮ MATTEBOX · " + source.kind.toUpperCase(), false);
+    try {
+      await loadMattebox();
+      if (!modal.classList.contains("is-open") || !mount.isConnected || modal.dataset.venomRequestToken !== requestToken) return true;
+      const engine = window.mattebox.preset();
+      matteboxInstance = engine;
+      matteboxRequestToken = requestToken;
+      engine.on("tracks:changed", () => {
+        if (matteboxInstance === engine && modal.dataset.venomRequestToken === requestToken) mountMatteboxTrackControls(form, engine);
+      });
+      engine.on("tracks:selected", () => {
+        if (matteboxInstance === engine && modal.dataset.venomRequestToken === requestToken) mountMatteboxTrackControls(form, engine);
+      });
+      const fallback = () => {
+        if (matteboxInstance !== engine || modal.dataset.venomRequestToken !== requestToken) return;
+        try { engine.unload(); engine.detach(); } catch (_) {}
+        matteboxInstance = null;
+        form.dataset.disableMatteboxOnce = "1";
+        setStatus(modal, "MATTEBOX НЕ ЗАПУСТИЛСЯ · ПЕРЕКЛЮЧАЮСЬ НА VENOM", false);
+        form.requestSubmit();
+      };
+      engine.on("error", fallback);
+      await engine.attach(video);
+      engine.load(source.url);
+      activeFilmKey = filmKey(modal._film);
+      activeStage = stage;
+      const key = activeFilmKey;
+      const saved = readProgress(key);
+      const resumeTime = resumeTimeFor(saved);
+      const onTime = () => {
+        if (matteboxInstance !== engine || !key) return;
+        if (video.currentTime > 0 && video.currentTime % 10 < 0.7) saveProgress(key, video.currentTime, video.duration);
+      };
+      video.addEventListener("timeupdate", onTime);
+      progressCleanup = () => video.removeEventListener("timeupdate", onTime);
+      if (resumeTime > 0) video.addEventListener("loadedmetadata", () => { try { video.currentTime = resumeTime; } catch (_) {} }, { once: true });
+      const all = readSources();
+      if (key) { all[key] = source; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {} }
+      window.setTimeout(() => {
+        if (matteboxInstance !== engine || modal.dataset.venomRequestToken !== requestToken) return;
+        mountMatteboxTrackControls(form, engine);
+        if (video.readyState === 0 && !(engine.tracks?.available || []).length) fallback();
+      }, 10000);
+      setStatus(modal, "MATTEBOX ПОДКЛЮЧЁН · ПРОВЕРЯЮ АУДИОДОРОЖКИ", false);
+      delete form.dataset.disableMatteboxOnce;
+      return true;
+    } catch (_) {
+      if (matteboxInstance) { try { matteboxInstance.unload(); matteboxInstance.detach(); } catch (_) {} matteboxInstance = null; }
+      form.dataset.disableMatteboxOnce = "1";
+      return false;
+    }
+  }
   function setStatus(modal, message, isError) {
     const status = $(".ad-watch-player__status", modal);
     if (!status) return;
@@ -138,6 +281,11 @@
     progressCleanup = null;
     try { playerInstance?.destroy?.(); } catch (_) {}
     playerInstance = null;
+    if (matteboxInstance) {
+      try { matteboxInstance.unload(); matteboxInstance.detach(); } catch (_) {}
+      matteboxInstance = null;
+    }
+    matteboxRequestToken = "";
     activeStage = null;
     activeFilmKey = "";
   }
@@ -197,8 +345,11 @@
       container.className = "ad-venom-mount";
       container.setAttribute("aria-label", "Видеоплеер");
       stage.appendChild(container);
-      setStatus(modal, "ЗАГРУЖАЮ VENOM PLAYER…", false);
+      delete form.dataset.disableMatteboxOnce;
+      setStatus(modal, "ЗАГРУЖАЮ ПЛЕЕР…", false);
       try {
+        const usedMattebox = await tryMattebox(modal, form, stage, source, requestToken);
+        if (usedMattebox) return;
         const VenomPlayer = await loadPlayer();
         if (!modal.classList.contains("is-open") || !container.isConnected || modal.dataset.venomRequestToken !== requestToken) return;
         const savedProgress = readProgress(key);
