@@ -258,7 +258,7 @@
       window.setTimeout(() => {
         if (matteboxInstance !== engine || modal.dataset.venomRequestToken !== requestToken) return;
         mountMatteboxTrackControls(form, engine);
-        if (video.readyState === 0 && !(engine.tracks?.available || []).length) fallback();
+        if (video.readyState === 0) fallback();
       }, 10000);
       setStatus(modal, "MATTEBOX ПОДКЛЮЧЁН · ПРОВЕРЯЮ АУДИОДОРОЖКИ", false);
       delete form.dataset.disableMatteboxOnce;
@@ -286,6 +286,8 @@
       matteboxInstance = null;
     }
     matteboxRequestToken = "";
+    const matteboxAudioPanel = $(".ad-mattebox-audio");
+    if (matteboxAudioPanel) matteboxAudioPanel.hidden = true;
     activeStage = null;
     activeFilmKey = "";
   }
@@ -345,7 +347,6 @@
       container.className = "ad-venom-mount";
       container.setAttribute("aria-label", "Видеоплеер");
       stage.appendChild(container);
-      delete form.dataset.disableMatteboxOnce;
       setStatus(modal, "ЗАГРУЖАЮ ПЛЕЕР…", false);
       try {
         const usedMattebox = await tryMattebox(modal, form, stage, source, requestToken);
@@ -388,6 +389,7 @@
           all[key] = source;
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {}
         }
+        delete form.dataset.disableMatteboxOnce;
         setStatus(modal, resumeTime ? "ПРОДОЛЖАЕМ С " + formatTime(resumeTime) + " · VENOM PLAYER" : "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН", false);
       } catch (error) {
         if (modal.dataset.venomRequestToken !== requestToken || !modal.classList.contains("is-open")) return;
