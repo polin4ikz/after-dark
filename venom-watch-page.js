@@ -881,7 +881,6 @@
       frame.referrerPolicy = "strict-origin-when-cross-origin";
       frame.loading = "eager";
       stage.appendChild(frame);
-      addStandalonePlayerLink(provider.url, provider.name);
       attachFrameProgress(frame, film, provider.name, provider.origin);
       status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
       streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
@@ -1018,15 +1017,12 @@
   async function findSources(film) {
     const area = $("#sourceResults");
     area.replaceChildren();
-    addStremioFallback(film);
     status("ЗАПУСКАЮ STELLAR ПО TMDB ID…");
     addAutomaticPlayerOption(film);
 
     // Fast path: try Stellar immediately. Do not wait for archive searches or TMDB provider cards.
     try {
       if (await tryExternalPlayerFallback(film)) {
-        await showOfficialProviders(film);
-        await showWatchmodeProviders(film);
         return;
       }
     } catch (error) {
@@ -1034,8 +1030,6 @@
     }
 
     status("STELLAR НЕ ОТВЕТИЛ · ПОКАЗЫВАЮ ДОСТУПНЫЕ СЕРВИСЫ И ИЩУ ДРУГОЙ ИСТОЧНИК…");
-    await showOfficialProviders(film);
-    await showWatchmodeProviders(film);
     try {
       const results = await searchOpenArchive(film);
       const exactRussian = chooseRussianArchiveCandidate(results);
@@ -1043,7 +1037,6 @@
         status("НАЙДЕН КАНДИДАТ С РУССКОЯЗЫЧНЫМИ МЕТАДАННЫМИ");
         addNote("Найдено точное совпадение с открытой лицензией и подсказкой о русском языке в метаданных. Это не подтверждает фактическую озвучку — нажми на источник, чтобы проверить его.");
         renderCandidate(exactRussian);
-        addExternalFallback(film);
         return;
       }
       const exactWithoutConfirmedRussian = (Array.isArray(results) ? results : [])
@@ -1082,9 +1075,6 @@
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
       console.warn("Automatic source discovery failed:", error);
     }
-    addExternalFallback(film);
-    await showOfficialProviders(film);
-    await showWatchmodeProviders(film);
   }
   async function initEpisodePicker(film) {
     const picker = $("#episodePicker"), seasonSelect = $("#seasonSelect"), episodeSelect = $("#episodeSelect");
@@ -1269,7 +1259,7 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); initEpisodePicker(film); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
