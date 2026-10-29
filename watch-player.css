@@ -66,3 +66,12 @@ body.ad-watch-player-open{overflow:hidden}
 .ad-venom-start-over{min-height:38px;padding:8px 12px;border:1px solid rgba(232,221,200,.35);background:transparent;color:#e8ddc8;font:9px "Geist Mono",monospace;letter-spacing:.05em;cursor:pointer}
 .ad-venom-start-over:hover{background:rgba(121,21,34,.35)}
 @media(max-width:600px){.ad-venom-resume{align-items:stretch;flex-direction:column}.ad-venom-start-over{width:100%;min-height:44px}}
+
+/* Mattebox audio selector follows the private-cinema controls. */
+.ad-mattebox-audio{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;padding:12px;border:1px solid rgba(232,221,200,.22);background:rgba(121,21,34,.12)}
+.ad-mattebox-audio[hidden]{display:none!important}
+.ad-mattebox-audio label{font:9px "Geist Mono",monospace;letter-spacing:.09em;color:rgba(232,221,200,.68)}
+.ad-mattebox-audio__select{width:100%;min-height:44px;padding:10px 12px;border:1px solid rgba(232,221,200,.3);border-radius:0;background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
+.ad-mattebox-audio__select:disabled{opacity:.75}
+.ad-mattebox-mount,.ad-mattebox-mount video{width:100%;height:100%;min-height:220px;background:#000}
+@media(max-width:600px){.ad-mattebox-audio{padding:10px}.ad-mattebox-audio__select{font-size:12px;min-height:46px}}
