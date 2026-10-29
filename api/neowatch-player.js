@@ -38,8 +38,10 @@ function extractEmbed(html, baseUrl) {
     const match = tag.match(/\bsrc\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/i);
     const raw = (match && (match[1] || match[2] || match[3]) || "").replace(/&amp;/gi, "&");
     if (!raw || /ads?|banner|tracker|analytics|doubleclick/i.test(raw)) continue;
-    const safe = safeEmbedUrl(new URL(raw, baseUrl).href);
-    if (safe) return safe;
+    try {
+      const safe = safeEmbedUrl(new URL(raw, baseUrl).href);
+      if (safe) return safe;
+    } catch (_) {}
   }
   return "";
 }
