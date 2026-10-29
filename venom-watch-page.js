@@ -1075,7 +1075,9 @@
           }
           if (!provider.readyTypes.includes(data.type)) return;
           const payload = data.data && typeof data.data === "object" ? data.data : data;
-          const eventName = String(payload.event || payload.name || "").toLowerCase();
+          // VidAPI documents player_status (not event/name) in PLAYER_EVENT.
+          // Other providers commonly use event/name, so accept both shapes.
+          const eventName = String(payload.player_status || payload.event || payload.name || "").toLowerCase();
           if (provider.readyEvents.includes(eventName)) finish("ready");
           else if (provider.errorEvents.includes(eventName)) finish("failed");
         };
@@ -1083,19 +1085,22 @@
         const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 10000 : 12000);
         window.addEventListener("message", onMessage);
         frame.addEventListener("error", () => finish("failed"), { once: true });
-        // No documented readiness event for NHD: keep its loaded page available
-        // for manual testing, but don't treat the iframe load as proof of playback.
-        if (provider.name === "NHD") frame.addEventListener("load", () => finish("loaded"), { once: true });
+        // VidSrc/NHD do not expose a readiness message we can reliably depend on.
+        // Keep the provider open after its iframe loads so it can be tested manually;
+        // iframe load alone is not proof that a playable video exists.
+        if (["VIDSRC", "NHD"].includes(provider.name)) {
+          frame.addEventListener("load", () => finish("loaded"), { once: true });
+        }
       });
 
-      if (outcome === "ready" || (provider.name === "NHD" && outcome === "loaded")) {
+      if (outcome === "ready" || (["VIDSRC", "NHD"].includes(provider.name) && outcome === "loaded")) {
         loader.classList.add("is-done");
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
         const successHints = {
-          VIDAPI: "VIDAPI загрузился. Проверь меню Audio: русская озвучка не гарантирована документацией. Субтитры и сохранение позиции заявлены.",
-          VIDSRC: "VIDSRC загрузился. Проверь воспроизведение и меню Audio; русские субтитры можно выбрать через настройки.",
-          NHD: "NHD загружен. Проверь Audio/озвучку вручную. Страница загрузилась, но это само по себе не гарантирует, что видео доступно.",
+          VIDAPI: "VIDAPI ответил событием плеера. Проверь видео и меню Audio: русская озвучка не гарантирована документацией.",
+          VIDSRC: "Страница VidSrc загрузилась. Это ещё не подтверждает запуск видео; проверь воспроизведение и меню аудио.",
+          NHD: "Страница NHD загрузилась. Это ещё не гарантирует доступность видео; проверь Audio/озвучку вручную.",
           STELLAR: "Stellar запущен. Язык интерфейса не задаёт язык аудио; дорожки зависят от потока."
         };
         streamStatus(successHints[provider.name] || "Плеер загружен.");
