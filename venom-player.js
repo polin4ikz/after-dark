@@ -298,7 +298,7 @@
     form.className = "ad-watch-player__form ad-venom-panel";
     form.innerHTML = [
       '<label for="adVenomKind">ИЛИ ЗАПУСТИТЬ VENOM PLAYER · ПРЯМОЙ ПОТОК</label>',
-      '<p class="ad-venom-note">Нужна прямая HTTPS-ссылка на HLS (.m3u8), DASH (.mpd) или видеофайл (MP4/WebM). Обычная ссылка на страницу онлайн-кинотеатра не подойдёт.</p>',
+      '<p class="ad-venom-note">ВЫБОР ЗВУКА РАБОТАЕТ ДЛЯ ПРЯМЫХ HLS/DASH-ПОТОКОВ. Встроенный плеер стороннего сервиса (например, Stellar) скрывает дорожки от сайта. Нужна прямая HTTPS-ссылка .m3u8 или .mpd; ссылка на страницу кинотеатра не подойдёт.</p>',
       '<div class="ad-venom-controls">',
       '<select id="adVenomKind" name="kind" aria-label="Тип источника"><option value="hls">HLS · M3U8</option><option value="dash">DASH · MPD</option><option value="file">MP4 / WEBM</option></select>',
       '<input id="adVenomSource" name="source" type="url" inputmode="url" placeholder="https://…/master.m3u8" autocomplete="url" required>',
