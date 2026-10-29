@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="venom-watch.css?v=20261029-season-picker1">
+  <link rel="stylesheet" href="venom-watch.css?v=20261029-player-cleanup1">
 </head>
 <body>
   <main class="player-page">
@@ -21,15 +21,6 @@
       <div class="eyebrow">NOW PLAYING <span id="mediaType">PRIVATE SELECTION</span></div>
       <h1 id="mediaTitle">Загрузка…</h1>
       <p id="mediaMeta" class="media-meta"></p>
-      <section id="episodePicker" class="episode-picker" hidden aria-label="Выбор сезона и серии">
-        <div class="episode-picker__heading"><span>ПРОДОЛЖИТЬ ИСТОРИЮ</span><small id="episodePickerMeta">СЕРИАЛ</small></div>
-        <div class="episode-picker__fields">
-          <label for="seasonSelect">СЕЗОН<select id="seasonSelect" disabled><option value="">ЗАГРУЖАЮ…</option></select></label>
-          <label for="episodeSelect">СЕРИЯ<select id="episodeSelect" disabled><option value="">ЗАГРУЖАЮ…</option></select></label>
-          <button id="playSelectedEpisode" type="button" disabled>ОТКРЫТЬ СЕРИЮ ↗</button>
-        </div>
-        <p id="episodePickerStatus" class="episode-picker__status" role="status" aria-live="polite">Загружаю список серий…</p>
-      </section>
       <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
       <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
       <div class="player-actions" aria-label="Playback actions"><button type="button" data-player-action="watched">MARK AS WATCHED</button><button type="button" data-player-action="rate">RATE</button></div>
@@ -53,6 +44,6 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
   <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
   <script src="watch-progress.js?v=20261028-step2-progress1"></script>
-  <script src="venom-watch-page.js?v=20261029-season-picker1"></script>
+  <script src="venom-watch-page.js?v=20261029-player-cleanup1"></script>
 </body>
 </html>
