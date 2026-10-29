@@ -94,7 +94,8 @@
       '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
       '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
-      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК РОССИЙСКИХ ИСТОЧНИКОВ ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК РОССИЙСКИХ ИСТОЧНИКОВ ↗</button>
+      <button class="ad-watch-player__search" type="button" data-ad-kodik-search>ПОИСК ОЗВУЧЕК KODIK ↗</button>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
@@ -110,6 +111,45 @@
       const resultButton = event.target.closest("[data-ad-archive-identifier]");
       const stremioButton = event.target.closest("[data-ad-stremio-open]");
       const neoSearchButton = event.target.closest("[data-ad-neowatch-search]");
+      const kodikSearchButton = event.target.closest("[data-ad-kodik-search]");
+      if (kodikSearchButton) {
+        const film = modal._film;
+        const query = titleOf(film).trim();
+        const year = String(film && (film.release_date || film.first_air_date) || "").slice(0, 4);
+        const results = $(".ad-watch-player__results", modal);
+        const status = $(".ad-watch-player__status", modal);
+        if (!query || !results) return;
+        kodikSearchButton.disabled = true;
+        results.textContent = "ИЩУ ВАРИАНТЫ ОЗВУЧКИ KODIK…";
+        if (status) { status.textContent = "ПРОБУЮ ПОИСК ПО НАЗВАНИЮ И ГОДУ."; status.classList.remove("is-error"); }
+        try {
+          const params = new URLSearchParams({ title: query });
+          if (/^\d{4}$/.test(year)) params.set("year", year);
+          const response = await fetch("/api/kodik-player?" + params.toString(), { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.message || data.error || "KODIK_SEARCH_FAILED");
+          const sources = Array.isArray(data.sources) ? data.sources : [];
+          if (!sources.length) {
+            results.textContent = data.message || "KODIK НЕ НАШЁЛ ПОДХОДЯЩИХ ВАРИАНТОВ.";
+          } else {
+            results.innerHTML = '<p class="ad-watch-player__result-description">Варианты сгруппированы по озвучке. Доступность зависит от источника.</p>' + sources.map(source =>
+              '<button type="button" class="ad-watch-player__result" data-ad-neowatch-source="' + esc(source.embedUrl) + '" data-provider="' + esc("Kodik · " + source.translation) + '">' +
+              '<span class="ad-watch-player__result-title">' + esc(source.translation || "Озвучка не указана") + '</span>' +
+              '<span class="ad-watch-player__result-meta">' + esc(source.title || query) + (source.year ? " · " + esc(source.year) : "") + (source.quality ? " · " + esc(source.quality) : "") + '</span>' +
+              '</button>'
+            ).join("");
+            if (status) status.textContent = "НАЙДЕНО ВАРИАНТОВ: " + sources.length + ". ВЫБЕРИ ОЗВУЧКУ.";
+          }
+        } catch (error) {
+          results.textContent = error.message === "KODIK_NOT_CONFIGURED"
+            ? "ПОИСК KODIK ПОКА НЕ ПОДКЛЮЧЁН: НУЖЕН KODIK_API_TOKEN В VERCEL PREVIEW."
+            : "НЕ УДАЛОСЬ ПОЛУЧИТЬ ВАРИАНТЫ KODIK. ПОПРОБУЙ ПОЗЖЕ.";
+          if (status) { status.textContent = "ПОИСК ОЗВУЧЕК НЕ УДАЛСЯ."; status.classList.add("is-error"); }
+        } finally {
+          kodikSearchButton.disabled = false;
+        }
+        return;
+      }
       const neoSourceButton = event.target.closest("[data-ad-neowatch-source]");
       if (neoSourceButton) {
         const embedUrl = neoSourceButton.dataset.adNeowatchSource || "";
