@@ -94,6 +94,7 @@
       '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
       '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК РОССИЙСКИХ ИСТОЧНИКОВ ↗</button>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
@@ -108,6 +109,59 @@
       const availabilityButton = event.target.closest("[data-ad-watchmode-search]");
       const resultButton = event.target.closest("[data-ad-archive-identifier]");
       const stremioButton = event.target.closest("[data-ad-stremio-open]");
+      const neoSearchButton = event.target.closest("[data-ad-neowatch-search]");
+      const neoSourceButton = event.target.closest("[data-ad-neowatch-source]");
+      if (neoSourceButton) {
+        const embedUrl = neoSourceButton.dataset.adNeowatchSource || "";
+        const film = modal._film;
+        const status = $(".ad-watch-player__status", modal);
+        const stage = $(".ad-watch-player__stage", modal);
+        try {
+          const url = new URL(embedUrl);
+          if (url.protocol !== "https:" || url.username || url.password) throw new Error("UNSAFE_SOURCE");
+          stage.innerHTML = '<iframe src="' + esc(url.href) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+          if (status) { status.textContent = "ИСТОЧНИК ОТКРЫТ · " + (neoSourceButton.dataset.provider || "NEOWATCH"); status.classList.remove("is-error"); }
+        } catch (_) {
+          if (status) { status.textContent = "НЕ УДАЛОСЬ ОТКРЫТЬ ЭТОТ ИСТОЧНИК."; status.classList.add("is-error"); }
+        }
+        return;
+      }
+      if (neoSearchButton) {
+        const film = modal._film;
+        const query = titleOf(film).trim();
+        const year = String(film && (film.release_date || film.first_air_date) || "").slice(0, 4);
+        const results = $(".ad-watch-player__results", modal);
+        const status = $(".ad-watch-player__status", modal);
+        if (!query || !results) return;
+        neoSearchButton.disabled = true;
+        results.textContent = "ИЩУ ДОСТУПНЫЕ ИСТОЧНИКИ…";
+        if (status) { status.textContent = "ПРОБУЮ NEO WATCH / NEOMOVIES."; status.classList.remove("is-error"); }
+        try {
+          const params = new URLSearchParams({ title: query });
+          if (/^\\d{4}$/.test(year)) params.set("year", year);
+          const response = await fetch("/api/neowatch-player?" + params.toString(), { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.message || data.error || "SOURCE_SEARCH_FAILED");
+          const sources = Array.isArray(data.sources) ? data.sources : [];
+          if (!sources.length) {
+            results.textContent = data.message || "ИСТОЧНИКИ НЕ НАЙДЕНЫ. ОСТАЛЬНЫЕ ВАРИАНТЫ ПРОСМОТРА НЕ ЗАТРОНУТЫ.";
+          } else {
+            results.innerHTML = '<p class="ad-watch-player__result-description">Выбери источник. Наличие русской озвучки зависит от самого плеера и доступных дорожек.</p>' + sources.map(source =>
+              '<button type="button" class="ad-watch-player__result" data-ad-neowatch-source="' + esc(source.embedUrl) + '" data-provider="' + esc(source.provider) + '">' +
+              '<span class="ad-watch-player__result-title">' + esc(source.provider) + '</span>' +
+              '<span class="ad-watch-player__result-meta">' + esc(source.year || year || "ГОД НЕ УКАЗАН") + (source.kpId ? " · KP " + esc(source.kpId) : "") + '</span>' +
+              '</button>'
+            ).join("");
+            if (status) status.textContent = "НАЙДЕНО ИСТОЧНИКОВ: " + sources.length + ". ВЫБЕРИ ОДИН НИЖЕ.";
+          }
+        } catch (error) {
+          results.textContent = "НЕ УДАЛОСЬ ПОЛУЧИТЬ ИСТОЧНИКИ. МОЖНО ПРОВЕРИТЬ STREMIO ИЛИ ВСТАВИТЬ ССЫЛКУ ВРУЧНУЮ.";
+          if (status) { status.textContent = "ПОИСК ИСТОЧНИКОВ ВРЕМЕННО НЕДОСТУПЕН."; status.classList.add("is-error"); }
+        } finally {
+          neoSearchButton.disabled = false;
+        }
+        return;
+      }
       if (stremioButton) {
         const film = modal._film;
         const id = Number(film && (film.tmdbId ?? film.id));
