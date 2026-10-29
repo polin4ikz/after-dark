@@ -425,15 +425,9 @@
     } catch (_) {}
     if (subtitles.length) setOptions($("#subtitleTrack"), subtitles, 0, "Нет субтитров");
     $("#trackControls").hidden = !(tracks.length > 1 || subtitles.length > 0);
-    streamStatus((russianSelected || preferredRussianAudioSelected)
-      ? "Выбрана русская озвучка."
-      : tracks.length && findRussianAudioTrackIndex(tracks) < 0
-        ? "Русская озвучка в этом потоке не найдена. Проверь меню самого плеера или выбери другой источник."
-        : tracks.length > 1
-          ? "Доступно несколько аудиодорожек."
-          : tracks.length === 1
-            ? "В потоке одна аудиодорожка."
-            : sourceLabel + " открыт нативным плеером. Если список озвучек не появился, браузер не передал After Dark данные о дорожках — проверь меню самого плеера.");
+    streamStatus(tracks.length
+      ? audioTrackStatus(tracks, russianSelected, tracks.length)
+      : sourceLabel + " открыт нативным плеером. Браузер не передал After Dark список аудиодорожек — это не доказывает отсутствие русского звука. Проверь меню самого плеера.");
   }
 
   function openDirectStream(rawUrl, allowUnknownEmbed = false) {
