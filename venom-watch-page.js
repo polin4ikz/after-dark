@@ -824,23 +824,6 @@
     return loader;
   }
 
-  function addStandalonePlayerLink(playerUrl, providerName) {
-    const area = $("#sourceResults");
-    if (!area || !/^https:\/\//i.test(String(playerUrl || ""))) return;
-    area.querySelectorAll(".standalone-player-link").forEach(link => link.remove());
-    const link = document.createElement("a");
-    link.className = "source-result source-result--external standalone-player-link";
-    link.href = playerUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "ОТКРЫТЬ " + String(providerName || "ПЛЕЕР") + " ОТДЕЛЬНО ↗";
-    area.prepend(link);
-    const note = document.createElement("p");
-    note.className = "source-note standalone-player-note";
-    note.textContent = "Отдельное окно помогает проверить все элементы управления плеера. Оно не добавляет аудиодорожки: русская озвучка доступна только если она есть в самом видеопотоке.";
-    area.insertBefore(note, link.nextSibling);
-  }
-
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
@@ -885,8 +868,8 @@
       status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
       streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
       streamStatus(provider.name === "STELLAR"
-        ? "Сначала проверяю Stellar по TMDB ID. Озвучку, субтитры и доступные настройки качества выбирай внутри самого плеера."
-        : "VidScene не подтвердил готовность видео; автоматически проверяю резервный источник.");
+        ? "Видео встроено прямо в After Dark. Важно: мы не можем добавить дорожку, которой нет в потоке Stellar; если русской озвучки нет в меню плеера, для этого тайтла нужен другой источник."
+        : "Источник не подтвердил готовность видео; автоматически проверяю резервный источник.");
 
       const outcome = await new Promise(resolve => {
         let settled = false;
@@ -922,7 +905,7 @@
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
         streamStatus(provider.name === "STELLAR"
-          ? "Плеер загрузился и ответил, но After Dark не может подтвердить, что видео действительно воспроизводится или содержит русскую дорожку."
+          ? "Плеер встроен в After Dark, но язык аудио зависит от самого видеопотока. Если русской дорожки нет в меню, этот источник её не предоставляет."
           : "Источник готов. Возможность сохранять позицию и менять дорожки зависит от API этого плеера.");
         addNote("Автоматически выбран плеер: " + provider.name + ".");
         return true;
@@ -993,27 +976,6 @@
     area.prepend(button);
     addNote("Автопоиск встроенного плеера доступен для этого фильма. Результат зависит от доступности источника и разрешения на встраивание.");
   }
-  function addStremioFallback(film) {
-    const area = $("#sourceResults");
-    if (!area || area.querySelector("[data-ad-stremio-open]")) return;
-
-    // Use a real anchor rather than window.open + an asynchronous TMDB request.
-    // The previous flow could be blocked by popup protection after the async request.
-    const link = document.createElement("a");
-    link.className = "source-result source-result--external";
-    link.dataset.adStremioOpen = "1";
-    link.href = "https://app.strem.io/shell-v4.4/";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "ОТКРЫТЬ STREMIO WEB ↗";
-    area.prepend(link);
-
-    const note = document.createElement("p");
-    note.className = "source-note";
-    note.textContent = "Открывает официальную веб-альфа-версию Stremio напрямую. Если она не загружается, проблема уже на стороне Stremio или сети; After Dark не может управлять её доступностью. Наличие фильма и русской озвучки не гарантировано.";
-    area.insertBefore(note, link.nextSibling);
-  }
-
   async function findSources(film) {
     const area = $("#sourceResults");
     area.replaceChildren();
@@ -1076,76 +1038,6 @@
       console.warn("Automatic source discovery failed:", error);
     }
   }
-  async function initEpisodePicker(film) {
-    const picker = $("#episodePicker"), seasonSelect = $("#seasonSelect"), episodeSelect = $("#episodeSelect");
-    const playButton = $("#playSelectedEpisode"), pickerStatus = $("#episodePickerStatus");
-    if (!picker || !seasonSelect || !episodeSelect || !playButton || !isSeriesFilm(film)) return;
-    picker.hidden = false;
-    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
-    if (!Number.isSafeInteger(id) || id <= 0) { pickerStatus.textContent = "Не удалось определить сериал."; return; }
-    let seasonRequest = 0;
-    const setStatus = message => { pickerStatus.textContent = message; };
-    const loadEpisodes = async (seasonNumber, preferredEpisode) => {
-      const request = ++seasonRequest;
-      episodeSelect.replaceChildren(new Option("ЗАГРУЖАЮ СЕРИИ…", ""));
-      episodeSelect.disabled = true; playButton.disabled = true; setStatus("Загружаю список серий…");
-      try {
-        const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id + "/season/" + seasonNumber), { headers: { accept: "application/json" } });
-        if (!response.ok) throw new Error("TMDB_HTTP_" + response.status);
-        const details = await response.json();
-        if (request !== seasonRequest) return;
-        const episodes = (Array.isArray(details.episodes) ? details.episodes : []).filter(ep => Number.isInteger(Number(ep.episode_number)) && Number(ep.episode_number) > 0);
-        episodeSelect.replaceChildren();
-        if (!episodes.length) { episodeSelect.add(new Option("СЕРИИ НЕ НАЙДЕНЫ", "")); setStatus("Для выбранного сезона TMDB не вернул список серий."); return; }
-        episodes.forEach(ep => { const n=Number(ep.episode_number), title=String(ep.name||"").trim(); episodeSelect.add(new Option(String(n).padStart(2,"0")+(title?" · "+title:" серия"),String(n))); });
-        const validPreferred = episodes.some(ep => Number(ep.episode_number) === Number(preferredEpisode));
-        episodeSelect.value = String(validPreferred ? Number(preferredEpisode) : Number(episodes[0].episode_number));
-        episodeSelect.disabled = episodes.length < 2; selectedEpisode = Number(episodeSelect.value); playButton.disabled = false;
-        setStatus("СЕРИЙ В СЕЗОНЕ: " + episodes.length + " · НОМЕРА ВЗЯТЫ ИЗ TMDB");
-      } catch (error) {
-        if (request !== seasonRequest) return;
-        episodeSelect.replaceChildren(new Option("НЕ УДАЛОСЬ ЗАГРУЗИТЬ", ""));
-        setStatus("Не удалось загрузить серии. Проверь соединение и настройки TMDB.");
-        console.warn("Episode picker load failed:", error);
-      }
-    };
-    seasonSelect.replaceChildren(new Option("ЗАГРУЖАЮ СЕЗОНЫ…", "")); seasonSelect.disabled = true; playButton.disabled = true;
-    try {
-      const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id), { headers: { accept: "application/json" } });
-      if (!response.ok) throw new Error("TMDB_HTTP_" + response.status);
-      const details = await response.json();
-      const seasons = (Array.isArray(details.seasons) ? details.seasons : []).filter(item => Number.isInteger(Number(item.season_number)) && Number(item.season_number) > 0 && Number(item.episode_count) > 0).sort((a,b)=>Number(a.season_number)-Number(b.season_number));
-      seasonSelect.replaceChildren();
-      if (!seasons.length) { seasonSelect.add(new Option("СЕЗОНЫ НЕ НАЙДЕНЫ", "")); setStatus("У этого сериала нет доступных сезонов в TMDB."); return; }
-      seasons.forEach(item => { const n=Number(item.season_number), count=Number(item.episode_count)||0; seasonSelect.add(new Option(n+" СЕЗОН"+(count?" · "+count+" СЕР.":""),String(n))); });
-      const saved = savedProgress(film) || {}, desiredSeason=Number(selectedSeason ?? saved.season_number ?? 1), desiredEpisode=Number(selectedEpisode ?? saved.episode_number ?? 1);
-      seasonSelect.value = String(seasons.some(item=>Number(item.season_number)===desiredSeason)?desiredSeason:Number(seasons[0].season_number));
-      selectedSeason = Number(seasonSelect.value); seasonSelect.disabled = seasons.length < 2;
-      seasonSelect.addEventListener("change", async () => { selectedSeason=Number(seasonSelect.value); selectedEpisode=1; await loadEpisodes(selectedSeason,1); });
-      episodeSelect.addEventListener("change", () => { selectedEpisode=Number(episodeSelect.value); playButton.disabled=!(Number.isInteger(selectedEpisode)&&selectedEpisode>0); });
-      playButton.addEventListener("click", async () => {
-        selectedSeason=Number(seasonSelect.value); selectedEpisode=Number(episodeSelect.value);
-        if (!(selectedSeason>0&&selectedEpisode>0)) return;
-        restartCurrentEpisode=true;
-        // The progress helper writes to local storage synchronously before cloud sync.
-        // Do not block playback on a slow or unavailable Supabase connection.
-        try {
-          const saveTask = window.afterDarkProgress?.save?.({tmdb_id:id,title:film.title||film.name||"",media_type:"tv",position_seconds:0,duration_seconds:0,status:"in_progress",season_number:selectedSeason,episode_number:selectedEpisode,source_provider:"manual-selection"});
-          Promise.resolve(saveTask).catch(error => console.warn("Episode selection progress sync failed:", error));
-        } catch (error) {
-          console.warn("Episode selection progress save failed:", error);
-        }
-        await findSources(film);
-      });
-      await loadEpisodes(selectedSeason,desiredEpisode);
-    } catch (error) {
-      seasonSelect.replaceChildren(new Option("НЕ УДАЛОСЬ ЗАГРУЗИТЬ","")); seasonSelect.disabled=true;
-      episodeSelect.replaceChildren(new Option("СПИСОК НЕДОСТУПЕН","")); episodeSelect.disabled=true;
-      setStatus("Не удалось загрузить сезоны. Проверь соединение и настройки TMDB.");
-      console.warn("Season picker load failed:",error);
-    }
-  }
-
   function init() {
     const manualSourceForm = $("#manualSourceForm");
     const manualSourceInput = $("#manualSourceUrl");
