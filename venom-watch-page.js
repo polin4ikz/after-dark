@@ -981,29 +981,53 @@
     const episode = Math.max(1, Math.floor(Number(selectedEpisode ?? previousProgress?.episode_number) || 1));
     restartCurrentEpisode = false;
 
-    // Try a provider that explicitly advertises multi-language audio first.
-    // NHD's embed includes its own audio/subtitle menus; its public docs do not
-    // expose parent-page playback events, so we must not claim synced progress.
+    // Try independent ID-based embeds before the known-working Stellar fallback.
+    // These services document playback embeds, but Russian audio must be checked
+    // per title; none of their public docs guarantees a Russian audio track.
     const candidates = [];
-    if (!film._forceStellar) candidates.push({
-      name: "NHD",
-      origin: "https://nhdapi.com",
-      url: isSeries
-        ? "https://nhdapi.com/tv/" + id + "/" + season + "/" + episode
-        : "https://nhdapi.com/movie/" + id,
-      readyTypes: [],
-      readyEvents: [],
-      errorEvents: []
-    });
+    if (!film._forceStellar) {
+      candidates.push({
+        name: "VIDAPI",
+        origin: "https://vaplayer.ru",
+        url: (isSeries
+          ? "https://vaplayer.ru/embed/tv/" + id + "/" + season + "/" + episode
+          : "https://vaplayer.ru/embed/movie/" + id)
+          + "?primaryColor=%237B1E2D&showTitle=false&autoplay=1&resumeAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&autonext=1" : ""),
+        readyTypes: ["PLAYER_EVENT"],
+        readyEvents: ["playing", "paused", "seeked", "completed"],
+        errorEvents: ["error"]
+      });
+      candidates.push({
+        name: "VIDSRC",
+        origin: "https://vidsrc.sh",
+        url: (isSeries
+          ? "https://vidsrc.sh/embed/tv/" + id + "/" + season + "/" + episode
+          : "https://vidsrc.sh/embed/movie/" + id)
+          + "?ds_lang=ru&autoplay=1&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&autonext=1" : ""),
+        readyTypes: ["PLAYER_EVENT"],
+        readyEvents: ["playing", "paused", "seeked", "completed"],
+        errorEvents: ["error"]
+      });
+      candidates.push({
+        name: "NHD",
+        origin: "https://nhdapi.com",
+        url: isSeries
+          ? "https://nhdapi.com/tv/" + id + "/" + season + "/" + episode
+          : "https://nhdapi.com/movie/" + id,
+        readyTypes: [],
+        readyEvents: [],
+        errorEvents: []
+      });
+    }
 
-    // Keep the currently working Stellar embed as a fallback.
+    // Keep Stellar as a fallback because the user has confirmed it currently plays.
     const stellarPath = isSeries ? "/ru/watch/embed/tv/" + id + "-" + season + "-" + episode : "/ru/watch/embed/movie/" + id;
     candidates.push({
       name: "STELLAR",
       origin: "https://stellar.rip",
       url: "https://stellar.rip" + stellarPath + "?theme=7B1E2D&title=false&poster=false&autoPlay=true&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&nextButton=true&autoNext=true" : ""),
       readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
-      readyEvents: ["play", "timeupdate"],
+      readyEvents: ["play", "timeupdate", "playing"],
       errorEvents: ["error"]
     });
 
@@ -1024,9 +1048,13 @@
       attachFrameProgress(frame, film, provider.name, provider.origin);
       status("ЗАПУСКАЮ ПЛЕЕР · " + provider.name);
       streamStatus("Подготавливаю видеопоток. Это может занять несколько секунд.");
-      streamStatus(provider.name === "NHD"
-        ? "ПРОБУЮ NHD: этот источник заявляет переключение озвучек и субтитры. Проверь меню Audio внутри плеера; наличие русской дорожки зависит от конкретного фильма."
-        : "Источник не подтвердил готовность видео; автоматически проверяю резервный источник.");
+      const providerHints = {
+        VIDAPI: "ПРОБУЮ VIDAPI. В документации подтверждены TMDB ID, серии и субтитры; русскую аудиодорожку нужно проверить в меню плеера.",
+        VIDSRC: "ПРОБУЮ VIDSRC. Есть выбор серий и русские субтитры; наличие русской озвучки пока не подтверждено.",
+        NHD: "ПРОБУЮ NHD. Источник заявляет несколько вариантов воспроизведения; проверь меню Audio, если видео запустится.",
+        STELLAR: "Открываю резервный Stellar."
+      };
+      streamStatus(providerHints[provider.name] || "Пробую источник.");
 
       const outcome = await new Promise(resolve => {
         let settled = false;
@@ -1052,11 +1080,11 @@
           else if (provider.errorEvents.includes(eventName)) finish("failed");
         };
         // Stellar should feel quick; don't wait the old 18 seconds before fallback.
-        const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 7500 : 9000);
+        const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 10000 : 12000);
         window.addEventListener("message", onMessage);
         frame.addEventListener("error", () => finish("failed"), { once: true });
-        // NHD documents no postMessage readiness event. The iframe load only
-        // confirms its page loaded, not that the requested video is playable.
+        // No documented readiness event for NHD: keep its loaded page available
+        // for manual testing, but don't treat the iframe load as proof of playback.
         if (provider.name === "NHD") frame.addEventListener("load", () => finish("loaded"), { once: true });
       });
 
@@ -1064,12 +1092,14 @@
         loader.classList.add("is-done");
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
-        streamStatus(provider.name === "NHD"
-          ? "NHD загружен. Открой настройки плеера и проверь Audio/озвучку: русский будет доступен только если источник нашёл такую дорожку. У NHD нет документированной синхронизации прогресса с After Dark."
-          : "Плеер Stellar запущен. Его язык интерфейса не задаёт язык аудио; дорожки определяются самим потоком.");
-        addNote(provider.name === "NHD"
-          ? "Пробный источник NHD: заявлены несколько озвучек и субтитры, но доступность русского и воспроизведение этого тайтла нужно проверить вручную."
-          : "Резервный плеер Stellar.");
+        const successHints = {
+          VIDAPI: "VIDAPI загрузился. Проверь меню Audio: русская озвучка не гарантирована документацией. Субтитры и сохранение позиции заявлены.",
+          VIDSRC: "VIDSRC загрузился. Проверь воспроизведение и меню Audio; русские субтитры можно выбрать через настройки.",
+          NHD: "NHD загружен. Проверь Audio/озвучку вручную. Страница загрузилась, но это само по себе не гарантирует, что видео доступно.",
+          STELLAR: "Stellar запущен. Язык интерфейса не задаёт язык аудио; дорожки зависят от потока."
+        };
+        streamStatus(successHints[provider.name] || "Плеер загружен.");
+        addNote("Источник: " + provider.name + ". Наличие русского аудио проверяется отдельно для каждого фильма.");
         if (provider.name === "NHD") {
           const switchButton = document.createElement("button");
           switchButton.type = "button";
