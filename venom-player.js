@@ -308,7 +308,7 @@
       '<div class="ad-venom-resume" hidden><span class="ad-venom-resume__label"></span><button type="button" class="ad-venom-start-over">НАЧАТЬ СНАЧАЛА ↺</button></div>'
     ].join("");
     const originalForm = $(".ad-watch-player__form:not(.ad-venom-panel)", modal);
-    if (originalForm) originalForm.insertAdjacentElement("afterend", form);
+    if (originalForm) originalForm.insertAdjacentElement("beforebegin", form);
     else $(".ad-watch-player__window", modal)?.appendChild(form);
 
     const resumePanel = $(".ad-venom-resume", form);
