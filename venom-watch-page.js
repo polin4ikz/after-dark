@@ -1060,7 +1060,7 @@
         if (provider.name === "NHD") frame.addEventListener("load", () => finish("loaded"), { once: true });
       });
 
-      if (outcome === "ready") {
+      if (outcome === "ready" || (provider.name === "NHD" && outcome === "loaded")) {
         loader.classList.add("is-done");
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
