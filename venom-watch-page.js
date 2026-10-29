@@ -610,6 +610,58 @@
     }
     return [...found.values()];
   }
+  async function searchNeoWatchSources(film, autoPlaySingle = false) {
+    const { titles, year } = filmSearchTerms(film);
+    const progress = savedProgress(film);
+    const isSeries = isSeriesFilm(film);
+    const season = Math.max(1, Math.floor(Number(progress?.season_number) || 1));
+    const episode = Math.max(1, Math.floor(Number(progress?.episode_number) || 1));
+    let payload = null;
+    for (const title of titles) {
+      try {
+        const params = new URLSearchParams({ title });
+        if (year) params.set("year", year);
+        if (isSeries) {
+          params.set("season", String(season));
+          params.set("episode", String(episode));
+        }
+        const response = await fetch("/api/neowatch-player?" + params.toString(), {
+          headers: { accept: "application/json" }
+        });
+        payload = await response.json().catch(() => ({}));
+        if (response.ok && Array.isArray(payload.sources) && payload.sources.length) break;
+      } catch (_) {}
+    }
+    const sources = Array.isArray(payload?.sources) ? payload.sources : [];
+    if (!sources.length) return false;
+
+    const area = $("#sourceResults");
+    const buttons = [];
+    sources.forEach(source => {
+      if (!source || typeof source.embedUrl !== "string" || !/^https:\/\//i.test(source.embedUrl)) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "source-result";
+      button.innerHTML = '<span class="source-result__title"></span><span class="source-result__meta"></span>';
+      button.querySelector(".source-result__title").textContent = "NEOWATCH · " + String(source.provider || "ВИДЕОИСТОЧНИК").toUpperCase();
+      button.querySelector(".source-result__meta").textContent = [source.title || film.title || film.name, source.year || year, isSeries ? "СЕЗОН " + season + " · СЕРИЯ " + episode : "ФИЛЬМ"].filter(Boolean).join(" · ");
+      button.addEventListener("click", () => {
+        openDirectStream(source.embedUrl, true);
+        status("ЗАПУЩЕН ИСТОЧНИК · " + String(source.provider || "NEOWATCH").toUpperCase());
+        streamStatus("Воспроизведение идёт во встроенном плеере источника. Выбор озвучки, если он доступен, находится внутри самого плеера.");
+        addNote("Источник выбран через NeoWatch. Доступность озвучки зависит от конкретного видеосервиса.");
+      });
+      area.appendChild(button);
+      buttons.push({ source, button });
+    });
+    if (!buttons.length) return false;
+    status("НАЙДЕНЫ ВАРИАНТЫ ВИДЕО · NEOWATCH");
+    streamStatus("NeoWatch вернул несколько источников. Выбери один из списка; выбор русской озвучки зависит от возможностей самого плеера.");
+    addNote("NeoWatch используется как дополнительный источник; основной каталог и сохранённые данные After Dark не меняются.");
+    if (autoPlaySingle && buttons.length === 1) buttons[0].button.click();
+    return true;
+  }
+
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
@@ -722,6 +774,8 @@
       try {
         // Prefer players with a documented playback-progress API, so resume works across devices.
         found = await tryExternalPlayerFallback(film);
+        // Try the additional NeoWatch provider catalog before generic page extraction.
+        if (!found) found = await searchNeoWatchSources(film, true);
         // If both ID-based players fail, retry page extraction twice before giving up.
         for (let pass = 0; pass < 2 && !found; pass++) {
           for (const title of titles) {
@@ -781,6 +835,10 @@
 
     status("STELLAR НЕ ОТВЕТИЛ · ПРОВЕРЯЮ ДРУГИЕ ИСТОЧНИКИ…");
     try {
+      if (await searchNeoWatchSources(film, true)) {
+        await showOfficialProviders(film);
+        return;
+      }
       const results = await searchOpenArchive(film);
       const exact = results.filter(item => item && item.confidence === "high");
       if (exact.length === 1) {
