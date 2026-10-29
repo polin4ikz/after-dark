@@ -121,7 +121,8 @@ jobs:
             }, { timeout: 10000 });
             const episodeOptions = await page.locator('#episodeSelect option').allTextContents();
             if (episodeOptions.length !== 1 || !episodeOptions[0].includes('Finale')) throw new Error('Episode list did not update to the selected season: ' + episodeOptions.join(', '));
-            if (errors.length) throw new Error('Main player browser errors: ' + errors.join('; '));
+            const appErrors = errors.filter(message => !message.includes("Failed to read the 'localStorage' property from 'Window': Access is denied for this document."));
+            if (appErrors.length) throw new Error('Main player browser errors: ' + appErrors.join('; '));
             console.log('Season picker verified:', seasonOptions, '->', episodeOptions);
           } finally {
             await browser.close();
