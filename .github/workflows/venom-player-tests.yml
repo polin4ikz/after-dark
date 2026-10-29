@@ -61,7 +61,7 @@ jobs:
             await browser.close();
           }
           NODE
-      - name: Verify real season and episode bounds in the main player
+      - name: Verify main player no longer duplicates episode controls or sends users to external players
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -72,32 +72,6 @@ jobs:
             page.on('pageerror', error => errors.push(error.message));
             await page.route('**/*', async route => {
               const url = new URL(route.request().url());
-              if (url.pathname === '/api/tmdb') {
-                const path = url.searchParams.get('path');
-                if (path === '/tv/123') {
-                  return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-                    id: 123, seasons: [
-                      { season_number: 1, episode_count: 2 },
-                      { season_number: 2, episode_count: 1 },
-                      { season_number: 99, episode_count: 0 }
-                    ]
-                  }) });
-                }
-                if (path === '/tv/123/season/1') {
-                  return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-                    season_number: 1, episodes: [
-                      { episode_number: 1, name: 'Pilot' },
-                      { episode_number: 2, name: 'The Second Episode' }
-                    ]
-                  }) });
-                }
-                if (path === '/tv/123/season/2') {
-                  return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-                    season_number: 2, episodes: [{ episode_number: 1, name: 'Finale' }]
-                  }) });
-                }
-                return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'unexpected path', path }) });
-              }
               if (url.origin === 'http://127.0.0.1:4173') return route.continue();
               return route.abort();
             });
@@ -106,24 +80,24 @@ jobs:
                 tmdbId: 123, type: 'series', media_type: 'tv', title: 'Test Series',
                 first_air_date: '2020-01-01'
               }));
+              window.afterDarkProgressReady = Promise.resolve(true);
+              window.afterDarkProgress = {
+                get: () => null,
+                save: async () => true,
+                formatTime: seconds => Math.floor(seconds / 60) + ' мин.'
+              };
             });
             await page.goto('http://127.0.0.1:4173/venom-watch.html', { waitUntil: 'domcontentloaded' });
-            await page.waitForFunction(() => {
-              const select = document.querySelector('#seasonSelect');
-              return select && !select.disabled && select.options.length === 2;
-            }, { timeout: 10000 });
-            const seasonOptions = await page.locator('#seasonSelect option').allTextContents();
-            if (seasonOptions.some(option => option.includes('99 СЕЗОН'))) throw new Error('Season with zero episodes should not be selectable');
-            await page.selectOption('#seasonSelect', '2');
-            await page.waitForFunction(() => {
-              const select = document.querySelector('#episodeSelect');
-              return select && select.options.length === 1 && select.options[0].textContent.includes('Finale');
-            }, { timeout: 10000 });
-            const episodeOptions = await page.locator('#episodeSelect option').allTextContents();
-            if (episodeOptions.length !== 1 || !episodeOptions[0].includes('Finale')) throw new Error('Episode list did not update to the selected season: ' + episodeOptions.join(', '));
+            await page.waitForSelector('#playerStage');
+            const controls = await page.locator('#seasonSelect, #episodeSelect, #episodePicker').count();
+            if (controls !== 0) throw new Error('Duplicate season/episode controls still exist in the page');
+            const html = await page.locator('body').innerText();
+            if (/ОТКРЫТЬ STREMIO|ОТКРЫТЬ STELLAR/i.test(html)) throw new Error('External player CTA still appears in page');
+            const script = await page.locator('script[src*="venom-watch-page.js"]').getAttribute('src');
+            if (!script || !script.includes('20261029-player-cleanup2')) throw new Error('Player script cache version was not updated');
             const appErrors = errors.filter(message => !message.includes("Failed to read the 'localStorage' property from 'Window': Access is denied for this document."));
             if (appErrors.length) throw new Error('Main player browser errors: ' + appErrors.join('; '));
-            console.log('Season picker verified:', seasonOptions, '->', episodeOptions);
+            console.log('Verified: no duplicate season/episode picker and no Stremio/Stellar external CTA.');
           } finally {
             await browser.close();
           }
