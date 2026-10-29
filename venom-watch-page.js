@@ -1007,7 +1007,6 @@
         status("ИСТОЧНИК НАЙДЕН · ЯЗЫК ОЗВУЧКИ НЕ ПОДТВЕРЖДЁН");
         addNote("Нашлось точное совпадение с открытой лицензией, но метаданные не подтверждают русскую озвучку. Не запускаю его автоматически, чтобы не выбрать случайно неподходящую дорожку.");
         renderCandidate(exactWithoutConfirmedRussian[0]);
-        addExternalFallback(film);
         return;
       }
       const { titles: providerTitles, year: providerYear } = filmSearchTerms(film);
