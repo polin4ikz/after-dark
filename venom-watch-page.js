@@ -1086,6 +1086,69 @@
     await showOfficialProviders(film);
     await showWatchmodeProviders(film);
   }
+  async function initEpisodePicker(film) {
+    const picker = $("#episodePicker"), seasonSelect = $("#seasonSelect"), episodeSelect = $("#episodeSelect");
+    const playButton = $("#playSelectedEpisode"), pickerStatus = $("#episodePickerStatus");
+    if (!picker || !seasonSelect || !episodeSelect || !playButton || !isSeriesFilm(film)) return;
+    picker.hidden = false;
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    if (!Number.isSafeInteger(id) || id <= 0) { pickerStatus.textContent = "Не удалось определить сериал."; return; }
+    let seasonRequest = 0;
+    const setStatus = message => { pickerStatus.textContent = message; };
+    const loadEpisodes = async (seasonNumber, preferredEpisode) => {
+      const request = ++seasonRequest;
+      episodeSelect.replaceChildren(new Option("ЗАГРУЖАЮ СЕРИИ…", ""));
+      episodeSelect.disabled = true; playButton.disabled = true; setStatus("Загружаю список серий…");
+      try {
+        const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id + "/season/" + seasonNumber), { headers: { accept: "application/json" } });
+        if (!response.ok) throw new Error("TMDB_HTTP_" + response.status);
+        const details = await response.json();
+        if (request !== seasonRequest) return;
+        const episodes = (Array.isArray(details.episodes) ? details.episodes : []).filter(ep => Number.isInteger(Number(ep.episode_number)) && Number(ep.episode_number) > 0);
+        episodeSelect.replaceChildren();
+        if (!episodes.length) { episodeSelect.add(new Option("СЕРИИ НЕ НАЙДЕНЫ", "")); setStatus("Для выбранного сезона TMDB не вернул список серий."); return; }
+        episodes.forEach(ep => { const n=Number(ep.episode_number), title=String(ep.name||"").trim(); episodeSelect.add(new Option(String(n).padStart(2,"0")+(title?" · "+title:" серия"),String(n))); });
+        const validPreferred = episodes.some(ep => Number(ep.episode_number) === Number(preferredEpisode));
+        episodeSelect.value = String(validPreferred ? Number(preferredEpisode) : Number(episodes[0].episode_number));
+        episodeSelect.disabled = episodes.length < 2; selectedEpisode = Number(episodeSelect.value); playButton.disabled = false;
+        setStatus("СЕРИЙ В СЕЗОНЕ: " + episodes.length + " · НОМЕРА ВЗЯТЫ ИЗ TMDB");
+      } catch (error) {
+        if (request !== seasonRequest) return;
+        episodeSelect.replaceChildren(new Option("НЕ УДАЛОСЬ ЗАГРУЗИТЬ", ""));
+        setStatus("Не удалось загрузить серии. Проверь соединение и настройки TMDB.");
+        console.warn("Episode picker load failed:", error);
+      }
+    };
+    seasonSelect.replaceChildren(new Option("ЗАГРУЖАЮ СЕЗОНЫ…", "")); seasonSelect.disabled = true; playButton.disabled = true;
+    try {
+      const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id), { headers: { accept: "application/json" } });
+      if (!response.ok) throw new Error("TMDB_HTTP_" + response.status);
+      const details = await response.json();
+      const seasons = (Array.isArray(details.seasons) ? details.seasons : []).filter(item => Number.isInteger(Number(item.season_number)) && Number(item.season_number) > 0).sort((a,b)=>Number(a.season_number)-Number(b.season_number));
+      seasonSelect.replaceChildren();
+      if (!seasons.length) { seasonSelect.add(new Option("СЕЗОНЫ НЕ НАЙДЕНЫ", "")); setStatus("У этого сериала нет доступных сезонов в TMDB."); return; }
+      seasons.forEach(item => { const n=Number(item.season_number), count=Number(item.episode_count)||0; seasonSelect.add(new Option(n+" СЕЗОН"+(count?" · "+count+" СЕР.":""),String(n))); });
+      const saved = savedProgress(film) || {}, desiredSeason=Number(selectedSeason ?? saved.season_number ?? 1), desiredEpisode=Number(selectedEpisode ?? saved.episode_number ?? 1);
+      seasonSelect.value = String(seasons.some(item=>Number(item.season_number)===desiredSeason)?desiredSeason:Number(seasons[0].season_number));
+      selectedSeason = Number(seasonSelect.value); seasonSelect.disabled = seasons.length < 2;
+      seasonSelect.addEventListener("change", async () => { selectedSeason=Number(seasonSelect.value); selectedEpisode=1; await loadEpisodes(selectedSeason,1); });
+      episodeSelect.addEventListener("change", () => { selectedEpisode=Number(episodeSelect.value); playButton.disabled=!(Number.isInteger(selectedEpisode)&&selectedEpisode>0); });
+      playButton.addEventListener("click", async () => {
+        selectedSeason=Number(seasonSelect.value); selectedEpisode=Number(episodeSelect.value);
+        if (!(selectedSeason>0&&selectedEpisode>0)) return;
+        restartCurrentEpisode=true;
+        await window.afterDarkProgress?.save?.({tmdb_id:id,title:film.title||film.name||"",media_type:"tv",position_seconds:0,duration_seconds:0,status:"in_progress",season_number:selectedSeason,episode_number:selectedEpisode,source_provider:"manual-selection"});
+        await findSources(film);
+      });
+      await loadEpisodes(selectedSeason,desiredEpisode);
+    } catch (error) {
+      seasonSelect.replaceChildren(new Option("НЕ УДАЛОСЬ ЗАГРУЗИТЬ","")); seasonSelect.disabled=true;
+      episodeSelect.replaceChildren(new Option("СПИСОК НЕДОСТУПЕН","")); episodeSelect.disabled=true;
+      setStatus("Не удалось загрузить сезоны. Проверь соединение и настройки TMDB.");
+      console.warn("Season picker load failed:",error);
+    }
+  }
+
   function init() {
     const manualSourceForm = $("#manualSourceForm");
     const manualSourceInput = $("#manualSourceUrl");
@@ -1199,6 +1262,7 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
+    if (isSeries) initEpisodePicker(film);
     Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
