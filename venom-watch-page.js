@@ -1164,7 +1164,11 @@
       if (index < 0) return;
       audioPreferenceApplied = true;
       let selectedTrack = null;
-      if (hls) {
+      if (matteboxInstance) {
+        const tracks = (matteboxInstance.tracks?.available || []).filter(track => track.contentType === "audio" && matteboxInstance.tracks.selectable(track.id));
+        selectedTrack = tracks[index] || null;
+        if (selectedTrack) matteboxInstance.tracks.select(selectedTrack.id);
+      } else if (hls) {
         selectedTrack = (hls.audioTracks || [])[index] || null;
         hls.audioTrack = index;
       } else if (dash) {
