@@ -1124,7 +1124,7 @@
       const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id), { headers: { accept: "application/json" } });
       if (!response.ok) throw new Error("TMDB_HTTP_" + response.status);
       const details = await response.json();
-      const seasons = (Array.isArray(details.seasons) ? details.seasons : []).filter(item => Number.isInteger(Number(item.season_number)) && Number(item.season_number) > 0).sort((a,b)=>Number(a.season_number)-Number(b.season_number));
+      const seasons = (Array.isArray(details.seasons) ? details.seasons : []).filter(item => Number.isInteger(Number(item.season_number)) && Number(item.season_number) > 0 && Number(item.episode_count) > 0).sort((a,b)=>Number(a.season_number)-Number(b.season_number));
       seasonSelect.replaceChildren();
       if (!seasons.length) { seasonSelect.add(new Option("СЕЗОНЫ НЕ НАЙДЕНЫ", "")); setStatus("У этого сериала нет доступных сезонов в TMDB."); return; }
       seasons.forEach(item => { const n=Number(item.season_number), count=Number(item.episode_count)||0; seasonSelect.add(new Option(n+" СЕЗОН"+(count?" · "+count+" СЕР.":""),String(n))); });
