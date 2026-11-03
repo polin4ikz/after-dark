@@ -427,6 +427,8 @@
     if (startOverButton) startOverButton.hidden = !resumeTime;
     if (panel && panel.dataset.filmKey !== key) {
       panel.dataset.filmKey = key;
+      delete panel.dataset.adVoiceover;
+      delete panel.dataset.adDoNotSaveSource;
       if (input && kind) {
         input.value = "";
         kind.value = "hls";
@@ -436,6 +438,7 @@
             input.value = valid.url;
             kind.value = valid.kind;
             panel.dataset.adVoiceover = saved.label || "";
+            delete panel.dataset.adDoNotSaveSource;
           } catch (_) {}
         }
       }
