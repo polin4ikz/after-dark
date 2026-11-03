@@ -587,7 +587,7 @@
       return;
     }
     const kind = path.endsWith(".m3u8") ? "hls" : path.endsWith(".mpd") ? "dash" : /\.(mp4|webm|ogv|ogg|m4v)(?:$)/i.test(path) ? "file" : "unknown";
-    const matteboxEnabled = new URLSearchParams(window.location.search).get("mattebox") === "1";
+    const matteboxEnabled = new URLSearchParams(window.location.search).get("mattebox") !== "0";
     if (matteboxEnabled && matteboxFallbackUrl !== url.href && (kind === "hls" || kind === "dash")) {
       resetStreamEngines();
       const matteboxStage = $("#playerStage");
@@ -1069,9 +1069,11 @@
         output.textContent = error.message || "НЕ УДАЛОСЬ ПОЛУЧИТЬ СПИСОК ИСТОЧНИКОВ.";
       } finally {
         button.disabled = false;
-        button.textContent = "НАЙТИ ВАРИАНТЫ ОЗВУЧКИ";
+        button.textContent = "ОБНОВИТЬ ВАРИАНТЫ ОЗВУЧКИ";
       }
     });
+    // Populate the real voiceover choices immediately; the video itself is not autoplayed.
+    button.click();
   }
 
   async function tryExternalPlayerFallback(film) {
