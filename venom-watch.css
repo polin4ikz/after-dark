@@ -187,3 +187,24 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-controls__field select{width:100%;min-height:38px;padding:8px 10px;border:1px solid rgba(232,221,200,.25);background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
 .vidrift-controls__field option{background:#100e0d;color:#e8ddc8}
 @media(max-width:600px){.vidrift-controls{top:8px;right:8px;width:min(260px,calc(100% - 16px))}.vidrift-controls__toggle{min-height:36px;padding:8px 10px}.vidrift-controls__panel{max-height:40vh}}
+
+
+/* Settings sit below the video so they never cover VidRift's Next Episode control. */
+.vidrift-player-shell{position:relative;width:100%}
+.vidrift-player-shell .player-stage{margin-top:0}
+.vidrift-controls{position:relative;z-index:2;display:block;width:100%;margin:10px 0 4px;padding:0;border:0;background:transparent}
+.vidrift-controls__toggle{display:block;min-height:40px;padding:9px 14px;border:1px solid rgba(232,221,200,.28);background:rgba(121,21,34,.16);color:#e8ddc8;font:9px "Geist Mono",monospace;letter-spacing:.08em;cursor:pointer}
+.vidrift-controls__toggle:hover,.vidrift-controls__toggle[aria-expanded="true"]{background:#791522}
+.vidrift-controls__panel{max-height:min(44vh,360px);overflow:auto;margin-top:7px;padding:12px;border:1px solid rgba(232,221,200,.2);background:#100e0d;box-shadow:0 12px 36px rgba(0,0,0,.25)}
+.vidrift-controls__panel[hidden]{display:none!important}
+.vidrift-controls__list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.vidrift-controls__note{margin:0 0 8px;color:rgba(232,221,200,.6);font:9px/1.4 "Geist Mono",monospace}
+.vidrift-controls__field{display:grid;gap:5px;color:rgba(232,221,200,.8);font:9px "Geist Mono",monospace;letter-spacing:.08em}
+.vidrift-controls__field select{width:100%;min-height:40px;padding:8px 10px;border:1px solid rgba(232,221,200,.25);background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
+.vidrift-controls__field option{background:#100e0d;color:#e8ddc8}
+.player-stage{position:relative}
+.vidrift-episode-info{position:absolute;left:clamp(16px,4vw,48px);bottom:clamp(62px,10vw,110px);z-index:6;width:min(560px,calc(100% - 32px));max-height:38%;overflow:auto;padding:16px 18px;background:linear-gradient(90deg,rgba(10,8,8,.94),rgba(10,8,8,.78));border-left:2px solid #a64250;color:#f2e9dc;pointer-events:none}
+.vidrift-episode-info[hidden]{display:none!important}
+.vidrift-episode-info h2{margin:0 0 7px;font-size:clamp(16px,2vw,23px);font-weight:500}
+.vidrift-episode-info p{margin:0;color:rgba(242,233,220,.78);font-size:clamp(12px,1.2vw,14px);line-height:1.5}
+@media(max-width:600px){.vidrift-controls__list{grid-template-columns:1fr}.vidrift-controls__toggle{width:100%;min-height:44px}.vidrift-episode-info{bottom:58px;padding:12px;max-height:34%}}
