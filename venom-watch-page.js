@@ -65,6 +65,76 @@
   function savedProgress(film) {
     return window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
   }
+  const EXTERNAL_SOURCES_KEY = "after-dark:external-watch-sources:v1";
+  function readExternalSources() {
+    try {
+      const data = JSON.parse(localStorage.getItem(EXTERNAL_SOURCES_KEY) || "{}");
+      return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+    } catch (_) { return {}; }
+  }
+  function parseWatchTime(value) {
+    const parts = String(value || "").trim().split(":");
+    if (parts.length < 2 || parts.length > 3 || parts.some(part => !/^\\d{1,2}$/.test(part))) return null;
+    const numbers = parts.map(Number);
+    if (numbers.slice(1).some(part => part > 59)) return null;
+    const seconds = parts.length === 3 ? numbers[0] * 3600 + numbers[1] * 60 + numbers[2] : numbers[0] * 60 + numbers[1];
+    return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : null;
+  }
+  function showExternalSource(film, url) {
+    const panel = $("#externalSourceSaved");
+    const link = $("#externalSourceLink");
+    const input = $("#externalPosition");
+    const statusText = $("#externalPositionStatus");
+    if (!panel || !link || !input) return;
+    const safe = new URL(url);
+    link.href = safe.href;
+    link.textContent = "ОТКРЫТЬ " + safe.hostname.replace(/^www\\./i, "").toLocaleUpperCase("ru-RU") + " ↗";
+    panel.hidden = false;
+    const saved = savedProgress(film);
+    if (saved?.position_seconds) input.value = window.afterDarkProgress?.formatTime(saved.position_seconds) || "";
+    if (statusText) statusText.textContent = saved?.source_provider === "external-link" && saved.position_seconds
+      ? "Последнее место сохранено: " + (window.afterDarkProgress?.formatTime(saved.position_seconds) || "")
+      : "Ссылка сохранена в этом браузере.";
+  }
+  function bindExternalProgress(film) {
+    const id = Number(film?.tmdbId ?? film?.tmdb_id ?? film?.id);
+    const savedUrl = readExternalSources()[String(id)];
+    const input = $("#manualSourceUrl");
+    if (savedUrl && input) {
+      input.value = savedUrl;
+      showExternalSource(film, savedUrl);
+    }
+    const saveButton = $("#saveExternalPosition");
+    if (!saveButton || saveButton.dataset.bound) return;
+    saveButton.dataset.bound = "1";
+    saveButton.addEventListener("click", async () => {
+      const timeInput = $("#externalPosition");
+      const statusText = $("#externalPositionStatus");
+      const seconds = parseWatchTime(timeInput?.value);
+      if (seconds == null) {
+        timeInput?.setCustomValidity("Введи время как 17:27 или 1:17:27.");
+        timeInput?.reportValidity();
+        return;
+      }
+      timeInput.setCustomValidity("");
+      const previous = savedProgress(film) || {};
+      const saved = await window.afterDarkProgress?.save?.({
+        tmdb_id: id,
+        title: film.title || film.name || "",
+        media_type: isSeriesFilm(film) ? "tv" : "movie",
+        position_seconds: seconds,
+        duration_seconds: Number(previous.duration_seconds || 0),
+        status: "in_progress",
+        season_number: isSeriesFilm(film) ? (selectedSeason ?? previous.season_number ?? 1) : null,
+        episode_number: isSeriesFilm(film) ? (selectedEpisode ?? previous.episode_number ?? 1) : null,
+        source_provider: "external-link"
+      });
+      if (statusText) statusText.textContent = saved
+        ? "Сохранено: " + (window.afterDarkProgress?.formatTime(seconds) || "")
+        : "Не удалось сохранить время просмотра.";
+    });
+  }
+
   function askResumeChoice(film) {
     const saved = window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
     const position = Number(saved?.position_seconds || 0);
@@ -1679,21 +1749,23 @@
       manualSourceForm.addEventListener("submit", event => {
         event.preventDefault();
         const rawSource = manualSourceInput.value.trim();
-        if (!rawSource) {
-          streamStatus("Вставь HTTPS-ссылку на прямой видеопоток или код iframe.", true);
-          manualSourceInput.focus();
+        const filmId = Number(currentFilm?.tmdbId ?? currentFilm?.tmdb_id ?? currentFilm?.id);
+        if (!rawSource || !Number.isSafeInteger(filmId) || filmId < 1) return;
+        let sourceUrl;
+        try {
+          sourceUrl = new URL(rawSource);
+          if (!["https:", "http:"].includes(sourceUrl.protocol)) throw new Error("Некорректная ссылка");
+        } catch (_) {
+          manualSourceInput.setCustomValidity("Вставь полную ссылку на сайт, начиная с https://");
+          manualSourceInput.reportValidity();
           return;
         }
-        try {
-          openDirectStream(rawSource);
-          status("РУЧНОЙ ИСТОЧНИК ПОДКЛЮЧЁН");
-          const sourceUrl = extractSubmittedUrl(rawSource);
-          const sourceHost = new URL(sourceUrl).hostname.replace(/^www[.]/i, "");
-          streamStatus("Подключён источник " + sourceHost + ". Если это HLS/DASH с несколькими аудиодорожками, After Dark покажет их и автоматически выберет русскую, когда язык указан в потоке. Для стороннего iframe дорожками управляет сам сайт.");
-          manualSourceInput.blur();
-        } catch (error) {
-          streamStatus(error && error.message ? error.message : "Не удалось открыть источник. Проверь ссылку.", true);
-        }
+        manualSourceInput.setCustomValidity("");
+        const savedSources = readExternalSources();
+        savedSources[String(filmId)] = sourceUrl.href;
+        try { localStorage.setItem(EXTERNAL_SOURCES_KEY, JSON.stringify(savedSources)); } catch (_) {}
+        manualSourceInput.value = sourceUrl.href;
+        showExternalSource(currentFilm, sourceUrl.href);
       });
     }
     $("#audioTrack").addEventListener("change", () => {
@@ -1749,6 +1821,7 @@
       return;
     }
     currentFilm = film;
+    bindExternalProgress(film);
     const initialStage = $("#playerStage");
     if (initialStage && !initialStage.querySelector(".cinema-loader")) initialStage.replaceChildren(createCinemaLoader("STELLAR"));
     const playerActions = document.querySelector(".player-actions");
