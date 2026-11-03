@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="AFTER DARK — личная коллекция кино">
   <title>AFTER DARK — Cinema</title>
+  <script>
+    (() => {
+      const url = new URL(window.location.href);
+      const ratingId = Number(url.searchParams.get("rate"));
+      if (ratingId > 0) {
+        window.__afterDarkPendingRating = ratingId;
+        url.searchParams.delete("rate");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,200..800&family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -70,6 +81,6 @@
   <script src="venom-player.js?v=20261029-mattebox-audio2"></script>
   <script src="script.js?v=20261103-movie-night-language1"></script>
   <script src="auth-ui.js?v=20261017-authfix2"></script>
-  <script src="supabase-runtime.js?v=20261028-step2-type-normalize1"></script>
+  <script src="supabase-runtime.js?v=20261103-one-shot-rating1"></script>
 </body>
 </html>
