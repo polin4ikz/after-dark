@@ -389,7 +389,8 @@
       } catch (error) {
         status.textContent = error.message || "Не удалось открыть источник.";
         status.classList.add("is-error");
-        if (activeVidriftFrame && $(".ad-watch-player__stage", modal)?.contains(activeVidriftFrame)) activeVidriftFrame = null;\n    $(".ad-watch-player__stage", modal).replaceChildren();
+        if (activeVidriftFrame && $(".ad-watch-player__stage", modal)?.contains(activeVidriftFrame)) activeVidriftFrame = null;
+    $(".ad-watch-player__stage", modal).replaceChildren();
       }
     });
     modal.addEventListener("click", event => {
