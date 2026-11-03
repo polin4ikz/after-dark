@@ -2,20 +2,31 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NeoWatch connectivity check</title></head>
 <body><pre id="result">Checking…</pre><script>
 (async()=>{
- const urls=[
-  ["search","https://api.neome.uk/api/v1/search?q=breaking&type=tv"],
-  ["alloha","https://api.neome.uk/api/v1/player/alloha/tmdb/1396?season=1&episode=1"],
-  ["cdn","https://api.neome.uk/api/v1/player/cdn/imdb/tt0903747?season=1&episode=1"]
- ];
- const out=[];
- for(const [name,url] of urls){
+ const base="https://api.neome.uk";
+ const out={};
+ async function get(name,url){
   try{
    const r=await fetch(url,{mode:"cors",headers:{accept:"application/json, text/html"}});
    const type=r.headers.get("content-type")||"";
-   let body=type.includes("json")?await r.json():await r.text();
-   out.push({name,status:r.status,type,body});
-  }catch(e){out.push({name,error:String(e)})}
+   const body=type.includes("json")?await r.json():await r.text();
+   out[name]={status:r.status,type};
+   return body;
+  }catch(e){out[name]={error:String(e)};return null}
  }
+ const search=await get("search",base+"/api/v1/search?q=breaking&type=tv");
+ const items=search?.data?.items||[];
+ out.search.match=items.filter(x=>String(x.originalTitle||"").toLowerCase()==="breaking bad").map(x=>({id:x.tmdbId,title:x.title,originalTitle:x.originalTitle,mediaType:x.mediaType}));
+ const alloha=await get("alloha",base+"/api/v1/player/alloha/tmdb/1396?season=1&episode=1");
+ out.alloha.body=alloha;
+ const cdn=await get("cdn",base+"/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2");
+ out.cdn.topKeys=cdn&&Object.keys(cdn);
+ out.cdn.dataKeys=cdn?.data&&Object.keys(cdn.data);
+ function findTrackArrays(x,path="data"){
+  if(!x||typeof x!=="object")return [];
+  if(Array.isArray(x)&&x.some(y=>y&&typeof y==="object"&&("m3u8Url" in y||"title" in y)))return [{path,items:x.filter(y=>y&&typeof y==="object").slice(0,30).map(y=>({title:y.title,season:y.season,episode:y.episode,hasUrl:Boolean(y.m3u8Url||y.url)}))}];
+  return Object.entries(x).flatMap(([k,v])=>findTrackArrays(v,path+"."+k));
+ }
+ out.cdn.trackArrays=findTrackArrays(cdn);
  document.getElementById("result").textContent=JSON.stringify(out,null,2);
 })();
 </script></body></html>
