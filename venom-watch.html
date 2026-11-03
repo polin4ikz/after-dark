@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="venom-watch.css?v=20261103-vidrift-controls9">
+  <link rel="stylesheet" href="venom-watch.css?v=20261103-player-cleanup2">
 </head>
 <body>
   <main class="player-page">
@@ -27,27 +27,39 @@
       </div>
       <section id="vidriftControls" class="vidrift-controls" aria-label="Качество, аудио и субтитры"></section>
       <section id="trackControls" class="track-controls" hidden aria-label="Внутренние дорожки"><label>ОЗВУЧКА<select id="audioTrack" disabled><option value="-1">Источник не предоставляет выбор</option></select></label><label>СУБТИТРЫ<select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select></label></section>
-      <div class="player-actions" aria-label="Playback actions"><button type="button" data-player-action="watched">MARK AS WATCHED</button><button type="button" data-player-action="rate">RATE</button></div>
-      
-      <p id="streamStatus" class="source-note stream-status" role="status" aria-live="polite">Озвучка, субтитры и качество настраиваются внутри самого плеера, если источник поддерживает эти функции.</p>
-      <form id="manualSourceForm" class="stream-form">
-        <label for="manualSourceUrl">СВОЙ ИСТОЧНИК · ССЫЛКА НА ВИДЕО ИЛИ ВСТРОЕННЫЙ ПЛЕЕР</label>
-        <div class="stream-form__row">
-          <input id="manualSourceUrl" name="sourceUrl" type="text" inputmode="url" autocomplete="url" placeholder="https://… .m3u8 / .mpd / .mp4 или iframe URL" aria-describedby="manualSourceHint" required>
-          <button type="submit">ОТКРЫТЬ ИСТОЧНИК ↗</button>
+      <div class="player-actions" aria-label="Действия с просмотром"><button type="button" data-player-action="watched">ОТМЕТИТЬ ПРОСМОТРЕННЫМ</button><button type="button" data-player-action="rate">ОЦЕНИТЬ</button></div>
+
+      <p id="streamStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+      <details class="reserve-source">
+        <summary><span>Резервная ссылка</span><small>если плеер не найдёт фильм</small></summary>
+        <div class="reserve-source__body">
+          <p class="reserve-source__hint">Сохрани ссылку и открой сайт-источник отдельно. After Dark не может автоматически считывать время из чужого плеера; последнее место можно записать вручную.</p>
+          <form id="manualSourceForm" class="reserve-source__form">
+            <label for="manualSourceUrl">ССЫЛКА НА САЙТ-ИСТОЧНИК</label>
+            <div class="reserve-source__row">
+              <input id="manualSourceUrl" name="sourceUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://…" aria-describedby="externalSourceHint" required>
+              <button type="submit">СОХРАНИТЬ ССЫЛКУ</button>
+            </div>
+            <p id="externalSourceHint" class="visually-hidden">Ссылка откроет исходный сайт в новой вкладке и не будет воспроизводиться внутри After Dark.</p>
+          </form>
+          <section id="externalSourceSaved" class="external-source-saved" hidden>
+            <a id="externalSourceLink" target="_blank" rel="noopener noreferrer"></a>
+            <label for="externalPosition">ГДЕ ОСТАНОВИЛАСЬ <span>например, 17:27</span></label>
+            <div class="reserve-source__row">
+              <input id="externalPosition" type="text" inputmode="numeric" placeholder="мин:сек или ч:мин:сек" autocomplete="off">
+              <button id="saveExternalPosition" type="button">СОХРАНИТЬ ВРЕМЯ</button>
+            </div>
+            <p id="externalPositionStatus" class="external-source-saved__status" role="status" aria-live="polite"></p>
+          </section>
         </div>
-        <p id="manualSourceHint" class="source-note">Для выбора озвучки лучше всего подходит прямой HLS (.m3u8) или DASH (.mpd) поток с открытым доступом. Ссылка на обычную страницу не всегда подходит; iframe остаётся под управлением своего сайта. After Dark не обходит DRM или ограничения доступа.</p>
-      </form>
-      <section class="source-discovery" aria-labelledby="sourceHeading">
-        <div class="source-heading" id="sourceHeading">ИСТОЧНИКИ ПРОСМОТРА</div>
-        <div id="sourceResults" class="source-results" aria-live="polite"></div>
-      </section>
+      </details>
+      <div id="sourceResults" hidden aria-live="polite"></div>
     </section>
     <footer class="player-footer"><span>AFTER DARK / EST. 2026</span><span>FILMS · SERIES · ANIMATION</span></footer>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
   <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
   <script src="watch-progress.js?v=20261028-step2-progress1"></script>
-  <script src="venom-watch-page.js?v=20261103-vidrift-controls9"></script>
+  <script src="venom-watch-page.js?v=20261103-player-cleanup2"></script>
 </body>
 </html>
