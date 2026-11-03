@@ -1039,7 +1039,7 @@
   function languageOf(item, originalLanguage = "") {
     const values = [
       item && item.label, item && item.name, item && item.title,
-      item && item.language, item && item.lang, item && item.description
+      item && item.language, item && item.lang, item && item.value, item && item.description
     ].filter(Boolean).join(" ").toLowerCase();
     if (/\b(ru|rus)\b|русск|russian/i.test(values)) return "ru";
     if (/\b(en|eng)\b|англ|english/i.test(values)) return "en";
@@ -1146,7 +1146,7 @@
         .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
-        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item, originalLanguage) }))
         .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
 
       if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
