@@ -15,6 +15,7 @@
   let selectedEpisode = null;
   let audioPreferenceApplied = false;
   let preferredRussianAudioSelected = false;
+  let externalLinkResumeChosen = false;
 
   function findRussianAudioTrackIndex(tracks) {
     if (!Array.isArray(tracks)) return -1;
@@ -139,6 +140,8 @@
     const saved = window.afterDarkProgress?.get(film?.tmdbId ?? film?.id) || null;
     const position = Number(saved?.position_seconds || 0);
     if (!saved || saved.status !== "in_progress" || position < 10) return Promise.resolve();
+    const savedExternalUrl = saved.source_provider === "external-link" ? readExternalSources()[String(Number(film?.tmdbId ?? film?.tmdb_id ?? film?.id))] : "";
+    const canResumeExternal = typeof savedExternalUrl === "string" && (savedExternalUrl.startsWith("https://") || savedExternalUrl.startsWith("http://"));
     const overlay = document.createElement("div");
     overlay.className = "resume-dialog-backdrop";
     overlay.setAttribute("role", "presentation");
@@ -159,13 +162,15 @@
     heading.textContent = "Ты остановилась" + episodeLabel + " — " + (window.afterDarkProgress?.formatTime ? window.afterDarkProgress.formatTime(position) : Math.floor(position / 60) + " мин.");
     const description = document.createElement("p");
     description.className = "resume-dialog__description";
-    description.textContent = "Продолжить с сохранённого места или начать просмотр сначала?";
+    description.textContent = canResumeExternal
+      ? "Откроется сохранённый сайт. Время записано вручную; на чужом плеере его нужно выставить самостоятельно."
+      : "Продолжить с сохранённого места или начать просмотр сначала?";
     const actions = document.createElement("div");
     actions.className = "resume-dialog__actions";
     const continueButton = document.createElement("button");
     continueButton.type = "button";
     continueButton.className = "resume-dialog__continue";
-    continueButton.textContent = "Продолжить";
+    continueButton.textContent = canResumeExternal ? "Открыть сайт" : "Продолжить";
     const restartButton = document.createElement("button");
     restartButton.type = "button";
     restartButton.className = "resume-dialog__restart";
@@ -177,6 +182,10 @@
     return new Promise(resolve => {
       const finish = restart => {
         restartCurrentEpisode = restart;
+        if (!restart && canResumeExternal) {
+          window.open(savedExternalUrl, "_blank", "noopener,noreferrer");
+          externalLinkResumeChosen = true;
+        }
         overlay.remove();
         resolve();
       };
@@ -1861,7 +1870,7 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); if (externalLinkResumeChosen) { externalLinkResumeChosen = false; return; } return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
