@@ -172,3 +172,18 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-controls__field select{width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid rgba(232,221,200,.25);border-radius:0;background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
 .vidrift-controls__field option{background:#171311;color:#e8ddc8}
 @media(max-width:560px){.vidrift-controls{grid-template-columns:1fr;padding:10px}.vidrift-controls__field select{min-height:46px;font-size:13px}}
+
+/* Compact language picker anchored inside the VidRift video frame. */
+.vidrift-player-shell{position:relative;width:100%}
+.vidrift-player-shell .player-stage{margin-top:0}
+.vidrift-controls{position:absolute;z-index:5;top:12px;right:12px;display:block;width:min(300px,calc(100% - 24px));margin:0;padding:0;border:0;background:transparent;pointer-events:none}
+.vidrift-controls__toggle{display:block;margin-left:auto;min-height:38px;padding:9px 12px;border:1px solid rgba(232,221,200,.32);background:rgba(16,14,13,.92);color:#e8ddc8;font:9px "Geist Mono",monospace;letter-spacing:.08em;cursor:pointer;pointer-events:auto}
+.vidrift-controls__toggle:hover,.vidrift-controls__toggle[aria-expanded="true"]{background:#791522}
+.vidrift-controls__panel{max-height:min(44vh,360px);overflow:auto;margin-top:6px;padding:12px;border:1px solid rgba(232,221,200,.24);background:rgba(16,14,13,.97);box-shadow:0 12px 36px rgba(0,0,0,.35);pointer-events:auto}
+.vidrift-controls__panel[hidden]{display:none!important}
+.vidrift-controls__note{margin:0 0 8px;color:rgba(232,221,200,.6);font:9px/1.4 "Geist Mono",monospace}
+.vidrift-controls__list{display:grid;gap:9px}
+.vidrift-controls__field{display:grid;gap:5px;color:rgba(232,221,200,.8);font:9px "Geist Mono",monospace;letter-spacing:.08em}
+.vidrift-controls__field select{width:100%;min-height:38px;padding:8px 10px;border:1px solid rgba(232,221,200,.25);background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
+.vidrift-controls__field option{background:#100e0d;color:#e8ddc8}
+@media(max-width:600px){.vidrift-controls{top:8px;right:8px;width:min(260px,calc(100% - 16px))}.vidrift-controls__toggle{min-height:36px;padding:8px 10px}.vidrift-controls__panel{max-height:40vh}}
