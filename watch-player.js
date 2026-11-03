@@ -76,61 +76,67 @@
   }
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
 
-  async function searchNeoWatchSources(title, year, season, episode) {
+  async function searchNeoWatchSources(film, season, episode) {
     const base = "https://api.neome.uk";
-    const searchUrl = new URL("/api/v1/search", base);
-    searchUrl.searchParams.set("query", title);
-    const searchResponse = await fetch(searchUrl.href, {
-      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(10000)
-    });
-    if (!searchResponse.ok) throw new Error("NEOWATCH_SEARCH_" + searchResponse.status);
-    const payload = await searchResponse.json();
-    const results = Array.isArray(payload?.data?.results) ? payload.data.results : [];
-    const normalize = value => String(value || "").toLocaleLowerCase().normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-    const wanted = normalize(title);
-    const idMatch = value => {
-      const match = String(value || "").match(/^(?:kp[_-]?)?(\d{1,12})$/i);
-      return match ? match[1] : "";
-    };
-    const match = results.find(item => {
-      const id = idMatch(item?.id);
-      const names = [item?.title, item?.originalTitle].map(normalize).filter(Boolean);
-      const titleMatch = names.some(name => name === wanted || name.startsWith(wanted + " ") || wanted.startsWith(name + " "));
-      const resultYear = item?.year == null ? "" : String(item.year).slice(0, 4);
-      return Boolean(id) && titleMatch && (!year || !resultYear || year === resultYear);
-    });
-    if (!match) return { sources: [], message: "NeoWatch не нашёл точного совпадения по названию и году." };
-    const kpId = idMatch(match.id);
-    const providers = [
-      { id: "collaps", label: "Collaps" }, { id: "alloha", label: "Alloha" },
-      { id: "lumex", label: "Lumex" }, { id: "vibix", label: "Vibix" }, { id: "hdvb", label: "HDVB" }
-    ];
+    const tmdbId = Number(film && (film.tmdbId ?? film.id));
+    const isSeries = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date);
+    if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("TMDB_ID_MISSING");
+    const episodeParams = new URLSearchParams();
+    if (isSeries && Number.isInteger(season) && season >= 1 && Number.isInteger(episode) && episode >= 1) {
+      episodeParams.set("season", String(season));
+      episodeParams.set("episode", String(episode));
+    }
     const sources = [];
-    await Promise.all(providers.map(async provider => {
-      const playerUrl = new URL("/api/v1/players/" + provider.id + "/kp/" + kpId, base);
-      if (Number.isInteger(season) && season >= 1 && Number.isInteger(episode) && episode >= 1) {
-        playerUrl.searchParams.set("season", String(season));
-        playerUrl.searchParams.set("episode", String(episode));
+    async function addSource(label, url) {
+      if (typeof url !== "string" || !url.trim()) return;
+      let embed;
+      try { embed = new URL(url, base); } catch (_) { return; }
+      if (embed.protocol !== "https:" || embed.username || embed.password || (embed.port && embed.port !== "443")) return;
+      if (!sources.some(source => source.embedUrl === embed.href)) {
+        sources.push({ provider: label, embedUrl: embed.href, title: titleOf(film), year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null });
       }
-      try {
-        const response = await fetch(playerUrl.href, {
-          headers: { accept: "text/html" }, mode: "cors", signal: AbortSignal.timeout(10000)
-        });
-        if (!response.ok) return;
-        const html = await response.text();
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const raw = doc.querySelector("iframe[src]")?.getAttribute("src") || "";
-        if (!raw) return;
-        const embed = new URL(raw, playerUrl.href);
-        if (embed.protocol !== "https:" || embed.username || embed.password || (embed.port && embed.port !== "443")) return;
-        if (!sources.some(source => source.embedUrl === embed.href)) {
-          sources.push({ provider: provider.label, embedUrl: embed.href, kpId,
-            title: String(match.title || title).slice(0, 160), year: match.year || year || null });
+    }
+    const allohaUrl = new URL("/api/v1/player/alloha/tmdb/" + tmdbId, base);
+    for (const [key, value] of episodeParams) allohaUrl.searchParams.set(key, value);
+    try {
+      const response = await fetch(allohaUrl.href, { headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(10000) });
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload && payload.success && payload.data && payload.data.url) await addSource("Alloha", payload.data.url);
+      }
+    } catch (_) { /* Try the next provider independently. */ }
+    try {
+      const type = isSeries ? "tv" : "movie";
+      const idsResponse = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {
+        headers: { accept: "application/json" }, signal: AbortSignal.timeout(10000)
+      });
+      if (idsResponse.ok) {
+        const ids = await idsResponse.json();
+        const imdbId = String(ids && ids.imdb_id || "");
+        if (/^tt\\d{5,12}$/.test(imdbId)) {
+          const cdnUrl = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), base);
+          for (const [key, value] of episodeParams) cdnUrl.searchParams.set(key, value);
+          const response = await fetch(cdnUrl.href, {
+            headers: { accept: "application/json, text/html" }, mode: "cors", signal: AbortSignal.timeout(10000)
+          });
+          if (response.ok) {
+            const contentType = response.headers.get("content-type") || "";
+            if (contentType.includes("json")) {
+              const payload = await response.json();
+              await addSource("CDN", payload && payload.data && (payload.data.url || payload.data.embedUrl) || payload && payload.url);
+            } else {
+              const html = await response.text();
+              const doc = new DOMParser().parseFromString(html, "text/html");
+              await addSource("CDN", doc.querySelector("iframe[src]")?.getAttribute("src") || "");
+            }
+          }
         }
-      } catch (_) { /* An unavailable provider must not hide the others. */ }
-    }));
-    return { sources, message: sources.length ? "" : "NeoWatch нашёл название, но плееры не вернули доступные iframe-источники." };
+      }
+    } catch (_) { /* One unavailable provider must not hide another. */ }
+    return {
+      sources,
+      message: sources.length ? "" : "NeoWatch не вернул доступный плеер для этого фильма или серии. Попробуй другой источник."
+    };
   }
 
   function ensureModal() {
@@ -151,8 +157,8 @@
       '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
       '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
-      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК РОССИЙСКИХ ИСТОЧНИКОВ ↗</button>',
-      '<button class="ad-watch-player__search" type="button" data-ad-kodik-search>ПОИСК ОЗВУЧЕК KODIK ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК ПЛЕЕРОВ NEO WATCH ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-kodik-search>ПОИСК ОЗВУЧЕК KODIK · НУЖЕН КЛЮЧ</button>',
       '<div class="ad-watch-player__episode-fields" hidden data-ad-episode-fields><label>СЕЗОН <input type="number" min="1" max="100" step="1" value="1" data-ad-season></label><label>СЕРИЯ <input type="number" min="1" max="500" step="1" value="1" data-ad-episode></label></div>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
@@ -239,7 +245,7 @@
           const episode = Number($("[data-ad-episode]", modal)?.value);
           const validEpisode = Number.isInteger(season) && season >= 1 && season <= 100 &&
             Number.isInteger(episode) && episode >= 1 && episode <= 500;
-          const data = await searchNeoWatchSources(query, year, validEpisode ? season : 0, validEpisode ? episode : 0);
+          const data = await searchNeoWatchSources(film, validEpisode ? season : 0, validEpisode ? episode : 0);
           const sources = Array.isArray(data.sources) ? data.sources : [];
           if (!sources.length) {
             results.textContent = data.message || "ИСТОЧНИКИ НЕ НАЙДЕНЫ. ОСТАЛЬНЫЕ ВАРИАНТЫ ПРОСМОТРА НЕ ЗАТРОНУТЫ.";
