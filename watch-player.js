@@ -113,17 +113,30 @@
     if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443")) {
       return { sources: [], message: "CDN ВЕРНУЛ НЕБЕЗОПАСНУЮ ССЫЛКУ НА ПОТОК." };
     }
-    const voiceover = String(data.title || data.provider || "CDN").slice(0, 120);
+    const episodeOptions = isSeries && Array.isArray(data.episodes)
+      ? data.episodes.filter(item => item && item.season === season && item.episode === episode && typeof item.m3u8Url === "string" && item.m3u8Url)
+      : [];
+    const candidates = episodeOptions.length ? episodeOptions : [{ title: data.title || data.provider || "CDN", m3u8Url: streamUrl }];
+    const sources = [];
+    for (const item of candidates) {
+      let itemUrl;
+      try { itemUrl = new URL(String(item.m3u8Url || streamUrl)); } catch (_) { continue; }
+      if (itemUrl.protocol !== "https:" || itemUrl.username || itemUrl.password || (itemUrl.port && itemUrl.port !== "443")) continue;
+      const label = String(item.title || data.title || data.provider || "CDN").slice(0, 120);
+      if (!sources.some(source => source.embedUrl === itemUrl.href)) {
+        sources.push({
+          provider: label,
+          embedUrl: itemUrl.href,
+          kind: "hls",
+          year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null,
+          season: isSeries ? season : null,
+          episode: isSeries ? episode : null
+        });
+      }
+    }
     return {
-      sources: [{
-        provider: voiceover,
-        embedUrl: parsed.href,
-        kind: "hls",
-        year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null,
-        season: isSeries ? season : null,
-        episode: isSeries ? episode : null
-      }],
-      message: ""
+      sources,
+      message: sources.length ? "" : "CDN-ПЛЕЕР НЕ ВЕРНУЛ ДОСТУПНУЮ HLS-ДОРОЖКУ ДЛЯ ВЫБРАННОЙ СЕРИИ ИЛИ ФИЛЬМА."
     };
   }
 
