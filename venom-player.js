@@ -258,7 +258,10 @@
       progressCleanup = () => video.removeEventListener("timeupdate", onTime);
       if (resumeTime > 0) video.addEventListener("loadedmetadata", () => { try { video.currentTime = resumeTime; } catch (_) {} }, { once: true });
       const all = readSources();
-      if (key) { all[key] = source; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {} }
+      if (key && form.dataset.adDoNotSaveSource !== "1") {
+        all[key] = { ...source, label: form.dataset.adVoiceover || "" };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {}
+      }
       window.setTimeout(() => {
         if (matteboxInstance !== engine || modal.dataset.venomRequestToken !== requestToken) return;
         mountMatteboxTrackControls(form, engine);
@@ -316,7 +319,7 @@
 
     const resumePanel = $(".ad-venom-resume", form);
     const sourceInput = $("#adVenomSource", form);
-    sourceInput.addEventListener("input", () => { delete form.dataset.adVoiceover; });
+    sourceInput.addEventListener("input", () => { delete form.dataset.adVoiceover; delete form.dataset.adDoNotSaveSource; });
     const resumeLabel = $(".ad-venom-resume__label", form);
     const startOverButton = $(".ad-venom-start-over", form);
     startOverButton.addEventListener("click", () => {
@@ -392,7 +395,7 @@
         const progressEvents = ["timeupdate", "pause", "ended"];
         progressEvents.forEach(name => container.addEventListener(name, captureProgress, true));
         progressCleanup = () => progressEvents.forEach(name => container.removeEventListener(name, captureProgress, true));
-        if (key) {
+        if (key && form.dataset.adDoNotSaveSource !== "1") {
           const all = readSources();
           all[key] = { ...source, label: form.dataset.adVoiceover || "" };
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {}
