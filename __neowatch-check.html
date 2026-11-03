@@ -21,6 +21,9 @@
  const cdn=await get("cdn",base+"/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2");
  out.cdn.topKeys=cdn&&Object.keys(cdn);
  out.cdn.dataKeys=cdn?.data&&Object.keys(cdn.data);
+ out.cdn.selected={provider:cdn?.data?.provider,title:cdn?.data?.title,isSeries:cdn?.data?.isSeries,season:cdn?.data?.season,episode:cdn?.data?.episode,type:cdn?.data?.type,hasM3u8:Boolean(cdn?.data?.m3u8Url)};
+ out.cdn.targetEpisode=(cdn?.data?.episodes||[]).filter(x=>x.season===4&&x.episode===2).map(x=>({title:x.title,hasUrl:Boolean(x.m3u8Url)}));
+ out.cdn.uniqueTrackTitles=[...new Set((cdn?.data?.episodes||[]).map(x=>x.title).filter(Boolean))];
  function findTrackArrays(x,path="data"){
   if(!x||typeof x!=="object")return [];
   if(Array.isArray(x)&&x.some(y=>y&&typeof y==="object"&&("m3u8Url" in y||"title" in y)))return [{path,items:x.filter(y=>y&&typeof y==="object").slice(0,30).map(y=>({title:y.title,season:y.season,episode:y.episode,hasUrl:Boolean(y.m3u8Url||y.url)}))}];
