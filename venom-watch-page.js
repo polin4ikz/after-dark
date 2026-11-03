@@ -971,6 +971,109 @@
     return loader;
   }
 
+  async function searchNeoWatchDirectSources(film, season, episode) {
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    const isSeries = isSeriesFilm(film);
+    const type = isSeries ? "tv" : "movie";
+    if (!Number.isSafeInteger(id) || id < 1) throw new Error("Не удалось определить TMDB ID.");
+    if (isSeries && (!Number.isInteger(season) || season < 1 || !Number.isInteger(episode) || episode < 1)) {
+      throw new Error("Укажи сезон и серию.");
+    }
+    const idsResponse = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(id)) + "/external_ids", {
+      headers: { accept: "application/json" }, signal: AbortSignal.timeout(10000)
+    });
+    if (!idsResponse.ok) throw new Error("TMDB не вернул внешние идентификаторы.");
+    const ids = await idsResponse.json();
+    const imdbId = String(ids && ids.imdb_id || "");
+    if (!/^tt\\d{5,12}$/.test(imdbId)) return [];
+    const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
+    if (isSeries) {
+      url.searchParams.set("season", String(season));
+      url.searchParams.set("episode", String(episode));
+    }
+    const response = await fetch(url.href, {
+      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error("CDN-источник ответил ошибкой " + response.status + ".");
+    const payload = await response.json();
+    const data = payload && payload.data || {};
+    if (!payload.success) return [];
+    const entries = isSeries && Array.isArray(data.episodes)
+      ? data.episodes.filter(item => item && Number(item.season) === season && Number(item.episode) === episode)
+      : [];
+    const candidates = entries.length ? entries : (data.m3u8Url ? [data] : []);
+    const seen = new Set();
+    return candidates.map(item => {
+      const raw = String(item.m3u8Url || data.m3u8Url || "");
+      let parsed;
+      try { parsed = new URL(raw); } catch (_) { return null; }
+      if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443") || seen.has(parsed.href)) return null;
+      seen.add(parsed.href);
+      return { url: parsed.href, title: String(item.title || item.name || data.title || data.provider || "CDN · HLS").slice(0, 120) };
+    }).filter(Boolean);
+  }
+
+  function mountNeoWatchChooser(film) {
+    const area = $("#sourceResults");
+    if (!area || area.querySelector(".neowatch-chooser")) return;
+    const isSeries = isSeriesFilm(film);
+    const chooser = document.createElement("section");
+    chooser.className = "neowatch-chooser";
+    chooser.innerHTML = '<div class="source-heading">ВЫБОР ОЗВУЧКИ · ПРЯМОЙ ИСТОЧНИК</div>' +
+      (isSeries ? '<div class="neowatch-episode-fields"><label>СЕЗОН<input type="number" min="1" max="100" step="1" value="' + Math.max(1, Number(selectedSeason) || 1) + '" id="neoSeason"></label><label>СЕРИЯ<input type="number" min="1" max="500" step="1" value="' + Math.max(1, Number(selectedEpisode) || 1) + '" id="neoEpisode"></label></div>' : '') +
+      '<button type="button" class="source-result neowatch-search">НАЙТИ ВАРИАНТЫ ОЗВУЧКИ</button><div class="neowatch-results" aria-live="polite"></div>';
+    area.appendChild(chooser);
+    const button = chooser.querySelector(".neowatch-search");
+    const output = chooser.querySelector(".neowatch-results");
+    button.addEventListener("click", async () => {
+      const season = isSeries ? Number($("#neoSeason").value) : null;
+      const episode = isSeries ? Number($("#neoEpisode").value) : null;
+      if (isSeries && (!Number.isInteger(season) || season < 1 || season > 100 || !Number.isInteger(episode) || episode < 1 || episode > 500)) {
+        output.textContent = "ПРОВЕРЬ НОМЕР СЕЗОНА И СЕРИИ.";
+        return;
+      }
+      selectedSeason = season;
+      selectedEpisode = episode;
+      button.disabled = true;
+      button.textContent = "ИЩУ ДОСТУПНЫЕ ОЗВУЧКИ…";
+      output.textContent = "ПРОВЕРЯЮ ИСТОЧНИКИ…";
+      try {
+        const sources = await searchNeoWatchDirectSources(film, season, episode);
+        output.replaceChildren();
+        if (!sources.length) {
+          output.textContent = "ДЛЯ ЭТОГО НАЗВАНИЯ И ЭПИЗОДА ПРЯМЫЕ ВАРИАНТЫ НЕ НАЙДЕНЫ. НИЖЕ ОСТАЮТСЯ ВНЕШНИЕ ПЛЕЕРЫ.";
+          return;
+        }
+        sources.forEach(source => {
+          const option = document.createElement("button");
+          option.type = "button";
+          option.className = "source-result";
+          const title = document.createElement("span");
+          title.className = "source-result__title";
+          title.textContent = source.title;
+          const meta = document.createElement("span");
+          meta.className = "source-result__meta";
+          meta.textContent = (isSeries ? "СЕЗОН " + season + " · СЕРИЯ " + episode + " · " : "") + "ПРЯМОЙ HLS · VENOM / MATTEBOX";
+          option.append(title, meta);
+          option.addEventListener("click", () => {
+            try {
+              openDirectStream(source.url);
+              status("ЗАПУЩЕН ИСТОЧНИК · " + source.title.toUpperCase());
+              streamStatus("Выбран вариант «" + source.title + "». Если поток содержит несколько аудиодорожек, After Dark покажет их отдельно.");
+            } catch (error) { streamStatus(error.message || "Не удалось открыть источник.", true); }
+          });
+          output.appendChild(option);
+        });
+        status("НАЙДЕНО ВАРИАНТОВ: " + sources.length + " · ВЫБЕРИ ОЗВУЧКУ НИЖЕ");
+      } catch (error) {
+        output.textContent = error.message || "НЕ УДАЛОСЬ ПОЛУЧИТЬ СПИСОК ИСТОЧНИКОВ.";
+      } finally {
+        button.disabled = false;
+        button.textContent = "НАЙТИ ВАРИАНТЫ ОЗВУЧКИ";
+      }
+    });
+  }
+
   async function tryExternalPlayerFallback(film) {
     const id = String(film.tmdbId ?? film.tmdb_id ?? film.id ?? "");
     if (!/^\d{1,12}$/.test(id) || Number(id) <= 0) return false;
@@ -1189,17 +1292,12 @@
   async function findSources(film) {
     const area = $("#sourceResults");
     area.replaceChildren();
-    status("ЗАПУСКАЮ STELLAR ПО TMDB ID…");
+    status("ПОДГОТАВЛИВАЮ ВЫБОР ИСТОЧНИКОВ…");
+    mountNeoWatchChooser(film);
     addAutomaticPlayerOption(film);
 
-    // Fast path: try Stellar immediately. Do not wait for archive searches or TMDB provider cards.
-    try {
-      if (await tryExternalPlayerFallback(film)) {
-        return;
-      }
-    } catch (error) {
-      console.warn("Primary embedded players failed:", error);
-    }
+    // Do not autoplay a third-party iframe: show the real source/voiceover chooser first.
+    // The user can explicitly choose an HLS variant or launch an external player below.
 
     status("STELLAR НЕ ОТВЕТИЛ · ПОКАЗЫВАЮ ДОСТУПНЫЕ СЕРВИСЫ И ИЩУ ДРУГОЙ ИСТОЧНИК…");
     try {
