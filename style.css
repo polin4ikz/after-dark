@@ -2877,5 +2877,5 @@ body {
 }
 
 
-/* Movie Night: quieter editorial titles inside the cloud */
-.movie-night-reveal-track span{font-family:"Instrument Serif",Georgia,serif!important;font-size:clamp(22px,2.7vw,38px)!important;font-weight:400!important;font-style:italic!important;letter-spacing:-.025em!important;text-transform:none!important;text-shadow:0 1px 18px rgba(54,12,18,.22)}
+/* Movie Night cloud titles use the site's main typeface */
+.movie-night-reveal-track span{font-family:var(--display)!important;font-size:clamp(18px,2.5vw,36px)!important;font-weight:600!important;font-style:normal!important;letter-spacing:-.035em!important;text-transform:none!important;text-shadow:0 1px 18px rgba(54,12,18,.22)}
