@@ -291,3 +291,28 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
   .vidrift-controls__toggle,.vidrift-episodes__toggle{flex-basis:100%;width:100%;max-width:100%}
   .vidrift-episodes__toggle{min-height:44px}
 }
+
+
+/* Keep playback feedback quiet and organize the backup source as a compact disclosure. */
+.visually-hidden,.player-status,.stream-status{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.reserve-source{margin:18px 0 24px;border:1px solid rgba(232,221,200,.13);background:rgba(232,221,200,.018)}
+.reserve-source>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:0 16px;color:var(--milk);font:10px "Geist Mono",monospace;letter-spacing:.08em;cursor:pointer;list-style:none}
+.reserve-source>summary::-webkit-details-marker{display:none}
+.reserve-source>summary::after{content:"+";color:#d89aa2;font:18px/1 Arial,sans-serif}
+.reserve-source[open]>summary::after{content:"−"}
+.reserve-source>summary small{margin-left:auto;color:var(--muted);font:9px "Geist Mono",monospace;letter-spacing:.03em}
+.reserve-source__body{padding:0 16px 16px;border-top:1px solid rgba(232,221,200,.09)}
+.reserve-source__hint{max-width:620px;margin:13px 0;color:rgba(232,221,200,.58);font-size:12px;line-height:1.5}
+.reserve-source__form label,.external-source-saved>label{display:flex;justify-content:space-between;gap:12px;margin:10px 0 7px;color:rgba(232,221,200,.58);font:8px "Geist Mono",monospace;letter-spacing:.12em}
+.reserve-source__form label span,.external-source-saved>label span{color:var(--muted);letter-spacing:.02em;text-transform:none}
+.reserve-source__row{display:flex;align-items:stretch;gap:8px}
+.reserve-source__row input{flex:1;min-width:0;min-height:42px;padding:0 12px;border:1px solid rgba(232,221,200,.17);border-radius:4px;background:#100e0d;color:var(--milk);font:13px Arial,sans-serif}
+.reserve-source__row input:focus{outline:1px solid rgba(191,91,106,.65);border-color:rgba(191,91,106,.65)}
+.reserve-source__row button{flex:0 0 auto;min-height:42px;padding:0 14px;border:1px solid rgba(191,91,106,.48);border-radius:4px;background:rgba(121,21,34,.35);color:var(--milk);font:8px "Geist Mono",monospace;letter-spacing:.07em;cursor:pointer}
+.reserve-source__row button:hover{background:#791522}
+.external-source-saved{margin-top:15px;padding-top:13px;border-top:1px solid rgba(232,221,200,.09)}
+.external-source-saved[hidden]{display:none!important}
+.external-source-saved>a{display:inline-block;color:#e0a3ac;font:9px "Geist Mono",monospace;letter-spacing:.08em;text-decoration:none}
+.external-source-saved>a:hover{text-decoration:underline}
+.external-source-saved__status{min-height:14px;margin:7px 0 0;color:var(--muted);font:9px/1.4 "Geist Mono",monospace}
+@media(max-width:600px){.reserve-source>summary{align-items:flex-start;flex-wrap:wrap;justify-content:flex-start;padding:13px}.reserve-source>summary small{flex-basis:100%;margin-left:0}.reserve-source__body{padding:0 12px 12px}.reserve-source__row{flex-direction:column}.reserve-source__row button{min-height:40px}.reserve-source__form label,.external-source-saved>label{flex-direction:column;gap:5px}}
