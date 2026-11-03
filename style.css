@@ -2878,4 +2878,22 @@ body {
 
 
 /* Movie Night cloud titles use the site's main typeface */
-.movie-night-reveal-track span{font-family:var(--mono)!important;font-size:clamp(15px,1.8vw,24px)!important;font-weight:400!important;font-style:normal!important;letter-spacing:-.035em!important;text-transform:none!important;text-shadow:0 1px 18px rgba(54,12,18,.22)}
+.movie-night-reveal-track span{
+  font-family:var(--mono)!important;
+  font-size:calc(clamp(15px,1.8vw,24px) * var(--word-size,1))!important;
+  font-weight:400!important;
+  font-style:normal!important;
+  letter-spacing:calc(-.035em + var(--word-size,1) * .008em)!important;
+  text-transform:none!important;
+  color:var(--word-color,var(--red))!important;
+  opacity:var(--word-opacity,.9);
+  text-shadow:0 1px 18px rgba(54,12,18,.22);
+  animation:movieWordFlight var(--word-duration,1.8s) cubic-bezier(.2,.65,.3,1) var(--delay,0s) both!important;
+}
+@keyframes movieWordFlight{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(calc(var(--word-rotation,0deg) * 1.6))}
+  18%{opacity:calc(var(--word-opacity,.9) * .7);transform:translate(-50%,-50%) scale(.76) rotate(var(--word-rotation,0deg))}
+  48%{opacity:var(--word-opacity,.9);transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1) rotate(calc(var(--word-rotation,0deg) * -.35))}
+  76%{opacity:calc(var(--word-opacity,.9) * .82);transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1.05) rotate(calc(var(--word-rotation,0deg) * .45))}
+  100%{opacity:0;transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1.28) rotate(calc(var(--word-rotation,0deg) * -1))}
+}
