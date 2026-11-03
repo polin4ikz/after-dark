@@ -45,6 +45,7 @@ module.exports = async function handler(req, res) {
     const url = new URL(API_BASE);
     url.searchParams.set("token", token);
     url.searchParams.set("title", title);
+    if (year) url.searchParams.set("year", year);
     url.searchParams.set("limit", "50");
     url.searchParams.set("translation_type", "voice");
     url.searchParams.set("with_seasons", "true");
