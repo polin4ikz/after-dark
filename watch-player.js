@@ -113,7 +113,7 @@
       if (idsResponse.ok) {
         const ids = await idsResponse.json();
         const imdbId = String(ids && ids.imdb_id || "");
-        if (/^tt\\d{5,12}$/.test(imdbId)) {
+        if (/^tt\d{5,12}$/.test(imdbId)) {
           const cdnUrl = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), base);
           for (const [key, value] of episodeParams) cdnUrl.searchParams.set(key, value);
           const response = await fetch(cdnUrl.href, {
@@ -158,7 +158,6 @@
       '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК ПЛЕЕРОВ NEO WATCH ↗</button>',
-      '<button class="ad-watch-player__search" type="button" data-ad-kodik-search>ПОИСК ОЗВУЧЕК KODIK · НУЖЕН КЛЮЧ</button>',
       '<div class="ad-watch-player__episode-fields" hidden data-ad-episode-fields><label>СЕЗОН <input type="number" min="1" max="100" step="1" value="1" data-ad-season></label><label>СЕРИЯ <input type="number" min="1" max="500" step="1" value="1" data-ad-episode></label></div>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
