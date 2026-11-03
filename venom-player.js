@@ -389,11 +389,12 @@
         progressCleanup = () => progressEvents.forEach(name => container.removeEventListener(name, captureProgress, true));
         if (key) {
           const all = readSources();
-          all[key] = source;
+          all[key] = { ...source, label: form.dataset.adVoiceover || "" };
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch (_) {}
         }
         delete form.dataset.disableMatteboxOnce;
-        setStatus(modal, resumeTime ? "ПРОДОЛЖАЕМ С " + formatTime(resumeTime) + " · VENOM PLAYER" : "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН", false);
+        const voiceoverLabel = form.dataset.adVoiceover || "";
+        setStatus(modal, (voiceoverLabel ? "ОЗВУЧКА · " + voiceoverLabel + " · " : "") + (resumeTime ? "ПРОДОЛЖАЕМ С " + formatTime(resumeTime) + " · VENOM PLAYER" : "VENOM PLAYER · ИСТОЧНИК ПОДКЛЮЧЁН"), false);
       } catch (error) {
         if (modal.dataset.venomRequestToken !== requestToken || !modal.classList.contains("is-open")) return;
         stage.replaceChildren();
@@ -426,6 +427,7 @@
             const valid = normalizeSource(saved.url, saved.kind);
             input.value = valid.url;
             kind.value = valid.kind;
+            panel.dataset.adVoiceover = saved.label || "";
           } catch (_) {}
         }
       }
