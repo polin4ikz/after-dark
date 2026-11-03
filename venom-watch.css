@@ -222,3 +222,9 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 
 .vidrift-controls>.vidrift-controls__panel{order:3;flex:1 0 100%}
 .vidrift-episodes{order:2}
+
+/* Keep the translated pause card clear of the center play control. */
+.vidrift-episode-info{left:16px;bottom:18%;width:min(350px,38%);max-height:25%;padding:11px 13px}
+.vidrift-episode-info h2{margin-bottom:5px;font-size:clamp(14px,1.5vw,18px)}
+.vidrift-episode-info p{font-size:clamp(11px,1vw,12px);line-height:1.35}
+@media(max-width:600px){.vidrift-episode-info{left:12px;bottom:19%;width:38%;max-height:24%;padding:8px 9px}.vidrift-episode-info h2{font-size:13px}.vidrift-episode-info p{font-size:10px;line-height:1.25}}
