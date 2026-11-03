@@ -87,10 +87,10 @@
     const payload = await searchResponse.json();
     const results = Array.isArray(payload?.data?.results) ? payload.data.results : [];
     const normalize = value => String(value || "").toLocaleLowerCase().normalize("NFKD")
-      .replace(/[\\u0300-\\u036f]/g, "").replace(/[^\\p{L}\\p{N}]+/gu, " ").trim();
+      .replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
     const wanted = normalize(title);
     const idMatch = value => {
-      const match = String(value || "").match(/^(?:kp[_-]?)?(\\d{1,12})$/i);
+      const match = String(value || "").match(/^(?:kp[_-]?)?(\d{1,12})$/i);
       return match ? match[1] : "";
     };
     const match = results.find(item => {
