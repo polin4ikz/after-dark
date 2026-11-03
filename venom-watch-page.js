@@ -1086,6 +1086,22 @@
       toggle.setAttribute("aria-expanded", String(expanded));
     });
 
+    const addUnavailableSelect = (labelText, message) => {
+      const label = document.createElement("label");
+      label.className = "vidrift-controls__field";
+      const caption = document.createElement("span");
+      caption.textContent = labelText;
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", labelText);
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = message;
+      select.appendChild(option);
+      select.disabled = true;
+      label.append(caption, select);
+      list.appendChild(label);
+    };
+
     const addSelect = (labelText, field, items, selected) => {
       if (!Array.isArray(items) || items.length < 1) return;
       const label = document.createElement("label");
@@ -1123,7 +1139,8 @@
       const qualities = (Array.isArray(state.qualities) ? state.qualities : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || "") }))
         .filter(item => item.value != null);
-      if (qualities.length > 1) addSelect("КАЧЕСТВО", "quality", qualities, state.quality);
+      if (qualities.length) addSelect("КАЧЕСТВО", "quality", qualities, state.quality);
+      else addUnavailableSelect("КАЧЕСТВО", "Качество недоступно");
 
       const audios = (Array.isArray(state.audios) ? state.audios : [])
         .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
@@ -1134,17 +1151,20 @@
 
       if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
       else if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
+      else if (audios.length === 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
+      else if (sources.length === 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
+      else addUnavailableSelect("ОЗВУЧКА", "Нет вариантов RU / EN");
 
       const subtitleLanguages = subtitles.filter(item => item.lang);
-      if (subtitleLanguages.length > 1) {
+      if (subtitleLanguages.length) {
         const off = subtitles.find(item => String(item.value).toLowerCase() === "off");
-        const choices = off ? subtitles : [{ value: "off", label: "Выкл." }, ...subtitleLanguages];
+        const choices = off ? [off, ...subtitleLanguages] : [{ value: "off", label: "Выкл." }, ...subtitleLanguages];
         addSelect("СУБТИТРЫ", "subtitle", choices, state.subtitle || "off");
+      } else {
+        addUnavailableSelect("СУБТИТРЫ", "Нет вариантов RU / EN");
       }
 
-      note.textContent = list.querySelectorAll("select").length
-        ? "Доступны только русские и английские варианты, переданные источником."
-        : "У источника сейчас один вариант или нет нескольких дорожек RU / EN для переключения.";
+      note.textContent = "В меню всегда видны три настройки. Переключение доступно, если источник передал подходящие варианты.";
     };
   }
 
@@ -1358,6 +1378,9 @@
           selectedEpisode = nextEpisode;
           if (episodeInfo) { episodeInfo.dataset.loadedFor = ""; frame._afterDarkHideEpisodeInfo?.(); }
           savePlaybackProgress(film, { currentTime: 0, duration: 0, season: nextSeason, episode: nextEpisode }, "VIDRIFT", true);
+          [500, 1400].forEach(delay => setTimeout(() => {
+            if (frame.isConnected && frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:get-state" }, origin);
+          }, delay));
         }
         return;
       }
