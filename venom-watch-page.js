@@ -1020,123 +1020,181 @@
     return { sources: [{ url: parsed.href, title: String(data.title || data.provider || "CDN · HLS").slice(0, 120) }], catalog: [] };
   }
 
-  function mountNeoWatchChooser(film) {
-    const area = $("#sourceResults");
-    if (!area || area.querySelector(".source-lab")) return;
-    const isSeries = isSeriesFilm(film);
-    const lab = document.createElement("section");
-    lab.className = "source-lab";
-    lab.innerHTML =
-      '<div class="source-heading">ТЕСТ ИСТОЧНИКОВ · ВЫБЕРИ СЕРВИС</div>' +
-      (isSeries ? '<div class="neowatch-episode-fields"><label>СЕЗОН<input type="number" min="1" max="100" step="1" value="' + Math.max(1, Number(selectedSeason) || 1) + '" id="labSeason"></label><label>СЕРИЯ<input type="number" min="1" max="500" step="1" value="' + Math.max(1, Number(selectedEpisode) || 1) + '" id="labEpisode"></label></div>' : '') +
-      '<div class="source-lab__list"></div><p class="source-lab__status" aria-live="polite">Выбери один из четырёх источников. Проверяем каждый отдельно.</p>';
-    area.appendChild(lab);
-    const list = lab.querySelector(".source-lab__list");
-    const note = lab.querySelector(".source-lab__status");
-    const sources = [
-      { id:"hdrezka", name:"HDREZKA", detail:"Каталог / поиск фильма и сериала", mode:"search" },
-      { id:"alloha", name:"ALLOHA", detail:"API-каталог / проверка озвучек", mode:"search" },
-      { id:"vidrift", name:"VIDRIFT", detail:"Встроенный плеер · аудиодорожки", mode:"embed" },
-      { id:"apiplayer", name:"APIPLAYER", detail:"Экспериментальный embed · IMDb ID", mode:"embed" }
-    ];
-    function getEpisode() {
-      const season = isSeries ? Number($("#labSeason")?.value) : 1;
-      const episode = isSeries ? Number($("#labEpisode")?.value) : 1;
-      if (isSeries && (!Number.isInteger(season) || season < 1 || season > 100 || !Number.isInteger(episode) || episode < 1 || episode > 500)) {
-        throw new Error("Проверь номер сезона и серии.");
+  function languageOf(item) {
+    const values = [
+      item && item.label, item && item.name, item && item.title,
+      item && item.language, item && item.lang, item && item.description
+    ].filter(Boolean).join(" ").toLowerCase();
+    if (/\\b(ru|rus)\\b|русск|russian/i.test(values)) return "ru";
+    if (/\\b(en|eng)\\b|англ|english/i.test(values)) return "en";
+    return "";
+  }
+
+  function mountVidriftControls(frame, film) {
+    const root = $("#vidriftControls");
+    if (!root) return;
+    root.replaceChildren();
+    root.hidden = false;
+    const note = document.createElement("p");
+    note.className = "vidrift-controls__note";
+    note.textContent = "Доступны только русские и английские варианты, которые передал источник.";
+    root.appendChild(note);
+
+    const addSelect = (labelText, field, items, selected) => {
+      if (!Array.isArray(items) || items.length < 2) return;
+      const label = document.createElement("label");
+      label.className = "vidrift-controls__field";
+      const caption = document.createElement("span");
+      caption.textContent = labelText;
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", labelText);
+      for (const item of items) {
+        const option = document.createElement("option");
+        option.value = String(item.value);
+        option.textContent = item.label;
+        select.appendChild(option);
       }
-      selectedSeason = isSeries ? season : null;
-      selectedEpisode = isSeries ? episode : null;
-      return {season, episode};
-    }
-    async function getImdbId() {
-      const tmdbId = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
-      const mediaType = isSeries ? "tv" : "movie";
-      if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("Не найден TMDB ID.");
-      const response = await fetch("/api/tmdb?path=/" + mediaType + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {headers:{accept:"application/json"}, signal:AbortSignal.timeout(12000)});
-      if (!response.ok) throw new Error("TMDB не вернул IMDb ID.");
-      const data = await response.json();
-      if (!/^tt\\d{5,12}$/.test(String(data.imdb_id || ""))) throw new Error("Для этого названия нет IMDb ID.");
-      return data.imdb_id;
-    }
-    function launchFrame(url, provider) {
-      resetStreamEngines();
-      const stage = $("#playerStage");
-      stage.replaceChildren();
-      const frame = document.createElement("iframe");
-      frame.src = url;
-      frame.title = "AFTER DARK — " + provider;
-      frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-      frame.allowFullscreen = true;
-      frame.referrerPolicy = "strict-origin-when-cross-origin";
-      frame.loading = "eager";
-      stage.appendChild(frame);
-      addFrameFallback(url);
-      status("ТЕСТ ИСТОЧНИКА · " + provider);
-      streamStatus("Открыт " + provider + ". Проверь запуск видео, меню озвучки и переключение серий. After Dark не может читать дорожки внутри чужого iframe, если сервис не передаёт их через API.");
-      note.textContent = provider + " открыт. Если внутри пусто или ошибка — нажми ссылку под плеером, чтобы проверить источник отдельно.";
-    }
-    for (const source of sources) {
-      const card = document.createElement("div");
-      card.className = "source-lab__item";
-      const info = document.createElement("div");
-      info.className = "source-lab__info";
-      const title = document.createElement("strong");
-      title.textContent = source.name;
-      const detail = document.createElement("span");
-      detail.textContent = source.detail;
-      info.append(title, detail);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "source-result";
-      button.textContent = source.mode === "embed" ? "ОТКРЫТЬ В AFTER DARK" : "НАЙТИ НАЗВАНИЕ";
-      button.addEventListener("click", async () => {
-        button.disabled = true;
-        try {
-          const {season, episode} = getEpisode();
-          const titleText = film.title || film.name || film.original_title || film.original_name || "";
-          const year = String(film.release_date || film.first_air_date || "").slice(0,4);
-          if (source.id === "hdrezka") {
-            const query = "site:hdrezka." + " " + titleText + " " + year;
-            const url = "https://yandex.ru/search/?text=" + encodeURIComponent(query);
-            window.open(url, "_blank", "noopener,noreferrer");
-            note.textContent = "HDRezka: открыл поиск. Выбери карточку сериала, затем проверь перевод и доступность сезонов. Автоматический разбор страницы пока не подтверждён.";
-            return;
-          }
-          if (source.id === "alloha") {
-            const query = titleText + " " + year + " смотреть онлайн Alloha";
-            const url = "https://yandex.ru/search/?text=" + encodeURIComponent(query);
-            window.open(url, "_blank", "noopener,noreferrer");
-            note.textContent = "Alloha: открыл поиск. API-каталог ранее находил переводы, но найденный iframe endpoint вернул 404; проверяем актуальную страницу источника.";
-            return;
-          }
-          if (source.id === "vidrift") {
-            const tmdbId = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
-            if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("Не найден TMDB ID.");
-            const url = isSeries
-              ? "https://embed.vidrift.net/embed/tv/" + tmdbId + "/" + season + "/" + episode
-              : "https://embed.vidrift.net/embed/movie/" + tmdbId;
-            launchFrame(url, "VIDRIFT");
-            return;
-          }
-          if (source.id === "apiplayer") {
-            const imdbId = await getImdbId();
-            const url = isSeries
-              ? "https://apiplayer.ru/embed/tv/" + imdbId + "/" + season + "/" + episode
-              : "https://apiplayer.ru/embed/movie/" + imdbId;
-            launchFrame(url, "APIPLAYER");
-            return;
-          }
-        } catch (error) {
-          note.textContent = error.message || "Не удалось запустить источник.";
-          streamStatus(note.textContent, true);
-        } finally {
-          button.disabled = false;
-        }
+      select.value = String(selected ?? items[0].value);
+      select.addEventListener("change", () => {
+        if (frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:set", [field]: select.value }, "https://embed.vidrift.net");
       });
-      card.append(info, button);
-      list.appendChild(card);
+      label.append(caption, select);
+      root.appendChild(label);
+    };
+
+    frame._afterDarkVidriftState = state => {
+      const sources = (Array.isArray(state.sources) ? state.sources : [])
+        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .filter(item => item.value != null && item.lang);
+      const audios = (Array.isArray(state.audios) ? state.audios : [])
+        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .filter(item => item.value != null && item.lang);
+      const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
+        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
+
+      // Server/source variants commonly represent separate dubs. If the player
+      // exposes language-labelled sources, use those; otherwise expose its audio tracks.
+      if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
+      else if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
+
+      if (subtitles.length) {
+        const withOff = subtitles.some(item => String(item.value).toLowerCase() === "off")
+          ? subtitles
+          : [{ value: "off", label: "Выключены" }, ...subtitles];
+        addSelect("СУБТИТРЫ", "subtitle", withOff, state.subtitle || "off");
+      }
+      if (root.querySelectorAll("select").length === 0) {
+        note.textContent = "У этого названия источник передал только один вариант озвучки или не указал язык. Других подтверждённых русских/английских вариантов нет.";
+      } else {
+        note.textContent = "Показываю только русские и английские варианты. Если у фильма одна дорожка, выбирать нечего.";
+      }
+    };
+  }
+
+  function launchVidriftPlayer(film) {
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      status("НЕ НАЙДЕН TMDB ID", true);
+      return;
     }
+    const isSeries = isSeriesFilm(film);
+    const saved = savedProgress(film) || {};
+    const season = isSeries ? Math.max(1, Math.floor(Number(selectedSeason ?? saved.season_number) || 1)) : 1;
+    const episode = isSeries ? Math.max(1, Math.floor(Number(selectedEpisode ?? saved.episode_number) || 1)) : 1;
+    selectedSeason = isSeries ? season : null;
+    selectedEpisode = isSeries ? episode : null;
+    const resumeAt = !restartCurrentEpisode && saved.status === "in_progress"
+      ? Math.max(0, Math.floor(Number(saved.position_seconds) || 0)) : 0;
+    restartCurrentEpisode = false;
+
+    resetStreamEngines();
+    const stage = $("#playerStage");
+    stage.replaceChildren();
+    const frame = document.createElement("iframe");
+    frame.className = "vidrift-frame";
+    frame.title = "AFTER DARK — " + (film.title || film.name || "VIDRIFT");
+    frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.loading = "eager";
+    const path = isSeries
+      ? "/embed/tv/" + id + "/" + season + "/" + episode
+      : "/embed/movie/" + id;
+    const params = new URLSearchParams({
+      brand: "AFTER DARK",
+      brandColor: "7B1E2D",
+      uiScale: "1.05",
+      showTitle: "1",
+      exit: "1",
+      hide: "settings,subtitles,server"
+    });
+    frame.src = "https://embed.vidrift.net" + path + "?" + params.toString();
+    stage.appendChild(frame);
+    mountVidriftControls(frame, film);
+    status("ЗАПУСКАЮ VIDRIFT");
+    streamStatus("Загружаю фильм. Плеер сам начнёт воспроизведение без дополнительной кнопки; браузер может начать без звука до первого касания.");
+
+    const origin = "https://embed.vidrift.net";
+    const onMessage = event => {
+      if (event.origin !== origin || event.source !== frame.contentWindow) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "vidrift:state") {
+        frame._afterDarkVidriftState?.(data);
+        status("VIDRIFT ГОТОВ · " + (data.paused ? "ПАУЗА" : "ВОСПРОИЗВЕДЕНИЕ"));
+        return;
+      }
+      if (data.type === "vidrift:progress" || data.type === "vidrift:paused") {
+        const currentTime = Number(data.currentTime);
+        const duration = Number(data.duration);
+        if (Number.isFinite(currentTime)) {
+          savePlaybackProgress(film, {
+            currentTime,
+            duration,
+            season: data.season ?? season,
+            episode: data.episode ?? episode,
+            event: data.type === "vidrift:paused" ? "pause" : "progress"
+          }, "VIDRIFT", data.type === "vidrift:paused");
+        }
+        return;
+      }
+      if (data.type === "vidrift:episode") {
+        const nextSeason = Number(data.season);
+        const nextEpisode = Number(data.episode);
+        if (Number.isInteger(nextSeason) && nextSeason > 0 && Number.isInteger(nextEpisode) && nextEpisode > 0) {
+          selectedSeason = nextSeason;
+          selectedEpisode = nextEpisode;
+          savePlaybackProgress(film, { currentTime: 0, duration: 0, season: nextSeason, episode: nextEpisode }, "VIDRIFT", true);
+        }
+        return;
+      }
+      if (data.type === "vidrift:exit") {
+        status("ВОЗВРАТ В AFTER DARK");
+        return;
+      }
+      if (data.type === "vidrift:command-error") {
+        console.warn("VIDRIFT COMMAND ERROR", data);
+        streamStatus("Не удалось применить настройку плеера: " + String(data.reason || "ошибка команды"), true);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    frame.addEventListener("load", () => {
+      if (frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "vidrift:get-state" }, origin);
+        if (resumeAt > 10) frame.contentWindow.postMessage({ type: "vidrift:resume", currentTime: resumeAt }, origin);
+      }
+    });
+    frame.addEventListener("error", () => {
+      status("VIDRIFT НЕ ЗАГРУЗИЛСЯ", true);
+      streamStatus("Не удалось загрузить VidRift. Попробуй обновить страницу.", true);
+    }, { once: true });
+    const oldCleanup = frame._afterDarkCleanup;
+    frame._afterDarkCleanup = () => {
+      window.removeEventListener("message", onMessage);
+      if (oldCleanup) oldCleanup();
+    };
+    addNote("Источник: VidRift. Позиция просмотра и текущие сезон/серия сохраняются в истории After Dark.");
   }
 
   async function tryExternalPlayerFallback(film) {
@@ -1357,44 +1415,10 @@
   async function findSources(film) {
     const area = $("#sourceResults");
     area.replaceChildren();
-    status("ПОДГОТАВЛИВАЮ ВЫБОР ИСТОЧНИКОВ…");
-    mountNeoWatchChooser(film);
-    addAutomaticPlayerOption(film);
-
-    // Do not autoplay a third-party iframe: show the real source/voiceover chooser first.
-    // The user can explicitly choose an HLS variant or launch an external player below.
-
-    status("ИСТОЧНИКИ ГОТОВЯТСЯ · ВЫБЕРИ ВАРИАНТ ВЫШЕ");
-    try {
-      const results = await searchOpenArchive(film);
-      const exactRussian = chooseRussianArchiveCandidate(results);
-      if (exactRussian) {
-        status("НАЙДЕН КАНДИДАТ С РУССКОЯЗЫЧНЫМИ МЕТАДАННЫМИ");
-        addNote("Найдено точное совпадение с открытой лицензией и подсказкой о русском языке в метаданных. Это не подтверждает фактическую озвучку — нажми на источник, чтобы проверить его.");
-        renderCandidate(exactRussian);
-        return;
-      }
-      const exactWithoutConfirmedRussian = (Array.isArray(results) ? results : [])
-        .filter(item => item && item.confidence === "high");
-      if (exactWithoutConfirmedRussian.length === 1) {
-        status("ИСТОЧНИК НАЙДЕН · ЯЗЫК ОЗВУЧКИ НЕ ПОДТВЕРЖДЁН");
-        addNote("Нашлось точное совпадение с открытой лицензией, но метаданные не подтверждают русскую озвучку. Не запускаю его автоматически, чтобы не выбрать случайно неподходящую дорожку.");
-        renderCandidate(exactWithoutConfirmedRussian[0]);
-        return;
-      }
-      if (results.length) {
-        status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
-        addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
-        results.forEach(renderCandidate);
-      } else {
-        status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
-        addNote("Прямые варианты озвучки ищутся отдельно. Внешние плееры запускаются только после твоего выбора.");
-      }
-    } catch (error) {
-      status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
-      console.warn("Automatic source discovery failed:", error);
-    }
+    status("ПОДГОТАВЛИВАЮ VIDRIFT…");
+    launchVidriftPlayer(film);
   }
+
   function init() {
     const manualSourceForm = $("#manualSourceForm");
     const manualSourceInput = $("#manualSourceUrl");
@@ -1512,12 +1536,12 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
       if (dash) { try { dash.reset(); } catch (_) {} }
-      const frame = $("#playerStage iframe"); if (frame) frame.src = "about:blank";
+      const frame = $("#playerStage iframe"); if (frame) { frame._afterDarkCleanup?.(); frame.src = "about:blank"; }
     });
   }
   if (typeof module !== "undefined" && module.exports) module.exports = { findRussianAudioTrackIndex, chooseRussianArchiveCandidate };
