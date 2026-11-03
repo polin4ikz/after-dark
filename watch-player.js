@@ -192,6 +192,7 @@
           input.value = sourceUrl;
           kindSelect.value = "hls";
           form.dataset.adVoiceover = label;
+          form.dataset.adDoNotSaveSource = "1";
           form.requestSubmit();
           return;
         }
