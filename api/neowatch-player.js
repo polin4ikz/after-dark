@@ -48,9 +48,14 @@ function extractEmbed(html, baseUrl) {
 async function fetchUpstream(url, accept) {
   const response = await fetch(url, {
     headers: { accept, "user-agent": "AfterDark/1.0 (+source discovery)" },
-    redirect: "manual",
+    redirect: "follow",
     signal: AbortSignal.timeout(6500)
   });
+  let finalUrl;
+  try { finalUrl = new URL(response.url || url); } catch (_) { throw new Error("UPSTREAM_INVALID_REDIRECT"); }
+  if (finalUrl.hostname.toLowerCase() !== "api.neome.uk" || finalUrl.protocol !== "https:") {
+    throw new Error("UPSTREAM_REDIRECT_BLOCKED");
+  }
   if (!response.ok) throw new Error("UPSTREAM_" + response.status);
   return accept.includes("json") ? response.json() : response.text();
 }
@@ -108,9 +113,12 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     const timeout = error && (error.name === "TimeoutError" || error.name === "AbortError");
+    console.warn("[NeoWatch source search]", error && error.message ? error.message : "unknown error");
     return res.status(502).json({
       error: timeout ? "NEOWATCH_TIMEOUT" : "NEOWATCH_UNAVAILABLE",
-      message: "Сервис NeoWatch временно недоступен; остальные источники After Dark не затронуты."
+      message: timeout
+        ? "NeoWatch не ответил вовремя. Попробуй ещё раз."
+        : "Сервис NeoWatch временно недоступен; остальные источники After Dark не затронуты."
     });
   }
 };
