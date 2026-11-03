@@ -1,33 +1,17 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NeoWatch HLS audio check</title></head>
-<body><video id="video" controls playsinline style="width:80vw;max-height:50vh"></video><pre id="result">Checking…</pre><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>NeoWatch CDN check</title></head><body><pre id="result">Checking…</pre><script>
 (async()=>{
  const out={};
- const write=()=>document.getElementById("result").textContent=JSON.stringify(out,null,2);
- try{
-  const response=await fetch("https://api.neome.uk/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2",{mode:"cors",headers:{accept:"application/json"}});
-  out.cdnStatus=response.status;
-  const payload=await response.json();
-  const data=payload?.data||{};
-  out.cdn={provider:data.provider,title:data.title,season:data.season,episode:data.episode,type:data.type,hasM3u8:Boolean(data.m3u8Url)};
-  const script=document.createElement("script");
-  script.src="https://cdn.jsdelivr.net/npm/mattebox@0.15.0/dist/cdn/mattebox.min.js";
-  await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
-  const engine=window.mattebox.preset();
-  const video=document.getElementById("video");
-  const render=()=>{
-   const tracks=engine.tracks?.available||[];
-   out.tracks=tracks.map(t=>({id:t.id,name:t.name,lang:t.lang,contentType:t.contentType,channels:t.channels,selectable:engine.tracks.selectable(t.id)}));
-   out.audioTracks=out.tracks.filter(t=>t.contentType==="audio");
-   write();
-  };
-  engine.on("tracks:changed",render);
-  engine.on("tracks:selected",render);
-  await engine.attach(video);
-  engine.load(data.m3u8Url);
-  setTimeout(render,12000);
-  setTimeout(()=>{out.video={readyState:video.readyState,duration:Number.isFinite(video.duration)?video.duration:null};write()},14000);
-  write();
- }catch(e){out.error=String(e);write()}
+ async function check(name,url){
+  try{
+   const r=await fetch(url,{mode:"cors",headers:{accept:"application/json"}});
+   const p=await r.json(),d=p?.data||{};
+   out[name]={status:r.status,success:p?.success,provider:d.provider,title:d.title,isSeries:d.isSeries,season:d.season,episode:d.episode,type:d.type,hasM3u8:Boolean(d.m3u8Url),urlProtocol:(()=>{try{return new URL(d.m3u8Url).protocol}catch(_){return ""}})()};
+  }catch(e){out[name]={error:String(e)}}
+ }
+ await Promise.all([
+  check("movie","https://api.neome.uk/api/v1/player/cdn/imdb/tt0137523"),
+  check("series","https://api.neome.uk/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2")
+ ]);
+ document.getElementById("result").textContent=JSON.stringify(out,null,2);
 })();
 </script></body></html>
