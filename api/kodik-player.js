@@ -1,7 +1,7 @@
 // Kodik source discovery adapter for the After Dark test branch.
 // Requires KODIK_API_TOKEN in the Vercel Preview environment.
 // Only returns HTTPS embed links published by Kodik; does not proxy media.
-const API_BASE = "https://kodikapi.com/search";
+const API_BASE = "https://kodik-api.com/search";
 const ALLOWED_HOSTS = new Set([
   "kodik.info", "kodik.cc", "kodik.club", "kodik.biz",
   "kodik.life", "kodik.lat", "kodik.online", "aniqit.com", "kodikplayer.com"
@@ -46,9 +46,10 @@ module.exports = async function handler(req, res) {
     url.searchParams.set("token", token);
     url.searchParams.set("title", title);
     url.searchParams.set("limit", "50");
+    url.searchParams.set("translation_type", "voice");
     url.searchParams.set("with_seasons", "true");
     const upstream = await fetch(url.href, {
-      method: "GET",
+      method: "POST",
       headers: { accept: "application/json", "user-agent": "AfterDark/1.0 source discovery" },
       signal: AbortSignal.timeout(7000)
     });
@@ -75,7 +76,7 @@ module.exports = async function handler(req, res) {
       if (!matchesTitle || (year && itemYear && year !== itemYear)) continue;
       const translation = item && item.translation || {};
       const kind = String(translation.type || "").toLowerCase();
-      if (kind && kind !== "voice") continue;
+      if (kind !== "voice") continue;
       const embedUrl = safeEmbed(item && item.link || "");
       if (!embedUrl || sources.some(source => source.embedUrl === embedUrl)) continue;
       sources.push({
