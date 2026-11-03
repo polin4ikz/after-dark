@@ -77,65 +77,53 @@
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
 
   async function searchNeoWatchSources(film, season, episode) {
-    const base = "https://api.neome.uk";
     const tmdbId = Number(film && (film.tmdbId ?? film.id));
     const isSeries = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date);
     if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("TMDB_ID_MISSING");
-    const episodeParams = new URLSearchParams();
-    if (isSeries && Number.isInteger(season) && season >= 1 && Number.isInteger(episode) && episode >= 1) {
-      episodeParams.set("season", String(season));
-      episodeParams.set("episode", String(episode));
+    if (isSeries && (!Number.isInteger(season) || season < 1 || !Number.isInteger(episode) || episode < 1)) {
+      return { sources: [], message: "УКАЖИ СЕЗОН И СЕРИЮ, ЧТОБЫ НАЙТИ ДОСТУПНУЮ ОЗВУЧКУ." };
     }
-    const sources = [];
-    async function addSource(label, url) {
-      if (typeof url !== "string" || !url.trim()) return;
-      let embed;
-      try { embed = new URL(url, base); } catch (_) { return; }
-      if (embed.protocol !== "https:" || embed.username || embed.password || (embed.port && embed.port !== "443")) return;
-      if (!sources.some(source => source.embedUrl === embed.href)) {
-        sources.push({ provider: label, embedUrl: embed.href, title: titleOf(film), year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null });
-      }
+    const type = isSeries ? "tv" : "movie";
+    const idsResponse = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {
+      headers: { accept: "application/json" }, signal: AbortSignal.timeout(10000)
+    });
+    if (!idsResponse.ok) throw new Error("TMDB_EXTERNAL_IDS_UNAVAILABLE");
+    const ids = await idsResponse.json();
+    const imdbId = String(ids && ids.imdb_id || "");
+    if (!/^tt\d{5,12}$/.test(imdbId)) {
+      return { sources: [], message: "У ЭТОГО НАЗВАНИЯ НЕТ IMDb ID ДЛЯ ПОИСКА ПЛЕЕРА." };
     }
-    const allohaUrl = new URL("/api/v1/player/alloha/tmdb/" + tmdbId, base);
-    for (const [key, value] of episodeParams) allohaUrl.searchParams.set(key, value);
-    try {
-      const response = await fetch(allohaUrl.href, { headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(10000) });
-      if (response.ok) {
-        const payload = await response.json();
-        if (payload && payload.success && payload.data && payload.data.url) await addSource("Alloha", payload.data.url);
-      }
-    } catch (_) { /* Try the next provider independently. */ }
-    try {
-      const type = isSeries ? "tv" : "movie";
-      const idsResponse = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {
-        headers: { accept: "application/json" }, signal: AbortSignal.timeout(10000)
-      });
-      if (idsResponse.ok) {
-        const ids = await idsResponse.json();
-        const imdbId = String(ids && ids.imdb_id || "");
-        if (/^tt\d{5,12}$/.test(imdbId)) {
-          const cdnUrl = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), base);
-          for (const [key, value] of episodeParams) cdnUrl.searchParams.set(key, value);
-          const response = await fetch(cdnUrl.href, {
-            headers: { accept: "application/json, text/html" }, mode: "cors", signal: AbortSignal.timeout(10000)
-          });
-          if (response.ok) {
-            const contentType = response.headers.get("content-type") || "";
-            if (contentType.includes("json")) {
-              const payload = await response.json();
-              await addSource("CDN", payload && payload.data && (payload.data.url || payload.data.embedUrl) || payload && payload.url);
-            } else {
-              const html = await response.text();
-              const doc = new DOMParser().parseFromString(html, "text/html");
-              await addSource("CDN", doc.querySelector("iframe[src]")?.getAttribute("src") || "");
-            }
-          }
-        }
-      }
-    } catch (_) { /* One unavailable provider must not hide another. */ }
+    const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
+    if (isSeries) {
+      url.searchParams.set("season", String(season));
+      url.searchParams.set("episode", String(episode));
+    }
+    const response = await fetch(url.href, {
+      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error("NEOWATCH_CDN_" + response.status);
+    const payload = await response.json();
+    const data = payload && payload.data || {};
+    const streamUrl = String(data.m3u8Url || "");
+    if (!payload.success || !streamUrl) {
+      return { sources: [], message: "CDN-ПЛЕЕР НЕ ВЕРНУЛ ВИДЕО ДЛЯ ВЫБРАННОЙ СЕРИИ ИЛИ ФИЛЬМА." };
+    }
+    let parsed;
+    try { parsed = new URL(streamUrl); } catch (_) { return { sources: [], message: "CDN ВЕРНУЛ НЕКОРРЕКТНУЮ ССЫЛКУ НА ПОТОК." }; }
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443")) {
+      return { sources: [], message: "CDN ВЕРНУЛ НЕБЕЗОПАСНУЮ ССЫЛКУ НА ПОТОК." };
+    }
+    const voiceover = String(data.title || data.provider || "CDN").slice(0, 120);
     return {
-      sources,
-      message: sources.length ? "" : "NeoWatch не вернул доступный плеер для этого фильма или серии. Попробуй другой источник."
+      sources: [{
+        provider: voiceover,
+        embedUrl: parsed.href,
+        kind: "hls",
+        year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null,
+        season: isSeries ? season : null,
+        episode: isSeries ? episode : null
+      }],
+      message: ""
     };
   }
 
@@ -176,15 +164,31 @@
       const neoSearchButton = event.target.closest("[data-ad-neowatch-search]");
       const neoSourceButton = event.target.closest("[data-ad-neowatch-source]");
       if (neoSourceButton) {
-        const embedUrl = neoSourceButton.dataset.adNeowatchSource || "";
-        const film = modal._film;
+        const sourceUrl = neoSourceButton.dataset.adNeowatchSource || "";
+        const label = neoSourceButton.dataset.provider || "NEOWATCH";
+        const kind = neoSourceButton.dataset.sourceKind || "iframe";
         const status = $(".ad-watch-player__status", modal);
+        if (kind === "hls") {
+          const form = $(".ad-venom-panel", modal);
+          const input = $("#adVenomSource", form);
+          const kindSelect = $("#adVenomKind", form);
+          if (!form || !input || !kindSelect) {
+            if (status) { status.textContent = "VENOM PLAYER ЕЩЁ ЗАГРУЖАЕТСЯ. ПОВТОРИ ЧЕРЕЗ СЕКУНДУ."; status.classList.add("is-error"); }
+            return;
+          }
+          input.value = sourceUrl;
+          kindSelect.value = "hls";
+          form.dataset.adVoiceover = label;
+          form.requestSubmit();
+          return;
+        }
+        const film = modal._film;
         const stage = $(".ad-watch-player__stage", modal);
         try {
-          const url = new URL(embedUrl);
+          const url = new URL(sourceUrl);
           if (url.protocol !== "https:" || url.username || url.password) throw new Error("UNSAFE_SOURCE");
           stage.innerHTML = '<iframe src="' + esc(url.href) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
-          if (status) { status.textContent = "ИСТОЧНИК ОТКРЫТ · " + (neoSourceButton.dataset.provider || "NEOWATCH"); status.classList.remove("is-error"); }
+          if (status) { status.textContent = "ИСТОЧНИК ОТКРЫТ · " + label; status.classList.remove("is-error"); }
         } catch (_) {
           if (status) { status.textContent = "НЕ УДАЛОСЬ ОТКРЫТЬ ЭТОТ ИСТОЧНИК."; status.classList.add("is-error"); }
         }
@@ -210,10 +214,10 @@
           if (!sources.length) {
             results.textContent = data.message || "ИСТОЧНИКИ НЕ НАЙДЕНЫ. ОСТАЛЬНЫЕ ВАРИАНТЫ ПРОСМОТРА НЕ ЗАТРОНУТЫ.";
           } else {
-            results.innerHTML = '<p class="ad-watch-player__result-description">Выбери источник. Наличие русской озвучки зависит от самого плеера и доступных дорожек.</p>' + sources.map(source =>
-              '<button type="button" class="ad-watch-player__result" data-ad-neowatch-source="' + esc(source.embedUrl) + '" data-provider="' + esc(source.provider) + '">' +
+            results.innerHTML = '<p class="ad-watch-player__result-description">ДОСТУПНЫЙ ПОТОК · ' + (sources[0].kind === "hls" ? "ПРЯМАЯ HLS-ДОРОЖКА ДЛЯ VENOM / MATTEBOX" : "ВНЕШНИЙ ПЛЕЕР") + '</p>' + sources.map(source =>
+              '<button type="button" class="ad-watch-player__result" data-ad-neowatch-source="' + esc(source.embedUrl) + '" data-source-kind="' + esc(source.kind || "iframe") + '" data-provider="' + esc(source.provider) + '">' +
               '<span class="ad-watch-player__result-title">' + esc(source.provider) + '</span>' +
-              '<span class="ad-watch-player__result-meta">' + esc(source.year || year || "ГОД НЕ УКАЗАН") + (source.kpId ? " · KP " + esc(source.kpId) : "") + '</span>' +
+              '<span class="ad-watch-player__result-meta">' + (source.season ? "СЕЗОН " + esc(source.season) + " · СЕРИЯ " + esc(source.episode) + " · " : "") + esc(source.year || year || "ГОД НЕ УКАЗАН") + '</span>' +
               '</button>'
             ).join("");
             if (status) status.textContent = "НАЙДЕНО ИСТОЧНИКОВ: " + sources.length + ". ВЫБЕРИ ОДИН НИЖЕ.";
