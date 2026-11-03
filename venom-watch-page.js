@@ -1130,7 +1130,6 @@
       uiScale: "1.05",
       showTitle: "1",
       exit: "1",
-      hide: "settings,subtitles,server"
     });
     frame.src = "https://embed.vidrift.net" + path + "?" + params.toString();
     stage.appendChild(frame);
