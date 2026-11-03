@@ -985,32 +985,39 @@
     if (!idsResponse.ok) throw new Error("TMDB не вернул внешние идентификаторы.");
     const ids = await idsResponse.json();
     const imdbId = String(ids && ids.imdb_id || "");
-    if (!/^tt\d{5,12}$/.test(imdbId)) return [];
+    if (!/^tt\\d{5,12}$/.test(imdbId)) return { sources: [], catalog: [] };
+    // For a series, request the complete season/episode catalog once. The API returns
+    // per-episode voiceover labels; requesting only one episode hides series-wide coverage.
     const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
-    if (isSeries) {
-      url.searchParams.set("season", String(season));
-      url.searchParams.set("episode", String(episode));
-    }
     const response = await fetch(url.href, {
-      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(15000)
+      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(20000)
     });
     if (!response.ok) throw new Error("CDN-источник ответил ошибкой " + response.status + ".");
     const payload = await response.json();
     const data = payload && payload.data || {};
-    if (!payload.success) return [];
-    const entries = isSeries && Array.isArray(data.episodes)
-      ? data.episodes.filter(item => item && Number(item.season) === season && Number(item.episode) === episode)
-      : [];
-    const candidates = entries.length ? entries : (data.m3u8Url ? [data] : []);
-    const seen = new Set();
-    return candidates.map(item => {
-      const raw = String(item.m3u8Url || data.m3u8Url || "");
-      let parsed;
-      try { parsed = new URL(raw); } catch (_) { return null; }
-      if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443") || seen.has(parsed.href)) return null;
-      seen.add(parsed.href);
-      return { url: parsed.href, title: String(item.title || item.name || data.title || data.provider || "CDN · HLS").slice(0, 120) };
-    }).filter(Boolean);
+    if (!payload.success) return { sources: [], catalog: [] };
+    if (isSeries) {
+      const catalog = (Array.isArray(data.episodes) ? data.episodes : []).filter(item =>
+        item && Number.isInteger(Number(item.season)) && Number(item.season) > 0 &&
+        Number.isInteger(Number(item.episode)) && Number(item.episode) > 0 &&
+        typeof item.m3u8Url === "string" && item.m3u8Url
+      );
+      const current = catalog.filter(item => Number(item.season) === season && Number(item.episode) === episode);
+      const seen = new Set();
+      const sources = current.map(item => {
+        let parsed;
+        try { parsed = new URL(item.m3u8Url); } catch (_) { return null; }
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443") || seen.has(parsed.href)) return null;
+        seen.add(parsed.href);
+        return { url: parsed.href, title: String(item.title || item.name || "Вариант озвучки").slice(0, 120), season, episode };
+      }).filter(Boolean);
+      return { sources, catalog };
+    }
+    const raw = String(data.m3u8Url || "");
+    let parsed;
+    try { parsed = new URL(raw); } catch (_) { return { sources: [], catalog: [] }; }
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443")) return { sources: [], catalog: [] };
+    return { sources: [{ url: parsed.href, title: String(data.title || data.provider || "CDN · HLS").slice(0, 120) }], catalog: [] };
   }
 
   function mountNeoWatchChooser(film) {
@@ -1038,10 +1045,24 @@
       button.textContent = "ИЩУ ДОСТУПНЫЕ ОЗВУЧКИ…";
       output.textContent = "ПРОВЕРЯЮ ИСТОЧНИКИ…";
       try {
-        const sources = await searchNeoWatchDirectSources(film, season, episode);
+        const result = await searchNeoWatchDirectSources(film, season, episode);
+        const sources = result.sources;
         output.replaceChildren();
+        if (isSeries && result.catalog.length) {
+          const coverage = new Map();
+          result.catalog.forEach(item => {
+            const label = String(item.title || item.name || "Без названия");
+            coverage.set(label, (coverage.get(label) || 0) + 1);
+          });
+          const summary = document.createElement("p");
+          summary.className = "neowatch-coverage";
+          summary.textContent = "В КАТАЛОГЕ СЕРИАЛА: " + Array.from(coverage.entries()).map(([name, count]) => name + " — " + count + " сер.").join(" · ");
+          output.appendChild(summary);
+        }
         if (!sources.length) {
-          output.textContent = "ДЛЯ ЭТОГО НАЗВАНИЯ И ЭПИЗОДА ПРЯМЫЕ ВАРИАНТЫ НЕ НАЙДЕНЫ. НИЖЕ ОСТАЮТСЯ ВНЕШНИЕ ПЛЕЕРЫ.";
+          const empty = document.createElement("p");
+          empty.textContent = "ДЛЯ " + (isSeries ? season + " СЕЗОНА, " + episode + " СЕРИИ" : "ЭТОГО НАЗВАНИЯ") + " ПРЯМОЙ ПОТОК НЕ НАЙДЕН. ВАЖНО: НЕ ПОДМЕНЯЮ ЕГО ДРУГОЙ СЕРИЕЙ.";
+          output.appendChild(empty);
           return;
         }
         sources.forEach(source => {
@@ -1055,12 +1076,32 @@
           meta.className = "source-result__meta";
           meta.textContent = (isSeries ? "СЕЗОН " + season + " · СЕРИЯ " + episode + " · " : "") + "ПРЯМОЙ HLS · VENOM / MATTEBOX";
           option.append(title, meta);
-          option.addEventListener("click", () => {
+          option.addEventListener("click", async () => {
+            option.disabled = true;
+            option.classList.add("is-loading");
             try {
               openDirectStream(source.url);
-              status("ЗАПУЩЕН ИСТОЧНИК · " + source.title.toUpperCase());
-              streamStatus("Выбран вариант «" + source.title + "». Если поток содержит несколько аудиодорожек, After Dark покажет их отдельно.");
-            } catch (error) { streamStatus(error.message || "Не удалось открыть источник.", true); }
+              status("ЗАПУСКАЮ · " + source.title.toUpperCase());
+              streamStatus("Выбран вариант «" + source.title + "». Подключаю видеопоток…");
+              const video = $("#playerStage video");
+              if (!video) throw new Error("Видеоплеер не создался.");
+              const startPlayback = () => {
+                const playResult = video.play();
+                if (playResult && typeof playResult.catch === "function") {
+                  playResult.catch(() => streamStatus("Поток подключён. Нажми ▶ в самом видео, чтобы начать воспроизведение.", true));
+                }
+              };
+              if (video.readyState >= 2) startPlayback();
+              else {
+                video.addEventListener("canplay", startPlayback, { once: true });
+                video.addEventListener("error", () => streamStatus("Источник не смог загрузить видео. Попробуй другой вариант озвучки.", true), { once: true });
+              }
+            } catch (error) {
+              streamStatus(error.message || "Не удалось открыть источник.", true);
+            } finally {
+              option.disabled = false;
+              option.classList.remove("is-loading");
+            }
           });
           output.appendChild(option);
         });
