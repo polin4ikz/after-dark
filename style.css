@@ -53,7 +53,7 @@
   width:min(72vw,760px)!important;
   height:min(58vh,500px)!important;
 
-  transform:translate(-50%,-50%) rotate(-5deg)!important;
+  transform:translate(-50%,-50%) rotate(-5deg);
 
   border-radius:
     47% 53% 42% 58% /
@@ -105,7 +105,7 @@
   width:min(52vw,560px)!important;
   height:min(42vh,390px)!important;
 
-  transform:translate(-50%,-50%) rotate(8deg)!important;
+  transform:translate(-50%,-50%) rotate(8deg);
 
   border-radius:
     54% 46% 58% 42% /
