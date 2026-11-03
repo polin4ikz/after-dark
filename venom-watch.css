@@ -162,3 +162,13 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .neowatch-results:empty{display:none}
 .neowatch-chooser .source-result__title,.neowatch-chooser .source-result__meta{display:block}
 @media(max-width:520px){.neowatch-chooser{padding:12px}.neowatch-episode-fields{gap:8px}}
+
+/* VidRift controls: compact language-only selectors. */
+.vidrift-frame{display:block;width:100%;height:100%;min-height:240px;border:0;background:#050505}
+.vidrift-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 4px;padding:12px;border:1px solid rgba(232,221,200,.18);background:rgba(121,21,34,.10)}
+.vidrift-controls[hidden]{display:none!important}
+.vidrift-controls__note{grid-column:1/-1;margin:0;color:rgba(232,221,200,.58);font:10px/1.45 "Geist Mono",monospace;letter-spacing:.025em}
+.vidrift-controls__field{display:grid;gap:6px;min-width:0;color:rgba(232,221,200,.7);font:9px "Geist Mono",monospace;letter-spacing:.08em}
+.vidrift-controls__field select{width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid rgba(232,221,200,.25);border-radius:0;background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
+.vidrift-controls__field option{background:#171311;color:#e8ddc8}
+@media(max-width:560px){.vidrift-controls{grid-template-columns:1fr;padding:10px}.vidrift-controls__field select{min-height:46px;font-size:13px}}
