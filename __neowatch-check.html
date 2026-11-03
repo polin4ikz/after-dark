@@ -1,35 +1,33 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NeoWatch connectivity check</title></head>
-<body><pre id="result">Checking…</pre><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NeoWatch HLS audio check</title></head>
+<body><video id="video" controls playsinline style="width:80vw;max-height:50vh"></video><pre id="result">Checking…</pre><script>
 (async()=>{
- const base="https://api.neome.uk";
  const out={};
- async function get(name,url){
-  try{
-   const r=await fetch(url,{mode:"cors",headers:{accept:"application/json, text/html"}});
-   const type=r.headers.get("content-type")||"";
-   const body=type.includes("json")?await r.json():await r.text();
-   out[name]={status:r.status,type};
-   return body;
-  }catch(e){out[name]={error:String(e)};return null}
- }
- const search=await get("search",base+"/api/v1/search?q=breaking&type=tv");
- const items=search?.data?.items||[];
- out.search.match=items.filter(x=>String(x.originalTitle||"").toLowerCase()==="breaking bad").map(x=>({id:x.tmdbId,title:x.title,originalTitle:x.originalTitle,mediaType:x.mediaType}));
- const alloha=await get("alloha",base+"/api/v1/player/alloha/tmdb/1396?season=1&episode=1");
- out.alloha.body=alloha;
- const cdn=await get("cdn",base+"/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2");
- out.cdn.topKeys=cdn&&Object.keys(cdn);
- out.cdn.dataKeys=cdn?.data&&Object.keys(cdn.data);
- out.cdn.selected={provider:cdn?.data?.provider,title:cdn?.data?.title,isSeries:cdn?.data?.isSeries,season:cdn?.data?.season,episode:cdn?.data?.episode,type:cdn?.data?.type,hasM3u8:Boolean(cdn?.data?.m3u8Url)};
- out.cdn.targetEpisode=(cdn?.data?.episodes||[]).filter(x=>x.season===4&&x.episode===2).map(x=>({title:x.title,hasUrl:Boolean(x.m3u8Url)}));
- out.cdn.uniqueTrackTitles=[...new Set((cdn?.data?.episodes||[]).map(x=>x.title).filter(Boolean))];
- function findTrackArrays(x,path="data"){
-  if(!x||typeof x!=="object")return [];
-  if(Array.isArray(x)&&x.some(y=>y&&typeof y==="object"&&("m3u8Url" in y||"title" in y)))return [{path,items:x.filter(y=>y&&typeof y==="object").slice(0,30).map(y=>({title:y.title,season:y.season,episode:y.episode,hasUrl:Boolean(y.m3u8Url||y.url)}))}];
-  return Object.entries(x).flatMap(([k,v])=>findTrackArrays(v,path+"."+k));
- }
- out.cdn.trackArrays=findTrackArrays(cdn);
- document.getElementById("result").textContent=JSON.stringify(out,null,2);
+ const write=()=>document.getElementById("result").textContent=JSON.stringify(out,null,2);
+ try{
+  const response=await fetch("https://api.neome.uk/api/v1/player/cdn/imdb/tt0903747?season=4&episode=2",{mode:"cors",headers:{accept:"application/json"}});
+  out.cdnStatus=response.status;
+  const payload=await response.json();
+  const data=payload?.data||{};
+  out.cdn={provider:data.provider,title:data.title,season:data.season,episode:data.episode,type:data.type,hasM3u8:Boolean(data.m3u8Url)};
+  const script=document.createElement("script");
+  script.src="https://cdn.jsdelivr.net/npm/mattebox@0.15.0/dist/cdn/mattebox.min.js";
+  await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
+  const engine=window.mattebox.preset();
+  const video=document.getElementById("video");
+  const render=()=>{
+   const tracks=engine.tracks?.available||[];
+   out.tracks=tracks.map(t=>({id:t.id,name:t.name,lang:t.lang,contentType:t.contentType,channels:t.channels,selectable:engine.tracks.selectable(t.id)}));
+   out.audioTracks=out.tracks.filter(t=>t.contentType==="audio");
+   write();
+  };
+  engine.on("tracks:changed",render);
+  engine.on("tracks:selected",render);
+  await engine.attach(video);
+  engine.load(data.m3u8Url);
+  setTimeout(render,12000);
+  setTimeout(()=>{out.video={readyState:video.readyState,duration:Number.isFinite(video.duration)?video.duration:null};write()},14000);
+  write();
+ }catch(e){out.error=String(e);write()}
 })();
 </script></body></html>
