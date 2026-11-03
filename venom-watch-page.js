@@ -1057,7 +1057,7 @@
     return label;
   }
 
-  function mountVidriftControls(frame, film) {
+  function mountVidriftControls(frame, film, initialSeason, initialEpisode) {
     const root = $("#vidriftControls");
     if (!root) return;
     root.replaceChildren();
@@ -1148,6 +1148,102 @@
     };
   }
 
+  function mountVidriftEpisodes(root, frame, film, initialSeason, initialEpisode) {
+    if (!isSeriesFilm(film)) return;
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    const section = document.createElement("div");
+    section.className = "vidrift-episodes";
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "vidrift-controls__toggle vidrift-episodes__toggle";
+    toggle.textContent = "СЕРИИ · RU";
+    toggle.setAttribute("aria-expanded", "false");
+    const panel = document.createElement("div");
+    panel.className = "vidrift-controls__panel vidrift-episodes__panel";
+    panel.hidden = true;
+    const seasonSelect = document.createElement("select");
+    seasonSelect.className = "vidrift-episodes__season";
+    seasonSelect.setAttribute("aria-label", "Сезон");
+    const episodeList = document.createElement("div");
+    episodeList.className = "vidrift-episodes__list";
+    const note = document.createElement("p");
+    note.className = "vidrift-controls__note";
+    note.textContent = "Загружаю названия серий…";
+    panel.append(note, seasonSelect, episodeList);
+    section.append(toggle, panel);
+    root.appendChild(section);
+    toggle.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+
+    const loadSeason = async seasonNumber => {
+      episodeList.replaceChildren();
+      note.textContent = "Загружаю серии…";
+      try {
+        const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id + "/season/" + seasonNumber) + "&language=ru-RU", { headers: { accept: "application/json" } });
+        if (!response.ok) throw new Error("episode metadata unavailable");
+        const data = await response.json();
+        const episodes = Array.isArray(data.episodes) ? data.episodes : [];
+        if (!episodes.length) {
+          note.textContent = "Список серий недоступен.";
+          return;
+        }
+        note.textContent = "Выбери серию. Названия загружены на русском, если TMDB их предоставляет.";
+        for (const item of episodes) {
+          const episodeNumber = Number(item.episode_number);
+          if (!Number.isInteger(episodeNumber) || episodeNumber < 1) continue;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "vidrift-episodes__item";
+          button.textContent = String(episodeNumber).padStart(2, "0") + " · " + String(item.name || ("Серия " + episodeNumber));
+          if (Number(seasonNumber) === Number(selectedSeason ?? initialSeason) && episodeNumber === Number(selectedEpisode ?? initialEpisode)) {
+            button.setAttribute("aria-current", "true");
+          }
+          button.addEventListener("click", () => {
+            const nextSeason = Number(seasonNumber);
+            if (nextSeason === Number(selectedSeason ?? initialSeason) && episodeNumber === Number(selectedEpisode ?? initialEpisode)) {
+              panel.hidden = true;
+              toggle.setAttribute("aria-expanded", "false");
+              return;
+            }
+            savePlaybackProgress(film, {
+              currentTime: Number(frame._afterDarkCurrentTime || 0),
+              duration: Number(frame._afterDarkDuration || 0),
+              season: selectedSeason ?? initialSeason,
+              episode: selectedEpisode ?? initialEpisode
+            }, "VIDRIFT", true);
+            selectedSeason = nextSeason;
+            selectedEpisode = episodeNumber;
+            restartCurrentEpisode = true;
+            launchVidriftPlayer(film);
+          });
+          episodeList.appendChild(button);
+        }
+      } catch (_) {
+        note.textContent = "Не удалось загрузить список серий. Проверь соединение и открой список ещё раз.";
+      }
+    };
+    fetch("/api/tmdb?path=" + encodeURIComponent("/tv/" + id) + "&language=ru-RU", { headers: { accept: "application/json" } })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("series metadata unavailable")))
+      .then(data => {
+        const seasons = (Array.isArray(data.seasons) ? data.seasons : []).filter(item => Number(item.season_number) > 0);
+        if (!seasons.length) throw new Error("no seasons");
+        seasonSelect.replaceChildren();
+        for (const item of seasons) {
+          const option = document.createElement("option");
+          option.value = String(item.season_number);
+          option.textContent = item.name || ("Сезон " + item.season_number);
+          seasonSelect.appendChild(option);
+        }
+        const preferred = String(initialSeason || 1);
+        seasonSelect.value = Array.from(seasonSelect.options).some(option => option.value === preferred) ? preferred : seasonSelect.options[0].value;
+        void loadSeason(Number(seasonSelect.value));
+        seasonSelect.addEventListener("change", () => { void loadSeason(Number(seasonSelect.value)); });
+      })
+      .catch(() => { note.textContent = "Не удалось загрузить сезоны на русском."; });
+  }
+
   function launchVidriftPlayer(film) {
     const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
     if (!Number.isSafeInteger(id) || id < 1) {
@@ -1185,7 +1281,8 @@
       uiScale: "1.05",
       showTitle: "1",
       exit: "1",
-      hide: "settings,subtitles,server,pausecard"
+      autoplay: "0",
+      hide: "settings,subtitles,server,pausecard,episodes"
     });
     frame.src = "https://embed.vidrift.net" + path + "?" + params.toString();
     stage.appendChild(frame);
@@ -1218,7 +1315,8 @@
       };
       frame._afterDarkHideEpisodeInfo = () => { episodeInfo.hidden = true; };
     }
-    mountVidriftControls(frame, film);
+    mountVidriftControls(frame, film, season, episode);
+    mountVidriftEpisodes($("#vidriftControls"), frame, film, season, episode);
     status("ЗАПУСКАЮ VIDRIFT");
     streamStatus("Загружаю фильм. Плеер сам начнёт воспроизведение без дополнительной кнопки; браузер может начать без звука до первого касания.");
 
@@ -1228,6 +1326,8 @@
       const data = event.data;
       if (!data || typeof data !== "object") return;
       if (data.type === "vidrift:state") {
+        frame._afterDarkCurrentTime = Number(data.currentTime) || frame._afterDarkCurrentTime || 0;
+        frame._afterDarkDuration = Number(data.duration) || frame._afterDarkDuration || 0;
         frame._afterDarkVidriftState?.(data);
         status("VIDRIFT ГОТОВ · " + (data.paused ? "ПАУЗА" : "ВОСПРОИЗВЕДЕНИЕ"));
         return;
@@ -1236,6 +1336,8 @@
       if (data.type === "vidrift:unpaused") frame._afterDarkHideEpisodeInfo?.();
       if (data.type === "vidrift:progress" || data.type === "vidrift:paused") {
         const currentTime = Number(data.currentTime);
+        frame._afterDarkCurrentTime = Number.isFinite(currentTime) ? currentTime : frame._afterDarkCurrentTime || 0;
+        frame._afterDarkDuration = Number(data.duration) || frame._afterDarkDuration || 0;
         const duration = Number(data.duration);
         if (Number.isFinite(currentTime)) {
           savePlaybackProgress(film, {
@@ -1633,7 +1735,7 @@
     const savedEpisodeProgress = savedProgress(film) || {};
     selectedSeason = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.season_number) || 1)) : null;
     selectedEpisode = isSeries ? Math.max(1, Math.floor(Number(savedEpisodeProgress.episode_number) || 1)) : null;
-    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
+    Promise.race([Promise.resolve(window.afterDarkProgressReady).catch(() => false), new Promise(resolve => setTimeout(resolve, 1200))]).then(async () => { const saved = savedProgress(film) || {}; if (isSeries) { selectedSeason = Math.max(1, Math.floor(Number(saved.season_number) || selectedSeason || 1)); selectedEpisode = Math.max(1, Math.floor(Number(saved.episode_number) || selectedEpisode || 1)); } await askResumeChoice(film); return findSources(film); }).catch(error => { console.error("PLAYER INITIALIZATION FAILED", error); status("НЕ УДАЛОСЬ ПОДГОТОВИТЬ ПЛЕЕР", true); });
     window.addEventListener("pagehide", () => {
       if (venomPlayerInstance) { try { venomPlayerInstance.destroy?.(); } catch (_) {} venomPlayerInstance = null; }
       if (hls) hls.destroy();
