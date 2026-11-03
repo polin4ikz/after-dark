@@ -1020,6 +1020,22 @@
     return { sources: [{ url: parsed.href, title: String(data.title || data.provider || "CDN · HLS").slice(0, 120) }], catalog: [] };
   }
 
+  async function loadOriginalLanguage(film) {
+    if (/^(ru|en)(?:[-_]|$)/i.test(String(film.original_language || ""))) return String(film.original_language).slice(0, 2).toLowerCase();
+    const id = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+    if (!Number.isSafeInteger(id) || id < 1) return "";
+    const type = isSeriesFilm(film) ? "tv" : "movie";
+    try {
+      const response = await fetch("/api/tmdb?path=" + encodeURIComponent("/" + type + "/" + id), {
+        headers: { accept: "application/json" }
+      });
+      if (!response.ok) return "";
+      const data = await response.json();
+      const language = String(data.original_language || "");
+      return /^(ru|en)(?:[-_]|$)/i.test(language) ? language.slice(0, 2).toLowerCase() : "";
+    } catch (_) { return ""; }
+  }
+
   function languageOf(item, originalLanguage = "") {
     const values = [
       item && item.label, item && item.name, item && item.title,
@@ -1047,6 +1063,8 @@
     root.replaceChildren();
     root.hidden = false;
     let expanded = false;
+    let originalLanguage = String(film.original_language || "");
+    let latestState = null;
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "vidrift-controls__toggle";
@@ -1069,7 +1087,7 @@
     });
 
     const addSelect = (labelText, field, items, selected) => {
-      if (!Array.isArray(items) || items.length < 2) return;
+      if (!Array.isArray(items) || items.length < 1) return;
       const label = document.createElement("label");
       label.className = "vidrift-controls__field";
       const caption = document.createElement("span");
@@ -1083,6 +1101,7 @@
         select.appendChild(option);
       }
       select.value = String(selected ?? items[0].value);
+      select.disabled = items.length < 2;
       select.addEventListener("change", () => {
         if (frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:set", [field]: select.value }, "https://embed.vidrift.net");
       });
@@ -1090,20 +1109,28 @@
       list.appendChild(label);
     };
 
+    frame._afterDarkSetOriginalLanguage = language => {
+      if (!language) return;
+      originalLanguage = language;
+      if (latestState) frame._afterDarkVidriftState(latestState);
+    };
     frame._afterDarkVidriftState = state => {
+      latestState = state;
       list.replaceChildren();
       const sources = (Array.isArray(state.sources) ? state.sources : [])
-        .map(item => { const lang = languageOf(item, film.original_language); return { value: item.value, label: trackLabel(item, lang), lang }; })
+        .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const audios = (Array.isArray(state.audios) ? state.audios : [])
-        .map(item => { const lang = languageOf(item, film.original_language); return { value: item.value, label: trackLabel(item, lang), lang }; })
+        .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
         .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
 
-      if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
-      else if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
+      if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
+      else if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
+      else if (audios.length === 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
+      else if (sources.length === 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
 
       const subtitleLanguages = subtitles.filter(item => item.lang);
       if (subtitleLanguages.length > 1) {
@@ -1210,6 +1237,12 @@
     frame.addEventListener("load", () => {
       if (frame.contentWindow) {
         frame.contentWindow.postMessage({ type: "vidrift:get-state" }, origin);
+        void loadOriginalLanguage(film).then(language => {
+          if (language && frame.contentWindow && frame._afterDarkSetOriginalLanguage) {
+            frame._afterDarkSetOriginalLanguage(language);
+            frame.contentWindow.postMessage({ type: "vidrift:get-state" }, origin);
+          }
+        });
         if (resumeAt > 10) frame.contentWindow.postMessage({ type: "vidrift:resume", currentTime: resumeAt }, origin);
       }
     });
