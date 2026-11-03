@@ -2877,7 +2877,7 @@ body {
 }
 
 
-/* Movie Night cloud titles use the site's main typeface */
+/* Movie Night: keep the original title animation and use Geist Mono. */
 .movie-night-reveal-track span{
   font-family:var(--mono)!important;
   font-size:clamp(15px,1.8vw,24px)!important;
@@ -2885,15 +2885,25 @@ body {
   font-style:normal!important;
   letter-spacing:-.035em!important;
   text-transform:none!important;
-  color:var(--word-color,var(--red))!important;
-  opacity:var(--word-opacity,.9);
   text-shadow:0 1px 18px rgba(54,12,18,.22);
-  animation:movieWordFlight var(--word-duration,1.8s) cubic-bezier(.2,.65,.3,1) var(--delay,0s) both!important;
 }
-@keyframes movieWordFlight{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(var(--word-rotation,0deg))}
-  18%{opacity:.55;transform:translate(-50%,-50%) scale(.76) rotate(var(--word-rotation,0deg))}
-  48%{opacity:var(--word-opacity,.9);transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1) rotate(var(--word-rotation,0deg))}
-  76%{opacity:.72;transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1.05) rotate(var(--word-rotation,0deg))}
-  100%{opacity:0;transform:translate(calc(-50% + var(--word-drift-x,0px)),calc(-50% + var(--word-drift-y,0px))) scale(1.28) rotate(0deg)}
+
+/* Let the cloud itself drift gently while title motion stays unchanged. */
+.movie-night-reveal:before{
+  transform:translate(-50%,-50%) rotate(-5deg);
+  animation:movieNightCloudDrift 10s ease-in-out infinite alternate;
+}
+.movie-night-reveal:after{
+  transform:translate(-50%,-50%) rotate(8deg);
+  animation:movieNightCloudCore 13s ease-in-out infinite alternate;
+}
+@keyframes movieNightCloudDrift{
+  0%{transform:translate(-51%,-49%) rotate(-8deg) scale(.96)}
+  48%{transform:translate(-49%,-51%) rotate(-1deg) scale(1.04)}
+  100%{transform:translate(-50%,-50%) rotate(5deg) scale(.99)}
+}
+@keyframes movieNightCloudCore{
+  0%{transform:translate(-53%,-48%) rotate(4deg) scale(.94)}
+  55%{transform:translate(-49%,-52%) rotate(12deg) scale(1.08)}
+  100%{transform:translate(-51%,-50%) rotate(2deg) scale(.98)}
 }
