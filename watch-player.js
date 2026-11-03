@@ -164,6 +164,7 @@
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
       '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://archive.org/embed/…" autocomplete="url"><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
+      '<div class="ad-vidrift-tracks" aria-label="Настройки дорожек"><label>АУДИО <select class="ad-vidrift-audio" aria-label="Аудиодорожка" disabled><option>Загрузка вариантов…</option></select><small class="ad-vidrift-audio-note">Варианты обновятся после загрузки плеера.</small></label><label>СУБТИТРЫ <select class="ad-vidrift-subtitles" aria-label="Субтитры" disabled><option>Загрузка вариантов…</option></select><small class="ad-vidrift-subtitles-note">Варианты обновятся после загрузки плеера.</small></label></div>',
       '<p class="ad-watch-player__status" aria-live="polite"></p><div class="ad-watch-player__stage"></div>',
       '<p class="ad-watch-player__footnote">YouTube · Vimeo · Archive.org / полноэкранный режим зависит от источника</p>',
       '</section>'
@@ -388,7 +389,7 @@
       } catch (error) {
         status.textContent = error.message || "Не удалось открыть источник.";
         status.classList.add("is-error");
-        $(".ad-watch-player__stage", modal).replaceChildren();
+        if (activeVidriftFrame && $(".ad-watch-player__stage", modal)?.contains(activeVidriftFrame)) activeVidriftFrame = null;\n    $(".ad-watch-player__stage", modal).replaceChildren();
       }
     });
     modal.addEventListener("click", event => {
@@ -400,41 +401,135 @@
     return modal;
   }
 
+  const VIDRIFT_ORIGIN = "https://embed.vidrift.net";
+  let activeVidriftFrame = null;
+  const VIDRIFT_PROGRESS_KEY = "after-dark:vidrift-progress:v1";
+  function trackLanguage(item) {
+    const label = String(item && (item.label || item.name || item.lang || item.language || "") || "");
+    const value = String(item && item.value || "");
+    const text = (label + " " + value).toLowerCase();
+    if (/\\b(ru|rus)([-_ ]|$)|русск|russian/.test(text)) return "ru";
+    if (/\\b(en|eng)([-_ ]|$)|англ|english/.test(text)) return "en";
+    return "";
+  }
+  function renderVidriftTracks(modal, state) {
+    const controls = $(".ad-vidrift-tracks", modal);
+    if (!controls) return;
+    const audio = $(".ad-vidrift-audio", controls);
+    const subtitles = $(".ad-vidrift-subtitles", controls);
+    const audioNote = $(".ad-vidrift-audio-note", controls);
+    const subtitleNote = $(".ad-vidrift-subtitles-note", controls);
+    const audioOptions = (Array.isArray(state.audios) ? state.audios : [])
+      .filter(item => trackLanguage(item) === "ru" || trackLanguage(item) === "en");
+    audio.replaceChildren();
+    if (audioOptions.length) {
+      audioOptions.forEach(item => audio.add(new Option(item.label || item.name || (trackLanguage(item) === "ru" ? "Русский" : "English"), String(item.value))));
+      audio.value = String(state.audio ?? audioOptions[0].value);
+    } else {
+      audio.add(new Option("Один вариант или источник не передал список", ""));
+    }
+    audio.disabled = audioOptions.length < 2;
+    audioNote.textContent = audioOptions.length > 1 ? "Выберите русскую или английскую дорожку." : "Переключение появится, если источник передаст несколько подходящих дорожек.";
+    const subtitleOptions = (Array.isArray(state.subtitles) ? state.subtitles : [])
+      .filter(item => String(item.value) === "off" || trackLanguage(item) === "ru" || trackLanguage(item) === "en");
+    const languageOptions = subtitleOptions.filter(item => item.value !== "off");
+    subtitles.replaceChildren();
+    if (languageOptions.length) {
+      const off = subtitleOptions.find(item => String(item.value) === "off");
+      if (off) subtitles.add(new Option(off.label || "Выкл.", String(off.value)));
+      languageOptions.forEach(item => subtitles.add(new Option(item.label || item.name || (trackLanguage(item) === "ru" ? "Русские" : "English"), String(item.value))));
+      subtitles.value = String(state.subtitle ?? (off ? off.value : languageOptions[0].value));
+    } else {
+      subtitles.add(new Option("Нет русских или английских субтитров", ""));
+    }
+    subtitles.disabled = languageOptions.length < 2;
+    subtitleNote.textContent = languageOptions.length > 1 ? "Доступно несколько языковых вариантов." : "Переключение появится, если источник передаст несколько подходящих вариантов.";
+  }
+  function savedVidriftProgress(film) {
+    try { return JSON.parse(localStorage.getItem(VIDRIFT_PROGRESS_KEY + ":" + filmKey(film)) || "null"); } catch (_) { return null; }
+  }
+  function saveVidriftProgress(film, data) {
+    const time = Number(data.currentTime);
+    const duration = Number(data.duration);
+    if (!Number.isFinite(time) || time < 0) return;
+    const item = { time: Math.floor(time), duration: Number.isFinite(duration) ? Math.floor(duration) : 0, season: data.season, episode: data.episode, updatedAt: Date.now() };
+    try { localStorage.setItem(VIDRIFT_PROGRESS_KEY + ":" + filmKey(film), JSON.stringify(item)); } catch (_) {}
+    const series = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
+    window.afterDarkProgress?.save?.({
+      tmdb_id: Number(film.tmdbId ?? film.id), title: titleOf(film),
+      media_type: series ? "tv" : "movie", position_seconds: item.time,
+      duration_seconds: item.duration, status: data.type === "vidrift:ended" ? "completed" : "in_progress",
+      season_number: Number(data.season) || undefined, episode_number: Number(data.episode) || undefined,
+      source_provider: "VidRift"
+    }).catch?.(() => {});
+  }
+  function attachVidriftControls(modal, frame, film) {
+    const controls = $(".ad-vidrift-tracks", modal);
+    const audio = $(".ad-vidrift-audio", controls);
+    const subtitles = $(".ad-vidrift-subtitles", controls);
+    audio.onchange = () => frame.contentWindow.postMessage({ type: "vidrift:set", audio: audio.value }, VIDRIFT_ORIGIN);
+    subtitles.onchange = () => frame.contentWindow.postMessage({ type: "vidrift:set", subtitle: subtitles.value }, VIDRIFT_ORIGIN);
+    frame.addEventListener("load", () => {
+      if (activeVidriftFrame !== frame) return;
+      frame.contentWindow.postMessage({ type: "vidrift:get-state" }, VIDRIFT_ORIGIN);
+      const saved = savedVidriftProgress(film) || window.afterDarkProgress?.get?.(film.tmdbId ?? film.id);
+      const time = Number(saved?.time ?? saved?.position_seconds);
+      if (Number.isFinite(time) && time > 10) frame.contentWindow.postMessage({ type: "vidrift:resume", currentTime: time }, VIDRIFT_ORIGIN);
+    });
+    window.addEventListener("message", event => {
+      if (event.origin !== VIDRIFT_ORIGIN || event.source !== frame.contentWindow || activeVidriftFrame !== frame) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "vidrift:state") renderVidriftTracks(modal, data);
+      if (data.type === "vidrift:progress" || data.type === "vidrift:paused" || data.type === "vidrift:ended") saveVidriftProgress(film, data);
+      if (data.type === "vidrift:episode") saveVidriftProgress(film, { ...data, type: "vidrift:progress", currentTime: 0, duration: 0 });
+    });
+  }
   function openPlayer(film) {
     if (!film) return;
     const modal = ensureModal();
     modal._film = film;
     $("#adWatchTitle", modal).textContent = titleOf(film);
     const isSeries = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
-    const episodeFields = $("[data-ad-episode-fields]", modal);
-    if (episodeFields) episodeFields.hidden = !isSeries;
-    const input = $("#adWatchSource", modal);
-    const status = $(".ad-watch-player__status", modal);
+    const season = Number($("[data-ad-season]", modal)?.value || 1);
+    const episode = Number($("[data-ad-episode]", modal)?.value || 1);
+    const id = Number(film.tmdbId ?? film.id);
     const stage = $(".ad-watch-player__stage", modal);
+    const status = $(".ad-watch-player__status", modal);
+    const tracks = $(".ad-vidrift-tracks", modal);
+    if (tracks) {
+      $(".ad-vidrift-audio", tracks).replaceChildren(new Option("Загрузка вариантов…", ""));
+      $(".ad-vidrift-subtitles", tracks).replaceChildren(new Option("Загрузка вариантов…", ""));
+      $(".ad-vidrift-audio", tracks).disabled = true;
+      $(".ad-vidrift-subtitles", tracks).disabled = true;
+    }
     stage.replaceChildren();
     status.textContent = "";
     status.classList.remove("is-error");
-    const results = $(".ad-watch-player__results", modal);
-    if (results) results.replaceChildren();
-    const availabilityResults = $(".ad-watch-player__availability-results", modal);
-    if (availabilityResults) availabilityResults.replaceChildren();
-    const availabilityButton = $("[data-ad-watchmode-search]", modal);
-    if (availabilityButton) availabilityButton.disabled = false;
-    const searchButton = $("[data-ad-archive-search]", modal);
-    if (searchButton) searchButton.disabled = false;
-    const cached = SOURCE_CACHE.get(filmKey(film));
-    input.value = cached ? cached.url : "";
+    if (!Number.isSafeInteger(id) || id < 1) {
+      status.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ TMDB ID ДЛЯ VIDRIFT.";
+      status.classList.add("is-error");
+      return;
+    }
+    const route = isSeries
+      ? "/embed/tv/" + encodeURIComponent(String(id)) + "/" + Math.max(1, season) + "/" + Math.max(1, episode)
+      : "/embed/movie/" + encodeURIComponent(String(id));
+    const url = new URL(route, VIDRIFT_ORIGIN);
+    url.searchParams.set("title", titleOf(film));
+    const frame = document.createElement("iframe");
+    frame.title = titleOf(film);
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.src = url.href;
+    stage.replaceChildren(frame);
+    activeVidriftFrame = frame;
+    attachVidriftControls(modal, frame, film);
+    status.textContent = "VIDRIFT ЗАПУСКАЕТСЯ · АВТОВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ БРАУЗЕРА";
     modal.dataset.openToken = String((Number(modal.dataset.openToken) || 0) + 1);
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("ad-watch-player-open");
-    if (cached) {
-      status.textContent = "ИСТОЧНИК ПОДКЛЮЧЁН · " + cached.provider.toUpperCase();
-      stage.innerHTML = '<iframe src="' + esc(cached.url) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
-    } else {
-      const searchUrl = "https://www.justwatch.com/de/suche?q=" + encodeURIComponent(titleOf(film));
-      results.innerHTML = '<p class="ad-watch-player__result-description">Плеер не нашёл сохранённый источник. Проверь, где фильм доступен легально, или отдельно выполни поиск по Internet Archive.</p><a class="ad-watch-player__result" href="' + esc(searchUrl) + '" target="_blank" rel="noopener noreferrer">ПРОВЕРИТЬ СЕРВИСЫ ПРОСМОТРА ↗</a>';
-    }
   }
   function closePlayer() {
     const modal = $("#adWatchPlayer");
