@@ -2631,3 +2631,42 @@ select{
     grid-template-columns:1fr!important;
   }
 }
+
+/* RATINGS — double the visible list height; keep the rest scrollable */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip !important;
+}
+
+.ratings-section .ratings-list,
+#ratingsList {
+  height: 340px !important;
+  max-height: 340px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+#ratingsList .rating-card,
+#ratingsList .rating-card > *,
+#ratingsList .rating-info,
+#ratingsList .rating-title,
+#ratingsList .rating-card p,
+#ratingsList .rating-score,
+#ratingsList .rating-average {
+  min-width: 0 !important;
+  max-width: 100%;
+  overflow-wrap: anywhere !important;
+  word-break: normal;
+}
+
+@media (max-width: 800px) {
+  .ratings-section .ratings-list,
+  #ratingsList {
+    height: 420px !important;
+    max-height: 420px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+}
