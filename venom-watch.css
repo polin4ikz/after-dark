@@ -250,3 +250,44 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-episode-info::-webkit-scrollbar{width:5px}
 .vidrift-episode-info::-webkit-scrollbar-thumb{border-radius:8px;background:rgba(210,139,150,.6)}
 @media(max-width:600px){.vidrift-episodes__panel{max-height:calc(100vh - 32px);padding:12px}.vidrift-episodes__list{max-height:calc(100vh - 230px)}}
+
+
+/* The settings and season/episode pickers share one button system. */
+.vidrift-controls__toggle,.vidrift-episodes__toggle{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:space-between;
+  flex:0 1 250px;
+  width:250px;
+  max-width:100%;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:0 14px;
+  border:1px solid rgba(191,91,106,.48);
+  border-radius:5px;
+  background:linear-gradient(135deg,rgba(121,21,34,.5),rgba(24,18,17,.95));
+  color:#e8ddc8;
+  font:9px "Geist Mono",monospace;
+  letter-spacing:.09em;
+  text-align:left;
+  box-shadow:0 5px 18px rgba(0,0,0,.22);
+  cursor:pointer;
+}
+.vidrift-controls__toggle::after,.vidrift-episodes__toggle::after{
+  content:"⌄";
+  flex:0 0 auto;
+  margin-left:10px;
+  color:#d89aa2;
+  font:15px/1 Arial,sans-serif;
+}
+.vidrift-controls__toggle:hover,.vidrift-controls__toggle[aria-expanded="true"],
+.vidrift-episodes__toggle:hover,.vidrift-episodes__toggle[aria-expanded="true"]{
+  border-color:rgba(220,145,155,.72);
+  background:linear-gradient(135deg,rgba(121,21,34,.8),rgba(24,18,17,.98));
+}
+@media(max-width:600px){
+  .vidrift-controls__toggle,.vidrift-episodes__toggle{flex-basis:100%;width:100%;max-width:100%}
+  .vidrift-episodes__toggle{min-height:44px}
+}
