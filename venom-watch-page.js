@@ -1068,7 +1068,7 @@
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "vidrift-controls__toggle";
-    toggle.textContent = "АУДИО / СУБТИТРЫ";
+    toggle.textContent = "КАЧЕСТВО · АУДИО · СУБТИТРЫ";
     toggle.setAttribute("aria-expanded", "false");
     const panel = document.createElement("div");
     panel.className = "vidrift-controls__panel";
@@ -1120,6 +1120,11 @@
       const sources = (Array.isArray(state.sources) ? state.sources : [])
         .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
+      const qualities = (Array.isArray(state.qualities) ? state.qualities : [])
+        .map(item => ({ value: item.value, label: String(item.label || item.value || "") }))
+        .filter(item => item.value != null);
+      if (qualities.length > 1) addSelect("КАЧЕСТВО", "quality", qualities, state.quality);
+
       const audios = (Array.isArray(state.audios) ? state.audios : [])
         .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
@@ -1129,8 +1134,6 @@
 
       if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
       else if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
-      else if (audios.length === 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
-      else if (sources.length === 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
 
       const subtitleLanguages = subtitles.filter(item => item.lang);
       if (subtitleLanguages.length > 1) {
@@ -1182,10 +1185,39 @@
       uiScale: "1.05",
       showTitle: "1",
       exit: "1",
-      hide: "settings,subtitles,server"
+      hide: "settings,subtitles,server,pausecard"
     });
     frame.src = "https://embed.vidrift.net" + path + "?" + params.toString();
     stage.appendChild(frame);
+    let episodeInfo = null;
+    if (isSeries) {
+      episodeInfo = document.createElement("aside");
+      episodeInfo.className = "vidrift-episode-info";
+      episodeInfo.hidden = true;
+      episodeInfo.setAttribute("aria-live", "polite");
+      const episodeHeading = document.createElement("h2");
+      const episodeDescription = document.createElement("p");
+      episodeInfo.append(episodeHeading, episodeDescription);
+      stage.appendChild(episodeInfo);
+      const loadEpisodeInfo = async (episodeSeason, episodeNumber) => {
+        episodeInfo.hidden = true;
+        const request = "/api/tmdb?path=" + encodeURIComponent("/tv/" + id + "/season/" + episodeSeason + "/episode/" + episodeNumber) + "&language=ru-RU";
+        try {
+          const response = await fetch(request, { headers: { accept: "application/json" } });
+          if (!response.ok) return;
+          const details = await response.json();
+          episodeHeading.textContent = details.name || ("Серия " + episodeNumber);
+          episodeDescription.textContent = details.overview || "";
+          episodeInfo.dataset.loadedFor = episodeSeason + ":" + episodeNumber;
+        } catch (_) {}
+      };
+      void loadEpisodeInfo(season, episode);
+      frame._afterDarkShowEpisodeInfo = () => {
+        if (episodeInfo.dataset.loadedFor !== selectedSeason + ":" + selectedEpisode) void loadEpisodeInfo(selectedSeason, selectedEpisode);
+        episodeInfo.hidden = false;
+      };
+      frame._afterDarkHideEpisodeInfo = () => { episodeInfo.hidden = true; };
+    }
     mountVidriftControls(frame, film);
     status("ЗАПУСКАЮ VIDRIFT");
     streamStatus("Загружаю фильм. Плеер сам начнёт воспроизведение без дополнительной кнопки; браузер может начать без звука до первого касания.");
@@ -1200,6 +1232,8 @@
         status("VIDRIFT ГОТОВ · " + (data.paused ? "ПАУЗА" : "ВОСПРОИЗВЕДЕНИЕ"));
         return;
       }
+      if (data.type === "vidrift:paused") frame._afterDarkShowEpisodeInfo?.();
+      if (data.type === "vidrift:unpaused") frame._afterDarkHideEpisodeInfo?.();
       if (data.type === "vidrift:progress" || data.type === "vidrift:paused") {
         const currentTime = Number(data.currentTime);
         const duration = Number(data.duration);
@@ -1220,6 +1254,7 @@
         if (Number.isInteger(nextSeason) && nextSeason > 0 && Number.isInteger(nextEpisode) && nextEpisode > 0) {
           selectedSeason = nextSeason;
           selectedEpisode = nextEpisode;
+          if (episodeInfo) { episodeInfo.dataset.loadedFor = ""; frame._afterDarkHideEpisodeInfo?.(); }
           savePlaybackProgress(film, { currentTime: 0, duration: 0, season: nextSeason, episode: nextEpisode }, "VIDRIFT", true);
         }
         return;
@@ -1253,6 +1288,7 @@
     const oldCleanup = frame._afterDarkCleanup;
     frame._afterDarkCleanup = () => {
       window.removeEventListener("message", onMessage);
+      episodeInfo?.remove();
       if (oldCleanup) oldCleanup();
     };
     addNote("Источник: VidRift. Позиция просмотра и текущие сезон/серия сохраняются в истории After Dark.");
