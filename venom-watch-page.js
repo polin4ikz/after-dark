@@ -1111,6 +1111,8 @@
 
     resetStreamEngines();
     const stage = $("#playerStage");
+    const previousFrame = stage.querySelector("iframe");
+    previousFrame?._afterDarkCleanup?.();
     stage.replaceChildren();
     const frame = document.createElement("iframe");
     frame.className = "vidrift-frame";
