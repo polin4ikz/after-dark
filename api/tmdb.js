@@ -6,6 +6,7 @@ const ALLOWED_PATHS = [
   /^\/discover\/(movie|tv)$/,
   /^\/(movie|tv)\/\d+$/,
   /^\/tv\/\d+\/season\/\d+$/,
+  /^\/tv\/\d+\/season\/\d+\/episode\/\d+$/,
   /^\/(movie|tv)\/\d+\/watch\/providers$/,
   /^\/(movie|tv)\/\d+\/external_ids$/
 ];
