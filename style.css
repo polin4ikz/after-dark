@@ -2878,4 +2878,4 @@ body {
 
 
 /* Movie Night cloud titles use the site's main typeface */
-.movie-night-reveal-track span{font-family:var(--display)!important;font-size:clamp(18px,2.5vw,36px)!important;font-weight:600!important;font-style:normal!important;letter-spacing:-.035em!important;text-transform:none!important;text-shadow:0 1px 18px rgba(54,12,18,.22)}
+.movie-night-reveal-track span{font-family:var(--mono)!important;font-size:clamp(15px,1.8vw,24px)!important;font-weight:400!important;font-style:normal!important;letter-spacing:-.035em!important;text-transform:none!important;text-shadow:0 1px 18px rgba(54,12,18,.22)}
