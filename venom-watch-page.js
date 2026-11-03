@@ -1176,7 +1176,7 @@
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "vidrift-controls__toggle vidrift-episodes__toggle";
-    toggle.textContent = "СЕРИИ · RU";
+    toggle.textContent = "ВЫБРАТЬ СЕРИЮ";
     toggle.setAttribute("aria-expanded", "false");
     const panel = document.createElement("div");
     panel.className = "vidrift-controls__panel vidrift-episodes__panel";
@@ -1189,12 +1189,42 @@
     const note = document.createElement("p");
     note.className = "vidrift-controls__note";
     note.textContent = "Загружаю названия серий…";
-    panel.append(note, seasonSelect, episodeList);
+    const panelHeader = document.createElement("div");
+    panelHeader.className = "vidrift-episodes__header";
+    const panelTitle = document.createElement("strong");
+    panelTitle.textContent = "СЕЗОН И СЕРИЯ";
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "vidrift-episodes__close";
+    closeButton.setAttribute("aria-label", "Закрыть список серий");
+    closeButton.textContent = "×";
+    panelHeader.append(panelTitle, closeButton);
+    const seasonLabel = document.createElement("label");
+    seasonLabel.className = "vidrift-episodes__season-label";
+    seasonLabel.textContent = "СЕЗОН";
+    seasonLabel.appendChild(seasonSelect);
+    panel.append(panelHeader, note, seasonLabel, episodeList);
     section.append(toggle, panel);
     root.appendChild(section);
+    const positionPanel = () => {
+      const rect = toggle.getBoundingClientRect();
+      const panelWidth = Math.max(240, Math.min(390, window.innerWidth - 32));
+      const panelHeight = Math.min(520, window.innerHeight - 32);
+      const left = Math.max(16, Math.min(rect.left, window.innerWidth - panelWidth - 16));
+      const top = Math.max(16, Math.min(rect.bottom + 8, window.innerHeight - panelHeight - 16));
+      panel.style.width = panelWidth + "px";
+      panel.style.left = left + "px";
+      panel.style.top = top + "px";
+    };
     toggle.addEventListener("click", () => {
       panel.hidden = !panel.hidden;
       toggle.setAttribute("aria-expanded", String(!panel.hidden));
+      if (!panel.hidden) positionPanel();
+    });
+    closeButton.addEventListener("click", () => {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.focus();
     });
 
     const loadSeason = async seasonNumber => {
