@@ -228,3 +228,25 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-episode-info h2{margin-bottom:5px;font-size:clamp(14px,1.5vw,18px)}
 .vidrift-episode-info p{font-size:clamp(11px,1vw,12px);line-height:1.35}
 @media(max-width:600px){.vidrift-episode-info{left:12px;bottom:19%;width:38%;max-height:24%;padding:8px 9px}.vidrift-episode-info h2{font-size:13px}.vidrift-episode-info p{font-size:10px;line-height:1.25}}
+
+
+/* Refined, viewport-clamped season and episode picker. */
+.vidrift-episodes{position:static}
+.vidrift-episodes__toggle{width:auto!important;min-width:190px;min-height:42px;padding:10px 15px;border:1px solid rgba(191,91,106,.48);border-radius:5px;background:linear-gradient(135deg,rgba(121,21,34,.5),rgba(24,18,17,.95));box-shadow:0 5px 18px rgba(0,0,0,.22);font-size:10px;letter-spacing:.1em}
+.vidrift-episodes__toggle::after{content:"⌄";margin-left:12px;color:#d89aa2;font-size:15px;line-height:10px}
+.vidrift-episodes__toggle:hover,.vidrift-episodes__toggle[aria-expanded="true"]{border-color:rgba(220,145,155,.72);background:linear-gradient(135deg,rgba(121,21,34,.8),rgba(24,18,17,.98))}
+.vidrift-episodes__panel{position:fixed;top:16px;left:16px;z-index:10020;box-sizing:border-box;width:min(390px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:min(70vh,520px);overflow:auto;margin:0;padding:14px;border:1px solid rgba(210,139,150,.32);border-radius:9px;background:linear-gradient(145deg,#201718,#100e0d 62%);box-shadow:0 22px 70px rgba(0,0,0,.66),0 0 0 1px rgba(255,255,255,.025) inset}
+.vidrift-episodes__panel[hidden]{display:none!important}
+.vidrift-episodes__header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(232,221,200,.12)}
+.vidrift-episodes__header strong{color:#e8ddc8;font:9px "Geist Mono",monospace;letter-spacing:.14em}
+.vidrift-episodes__close{width:30px;height:30px;border:1px solid rgba(232,221,200,.14);border-radius:50%;background:rgba(232,221,200,.04);color:#e8ddc8;font:20px/1 Arial,sans-serif;cursor:pointer}
+.vidrift-episodes__close:hover{background:rgba(121,21,34,.55)}
+.vidrift-episodes__season-label{display:grid;gap:6px;margin:10px 0;color:rgba(232,221,200,.58);font:8px "Geist Mono",monospace;letter-spacing:.14em}
+.vidrift-episodes__season{box-sizing:border-box;width:100%;min-height:42px;margin:0;padding:9px 11px;border:1px solid rgba(232,221,200,.2);border-radius:4px;background:#171311;color:#f2e9dc;font:13px Arial,sans-serif}
+.vidrift-episodes__list{display:grid;gap:6px;max-height:min(42vh,320px);overflow:auto;padding-right:3px}
+.vidrift-episodes__item{min-width:0;padding:10px 11px;border:1px solid rgba(232,221,200,.09);border-radius:4px;background:rgba(232,221,200,.025);color:#e8ddc8;text-align:left;font:13px/1.4 Arial,sans-serif;overflow-wrap:anywhere}
+.vidrift-episodes__item:hover,.vidrift-episodes__item[aria-current="true"]{border-color:rgba(179,76,92,.7);background:rgba(121,21,34,.25)}
+.vidrift-episode-info{pointer-events:auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:rgba(210,139,150,.6) rgba(255,255,255,.06)}
+.vidrift-episode-info::-webkit-scrollbar{width:5px}
+.vidrift-episode-info::-webkit-scrollbar-thumb{border-radius:8px;background:rgba(210,139,150,.6)}
+@media(max-width:600px){.vidrift-episodes__panel{max-height:calc(100vh - 32px);padding:12px}.vidrift-episodes__list{max-height:calc(100vh - 230px)}}
