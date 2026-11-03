@@ -1096,7 +1096,7 @@
         .map(item => { const lang = languageOf(item, film.original_language); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const audios = (Array.isArray(state.audios) ? state.audios : [])
-        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .map(item => { const lang = languageOf(item, film.original_language); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
