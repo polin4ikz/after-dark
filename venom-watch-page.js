@@ -985,7 +985,7 @@
     if (!idsResponse.ok) throw new Error("TMDB не вернул внешние идентификаторы.");
     const ids = await idsResponse.json();
     const imdbId = String(ids && ids.imdb_id || "");
-    if (!/^tt\\d{5,12}$/.test(imdbId)) return { sources: [], catalog: [] };
+    if (!/^tt\d{5,12}$/.test(imdbId)) return { sources: [], catalog: [] };
     // For a series, request the complete season/episode catalog once. The API returns
     // per-episode voiceover labels; requesting only one episode hides series-wide coverage.
     const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
