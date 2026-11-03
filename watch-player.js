@@ -465,6 +465,7 @@
   }
   function attachVidriftControls(modal, frame, film) {
     const controls = $(".ad-vidrift-tracks", modal);
+    let didResume = false;
     const audio = $(".ad-vidrift-audio", controls);
     const subtitles = $(".ad-vidrift-subtitles", controls);
     audio.onchange = () => frame.contentWindow.postMessage({ type: "vidrift:set", audio: audio.value }, VIDRIFT_ORIGIN);
@@ -472,6 +473,8 @@
     frame.addEventListener("load", () => {
       if (activeVidriftFrame !== frame) return;
       frame.contentWindow.postMessage({ type: "vidrift:get-state" }, VIDRIFT_ORIGIN);
+      if (didResume) return;
+      didResume = true;
       const saved = savedVidriftProgress(film) || window.afterDarkProgress?.get?.(film.tmdbId ?? film.id);
       const time = Number(saved?.time ?? saved?.position_seconds);
       if (Number.isFinite(time) && time > 10) frame.contentWindow.postMessage({ type: "vidrift:resume", currentTime: time }, VIDRIFT_ORIGIN);
@@ -491,8 +494,15 @@
     modal._film = film;
     $("#adWatchTitle", modal).textContent = titleOf(film);
     const isSeries = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
-    const season = Number($("[data-ad-season]", modal)?.value || 1);
-    const episode = Number($("[data-ad-episode]", modal)?.value || 1);
+    const savedProgress = savedVidriftProgress(film) || window.afterDarkProgress?.get?.(film.tmdbId ?? film.id);
+    const seasonField = $("[data-ad-season]", modal);
+    const episodeField = $("[data-ad-episode]", modal);
+    if (isSeries && savedProgress) {
+      if (seasonField && Number(savedProgress.season ?? savedProgress.season_number) > 0) seasonField.value = String(savedProgress.season ?? savedProgress.season_number);
+      if (episodeField && Number(savedProgress.episode ?? savedProgress.episode_number) > 0) episodeField.value = String(savedProgress.episode ?? savedProgress.episode_number);
+    }
+    const season = Number(seasonField?.value || 1);
+    const episode = Number(episodeField?.value || 1);
     const id = Number(film.tmdbId ?? film.id);
     const stage = $(".ad-watch-player__stage", modal);
     const status = $(".ad-watch-player__status", modal);
