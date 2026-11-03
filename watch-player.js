@@ -96,6 +96,7 @@
       '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК РОССИЙСКИХ ИСТОЧНИКОВ ↗</button>',
       '<button class="ad-watch-player__search" type="button" data-ad-kodik-search>ПОИСК ОЗВУЧЕК KODIK ↗</button>',
+      '<div class="ad-watch-player__episode-fields" hidden data-ad-episode-fields><label>СЕЗОН <input type="number" min="1" max="100" step="1" value="1" data-ad-season></label><label>СЕРИЯ <input type="number" min="1" max="500" step="1" value="1" data-ad-episode></label></div>',
       '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
       '<div class="ad-watch-player__results" aria-live="polite"></div>',
       '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
@@ -179,6 +180,13 @@
         try {
           const params = new URLSearchParams({ title: query });
           if (/^\\d{4}$/.test(year)) params.set("year", year);
+          const season = Number($("[data-ad-season]", modal)?.value);
+          const episode = Number($("[data-ad-episode]", modal)?.value);
+          if (Number.isInteger(season) && season >= 1 && season <= 100 &&
+              Number.isInteger(episode) && episode >= 1 && episode <= 500) {
+            params.set("season", String(season));
+            params.set("episode", String(episode));
+          }
           const response = await fetch("/api/neowatch-player?" + params.toString(), { headers: { accept: "application/json" } });
           const data = await response.json();
           if (!response.ok) throw new Error(data.message || data.error || "SOURCE_SEARCH_FAILED");
@@ -363,6 +371,9 @@
     const modal = ensureModal();
     modal._film = film;
     $("#adWatchTitle", modal).textContent = titleOf(film);
+    const isSeries = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
+    const episodeFields = $("[data-ad-episode-fields]", modal);
+    if (episodeFields) episodeFields.hidden = !isSeries;
     const input = $("#adWatchSource", modal);
     const status = $(".ad-watch-player__status", modal);
     const stage = $(".ad-watch-player__stage", modal);
