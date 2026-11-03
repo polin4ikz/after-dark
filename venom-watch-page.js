@@ -1025,8 +1025,8 @@
       item && item.label, item && item.name, item && item.title,
       item && item.language, item && item.lang, item && item.description
     ].filter(Boolean).join(" ").toLowerCase();
-    if (/\b(ru|rus)\\b|русск|russian/i.test(values)) return "ru";
-    if (/\b(en|eng)\\b|англ|english/i.test(values)) return "en";
+    if (/\b(ru|rus)\b|русск|russian/i.test(values)) return "ru";
+    if (/\b(en|eng)\b|англ|english/i.test(values)) return "en";
     return "";
   }
 
