@@ -22,9 +22,11 @@
       <h1 id="mediaTitle">Загрузка…</h1>
       <p id="mediaMeta" class="media-meta"></p>
       <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
+      <section id="vidriftControls" class="vidrift-controls" aria-label="Выбор озвучки и субтитров"><p class="vidrift-controls__note">Настройки аудио и субтитров появятся здесь, если VidRift передаст несколько вариантов. Также доступны меню плеера.</p></section>
+      <section id="trackControls" class="track-controls" hidden aria-label="Внутренние дорожки"><label>ОЗВУЧКА<select id="audioTrack" disabled><option value="-1">Источник не предоставляет выбор</option></select></label><label>СУБТИТРЫ<select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select></label></section>
       <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
       <div class="player-actions" aria-label="Playback actions"><button type="button" data-player-action="watched">MARK AS WATCHED</button><button type="button" data-player-action="rate">RATE</button></div>
-      <section id="trackControls" class="track-controls" hidden aria-label="Внутренние дорожки"><label>ОЗВУЧКА<select id="audioTrack" disabled><option value="-1">Источник не предоставляет выбор</option></select></label><label>СУБТИТРЫ<select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select></label></section><section id="vidriftControls" class="vidrift-controls" hidden aria-label="Выбор озвучки и субтитров"></section>
+      
       <p id="streamStatus" class="source-note stream-status" role="status" aria-live="polite">Озвучка, субтитры и качество настраиваются внутри самого плеера, если источник поддерживает эти функции.</p>
       <form id="manualSourceForm" class="stream-form">
         <label for="manualSourceUrl">СВОЙ ИСТОЧНИК · ССЫЛКА НА ВИДЕО ИЛИ ВСТРОЕННЫЙ ПЛЕЕР</label>
