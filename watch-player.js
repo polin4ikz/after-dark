@@ -76,6 +76,63 @@
   }
   function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
 
+  async function searchNeoWatchSources(title, year, season, episode) {
+    const base = "https://api.neome.uk";
+    const searchUrl = new URL("/api/v1/search", base);
+    searchUrl.searchParams.set("query", title);
+    const searchResponse = await fetch(searchUrl.href, {
+      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(10000)
+    });
+    if (!searchResponse.ok) throw new Error("NEOWATCH_SEARCH_" + searchResponse.status);
+    const payload = await searchResponse.json();
+    const results = Array.isArray(payload?.data?.results) ? payload.data.results : [];
+    const normalize = value => String(value || "").toLocaleLowerCase().normalize("NFKD")
+      .replace(/[\\u0300-\\u036f]/g, "").replace(/[^\\p{L}\\p{N}]+/gu, " ").trim();
+    const wanted = normalize(title);
+    const idMatch = value => {
+      const match = String(value || "").match(/^(?:kp[_-]?)?(\\d{1,12})$/i);
+      return match ? match[1] : "";
+    };
+    const match = results.find(item => {
+      const id = idMatch(item?.id);
+      const names = [item?.title, item?.originalTitle].map(normalize).filter(Boolean);
+      const titleMatch = names.some(name => name === wanted || name.startsWith(wanted + " ") || wanted.startsWith(name + " "));
+      const resultYear = item?.year == null ? "" : String(item.year).slice(0, 4);
+      return Boolean(id) && titleMatch && (!year || !resultYear || year === resultYear);
+    });
+    if (!match) return { sources: [], message: "NeoWatch не нашёл точного совпадения по названию и году." };
+    const kpId = idMatch(match.id);
+    const providers = [
+      { id: "collaps", label: "Collaps" }, { id: "alloha", label: "Alloha" },
+      { id: "lumex", label: "Lumex" }, { id: "vibix", label: "Vibix" }, { id: "hdvb", label: "HDVB" }
+    ];
+    const sources = [];
+    await Promise.all(providers.map(async provider => {
+      const playerUrl = new URL("/api/v1/players/" + provider.id + "/kp/" + kpId, base);
+      if (Number.isInteger(season) && season >= 1 && Number.isInteger(episode) && episode >= 1) {
+        playerUrl.searchParams.set("season", String(season));
+        playerUrl.searchParams.set("episode", String(episode));
+      }
+      try {
+        const response = await fetch(playerUrl.href, {
+          headers: { accept: "text/html" }, mode: "cors", signal: AbortSignal.timeout(10000)
+        });
+        if (!response.ok) return;
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const raw = doc.querySelector("iframe[src]")?.getAttribute("src") || "";
+        if (!raw) return;
+        const embed = new URL(raw, playerUrl.href);
+        if (embed.protocol !== "https:" || embed.username || embed.password || (embed.port && embed.port !== "443")) return;
+        if (!sources.some(source => source.embedUrl === embed.href)) {
+          sources.push({ provider: provider.label, embedUrl: embed.href, kpId,
+            title: String(match.title || title).slice(0, 160), year: match.year || year || null });
+        }
+      } catch (_) { /* An unavailable provider must not hide the others. */ }
+    }));
+    return { sources, message: sources.length ? "" : "NeoWatch нашёл название, но плееры не вернули доступные iframe-источники." };
+  }
+
   function ensureModal() {
     let modal = $("#adWatchPlayer");
     if (modal) return modal;
@@ -178,18 +235,11 @@
         results.textContent = "ИЩУ ДОСТУПНЫЕ ИСТОЧНИКИ…";
         if (status) { status.textContent = "ПРОБУЮ NEO WATCH / NEOMOVIES."; status.classList.remove("is-error"); }
         try {
-          const params = new URLSearchParams({ title: query });
-          if (/^\\d{4}$/.test(year)) params.set("year", year);
           const season = Number($("[data-ad-season]", modal)?.value);
           const episode = Number($("[data-ad-episode]", modal)?.value);
-          if (Number.isInteger(season) && season >= 1 && season <= 100 &&
-              Number.isInteger(episode) && episode >= 1 && episode <= 500) {
-            params.set("season", String(season));
-            params.set("episode", String(episode));
-          }
-          const response = await fetch("/api/neowatch-player?" + params.toString(), { headers: { accept: "application/json" } });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.message || data.error || "SOURCE_SEARCH_FAILED");
+          const validEpisode = Number.isInteger(season) && season >= 1 && season <= 100 &&
+            Number.isInteger(episode) && episode >= 1 && episode <= 500;
+          const data = await searchNeoWatchSources(query, year, validEpisode ? season : 0, validEpisode ? episode : 0);
           const sources = Array.isArray(data.sources) ? data.sources : [];
           if (!sources.length) {
             results.textContent = data.message || "ИСТОЧНИКИ НЕ НАЙДЕНЫ. ОСТАЛЬНЫЕ ВАРИАНТЫ ПРОСМОТРА НЕ ЗАТРОНУТЫ.";
