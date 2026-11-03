@@ -116,7 +116,7 @@
     const episodeOptions = isSeries && Array.isArray(data.episodes)
       ? data.episodes.filter(item => item && item.season === season && item.episode === episode && typeof item.m3u8Url === "string" && item.m3u8Url)
       : [];
-    const candidates = episodeOptions.length ? episodeOptions : [{ title: data.title || data.provider || "CDN", m3u8Url: streamUrl }];
+    const candidates = episodeOptions.length ? episodeOptions : [{ title: "CDN · HLS", m3u8Url: streamUrl }];
     const sources = [];
     for (const item of candidates) {
       let itemUrl;
