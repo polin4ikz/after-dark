@@ -1299,7 +1299,7 @@
     // Do not autoplay a third-party iframe: show the real source/voiceover chooser first.
     // The user can explicitly choose an HLS variant or launch an external player below.
 
-    status("STELLAR НЕ ОТВЕТИЛ · ПОКАЗЫВАЮ ДОСТУПНЫЕ СЕРВИСЫ И ИЩУ ДРУГОЙ ИСТОЧНИК…");
+    status("ИСТОЧНИКИ ГОТОВЯТСЯ · ВЫБЕРИ ВАРИАНТ ВЫШЕ");
     try {
       const results = await searchOpenArchive(film);
       const exactRussian = chooseRussianArchiveCandidate(results);
@@ -1317,28 +1317,13 @@
         renderCandidate(exactWithoutConfirmedRussian[0]);
         return;
       }
-      const { titles: providerTitles, year: providerYear } = filmSearchTerms(film);
-      for (const providerTitle of providerTitles) {
-        try {
-          const params = new URLSearchParams({ title: providerTitle });
-          if (providerYear) params.set("year", providerYear);
-          const response = await fetch("/api/resolve-film-player?" + params.toString(), { headers: { accept: "application/json" } });
-          const resolved = await response.json().catch(() => ({}));
-          if (response.ok && resolved.embedUrl) {
-            openDirectStream(resolved.embedUrl, true);
-            status("ВСТРОЕННЫЙ ПЛЕЕР НАЙДЕН · " + String(resolved.provider || "ИСТОЧНИК").toUpperCase());
-            addNote("After Dark нашёл страницу фильма и извлёк адрес встроенного плеера. Точное сохранение позиции зависит от событий, которые передаёт источник.");
-            return;
-          }
-        } catch (_) {}
-      }
       if (results.length) {
         status("НАШЛИСЬ ОТКРЫТЫЕ ВАРИАНТЫ · ВЫБЕРИ ПОДХОДЯЩИЙ");
         addNote("Это записи Internet Archive с открытой лицензией. Совпадение названия не гарантирует, что там находится полный фильм.");
         results.forEach(renderCandidate);
       } else {
         status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
-        addNote("Проверены Stellar, резервный плеер и поиск открытых видео. Доступность зависит от источника и региона.");
+        addNote("Прямые варианты озвучки ищутся отдельно. Внешние плееры запускаются только после твоего выбора.");
       }
     } catch (error) {
       status("АВТОМАТИЧЕСКИЙ ИСТОЧНИК НЕ НАЙДЕН");
