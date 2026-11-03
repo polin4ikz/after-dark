@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NeoWatch connectivity check</title></head>
+<body><pre id="result">Checking…</pre><script>
+(async()=>{
+ const urls=[
+  ["search","https://api.neome.uk/api/v1/search?q=breaking&type=tv"],
+  ["alloha","https://api.neome.uk/api/v1/player/alloha/tmdb/1396?season=1&episode=1"],
+  ["cdn","https://api.neome.uk/api/v1/player/cdn/imdb/tt0903747?season=1&episode=1"]
+ ];
+ const out=[];
+ for(const [name,url] of urls){
+  try{
+   const r=await fetch(url,{mode:"cors",headers:{accept:"application/json, text/html"}});
+   const type=r.headers.get("content-type")||"";
+   let body=type.includes("json")?await r.json():await r.text();
+   out.push({name,status:r.status,type,body});
+  }catch(e){out.push({name,error:String(e)})}
+ }
+ document.getElementById("result").textContent=JSON.stringify(out,null,2);
+})();
+</script></body></html>
