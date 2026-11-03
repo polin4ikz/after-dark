@@ -191,10 +191,18 @@ const jitterY = (Math.random() - 0.5) * 40;
 span.style.left = `calc(50% + ${point[0] + jitterX}px)`;
 span.style.top = `calc(50% + ${point[1] + jitterY}px)`;
 span.style.setProperty("--delay", `${Math.random() * 0.08}s`);
+    span.style.setProperty("--word-size", (0.72 + Math.random() * 0.72).toFixed(2));
+    span.style.setProperty("--word-rotation", ((Math.random() - 0.5) * 18) + "deg");
+    span.style.setProperty("--word-duration", (1.25 + Math.random() * 0.9) + "s");
+    span.style.setProperty("--word-opacity", (0.58 + Math.random() * 0.42).toFixed(2));
+    span.style.setProperty("--word-drift-x", ((Math.random() - 0.5) * 34) + "px");
+    span.style.setProperty("--word-drift-y", ((Math.random() - 0.5) * 26) + "px");
+    const wordColors = ["#791522", "#8e1d2b", "#a32938", "#5f1924", "#b34750"];
+    span.style.setProperty("--word-color", wordColors[Math.floor(Math.random() * wordColors.length)]);
 
     track.appendChild(span);
 
-    setTimeout(()=>span.remove(),1500);
+    setTimeout(()=>span.remove(),2300);
   };
 
 for(let n=0;n<8;n++){
