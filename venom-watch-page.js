@@ -1035,10 +1035,27 @@
     if (!root) return;
     root.replaceChildren();
     root.hidden = false;
+    let expanded = false;
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "vidrift-controls__toggle";
+    toggle.textContent = "АУДИО / СУБТИТРЫ";
+    toggle.setAttribute("aria-expanded", "false");
+    const panel = document.createElement("div");
+    panel.className = "vidrift-controls__panel";
+    panel.hidden = true;
     const note = document.createElement("p");
     note.className = "vidrift-controls__note";
-    note.textContent = "Доступны только русские и английские варианты, которые передал источник.";
-    root.appendChild(note);
+    note.textContent = "Загружаю варианты RU / EN…";
+    const list = document.createElement("div");
+    list.className = "vidrift-controls__list";
+    panel.append(note, list);
+    root.append(toggle, panel);
+    toggle.addEventListener("click", () => {
+      expanded = !expanded;
+      panel.hidden = !expanded;
+      toggle.setAttribute("aria-expanded", String(expanded));
+    });
 
     const addSelect = (labelText, field, items, selected) => {
       if (!Array.isArray(items) || items.length < 2) return;
@@ -1059,11 +1076,11 @@
         if (frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:set", [field]: select.value }, "https://embed.vidrift.net");
       });
       label.append(caption, select);
-      root.appendChild(label);
+      list.appendChild(label);
     };
 
     frame._afterDarkVidriftState = state => {
-      root.replaceChildren(note);
+      list.replaceChildren();
       const sources = (Array.isArray(state.sources) ? state.sources : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
         .filter(item => item.value != null && item.lang);
@@ -1074,22 +1091,19 @@
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
         .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
 
-      // Server/source variants commonly represent separate dubs. If the player
-      // exposes language-labelled sources, use those; otherwise expose its audio tracks.
       if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
       else if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
 
-      if (subtitles.length) {
-        const withOff = subtitles.some(item => String(item.value).toLowerCase() === "off")
-          ? subtitles
-          : [{ value: "off", label: "Выключены" }, ...subtitles];
-        addSelect("СУБТИТРЫ", "subtitle", withOff, state.subtitle || "off");
+      const subtitleLanguages = subtitles.filter(item => item.lang);
+      if (subtitleLanguages.length > 1) {
+        const off = subtitles.find(item => String(item.value).toLowerCase() === "off");
+        const choices = off ? subtitles : [{ value: "off", label: "Выкл." }, ...subtitleLanguages];
+        addSelect("СУБТИТРЫ", "subtitle", choices, state.subtitle || "off");
       }
-      if (root.querySelectorAll("select").length === 0) {
-        note.textContent = "У этого названия источник передал только один вариант озвучки или не указал язык. Других подтверждённых русских/английских вариантов нет.";
-      } else {
-        note.textContent = "Показываю только русские и английские варианты. Если у фильма одна дорожка, выбирать нечего.";
-      }
+
+      note.textContent = list.querySelectorAll("select").length
+        ? "Доступны только русские и английские варианты, переданные источником."
+        : "У источника сейчас один вариант или нет нескольких дорожек RU / EN для переключения.";
     };
   }
 
@@ -1130,6 +1144,7 @@
       uiScale: "1.05",
       showTitle: "1",
       exit: "1",
+      hide: "settings,subtitles,server"
     });
     frame.src = "https://embed.vidrift.net" + path + "?" + params.toString();
     stage.appendChild(frame);
