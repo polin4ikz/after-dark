@@ -1022,99 +1022,121 @@
 
   function mountNeoWatchChooser(film) {
     const area = $("#sourceResults");
-    if (!area || area.querySelector(".neowatch-chooser")) return;
+    if (!area || area.querySelector(".source-lab")) return;
     const isSeries = isSeriesFilm(film);
-    const chooser = document.createElement("section");
-    chooser.className = "neowatch-chooser";
-    chooser.innerHTML = '<div class="source-heading">ВЫБОР ОЗВУЧКИ · ПРЯМОЙ ИСТОЧНИК</div>' +
-      (isSeries ? '<div class="neowatch-episode-fields"><label>СЕЗОН<input type="number" min="1" max="100" step="1" value="' + Math.max(1, Number(selectedSeason) || 1) + '" id="neoSeason"></label><label>СЕРИЯ<input type="number" min="1" max="500" step="1" value="' + Math.max(1, Number(selectedEpisode) || 1) + '" id="neoEpisode"></label></div>' : '') +
-      '<button type="button" class="source-result neowatch-search">НАЙТИ ВАРИАНТЫ ОЗВУЧКИ</button><div class="neowatch-results" aria-live="polite"></div>';
-    area.appendChild(chooser);
-    const button = chooser.querySelector(".neowatch-search");
-    const output = chooser.querySelector(".neowatch-results");
-    button.addEventListener("click", async () => {
-      const season = isSeries ? Number($("#neoSeason").value) : null;
-      const episode = isSeries ? Number($("#neoEpisode").value) : null;
+    const lab = document.createElement("section");
+    lab.className = "source-lab";
+    lab.innerHTML =
+      '<div class="source-heading">ТЕСТ ИСТОЧНИКОВ · ВЫБЕРИ СЕРВИС</div>' +
+      (isSeries ? '<div class="neowatch-episode-fields"><label>СЕЗОН<input type="number" min="1" max="100" step="1" value="' + Math.max(1, Number(selectedSeason) || 1) + '" id="labSeason"></label><label>СЕРИЯ<input type="number" min="1" max="500" step="1" value="' + Math.max(1, Number(selectedEpisode) || 1) + '" id="labEpisode"></label></div>' : '') +
+      '<div class="source-lab__list"></div><p class="source-lab__status" aria-live="polite">Выбери один из четырёх источников. Проверяем каждый отдельно.</p>';
+    area.appendChild(lab);
+    const list = lab.querySelector(".source-lab__list");
+    const note = lab.querySelector(".source-lab__status");
+    const sources = [
+      { id:"hdrezka", name:"HDREZKA", detail:"Каталог / поиск фильма и сериала", mode:"search" },
+      { id:"alloha", name:"ALLOHA", detail:"API-каталог / проверка озвучек", mode:"search" },
+      { id:"vidrift", name:"VIDRIFT", detail:"Встроенный плеер · аудиодорожки", mode:"embed" },
+      { id:"apiplayer", name:"APIPLAYER", detail:"Экспериментальный embed · IMDb ID", mode:"embed" }
+    ];
+    function getEpisode() {
+      const season = isSeries ? Number($("#labSeason")?.value) : 1;
+      const episode = isSeries ? Number($("#labEpisode")?.value) : 1;
       if (isSeries && (!Number.isInteger(season) || season < 1 || season > 100 || !Number.isInteger(episode) || episode < 1 || episode > 500)) {
-        output.textContent = "ПРОВЕРЬ НОМЕР СЕЗОНА И СЕРИИ.";
-        return;
+        throw new Error("Проверь номер сезона и серии.");
       }
-      selectedSeason = season;
-      selectedEpisode = episode;
-      button.disabled = true;
-      button.textContent = "ИЩУ ДОСТУПНЫЕ ОЗВУЧКИ…";
-      output.textContent = "ПРОВЕРЯЮ ИСТОЧНИКИ…";
-      try {
-        const result = await searchNeoWatchDirectSources(film, season, episode);
-        const sources = result.sources;
-        output.replaceChildren();
-        if (isSeries && result.catalog.length) {
-          const coverage = new Map();
-          result.catalog.forEach(item => {
-            const label = String(item.title || item.name || "Без названия");
-            coverage.set(label, (coverage.get(label) || 0) + 1);
-          });
-          const summary = document.createElement("p");
-          summary.className = "neowatch-coverage";
-          summary.textContent = "В КАТАЛОГЕ СЕРИАЛА: " + Array.from(coverage.entries()).map(([name, count]) => name + " — " + count + " сер.").join(" · ");
-          output.appendChild(summary);
+      selectedSeason = isSeries ? season : null;
+      selectedEpisode = isSeries ? episode : null;
+      return {season, episode};
+    }
+    async function getImdbId() {
+      const tmdbId = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+      const mediaType = isSeries ? "tv" : "movie";
+      if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("Не найден TMDB ID.");
+      const response = await fetch("/api/tmdb?path=/" + mediaType + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {headers:{accept:"application/json"}, signal:AbortSignal.timeout(12000)});
+      if (!response.ok) throw new Error("TMDB не вернул IMDb ID.");
+      const data = await response.json();
+      if (!/^tt\\d{5,12}$/.test(String(data.imdb_id || ""))) throw new Error("Для этого названия нет IMDb ID.");
+      return data.imdb_id;
+    }
+    function launchFrame(url, provider) {
+      resetStreamEngines();
+      const stage = $("#playerStage");
+      stage.replaceChildren();
+      const frame = document.createElement("iframe");
+      frame.src = url;
+      frame.title = "AFTER DARK — " + provider;
+      frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.loading = "eager";
+      stage.appendChild(frame);
+      addFrameFallback(url);
+      status("ТЕСТ ИСТОЧНИКА · " + provider);
+      streamStatus("Открыт " + provider + ". Проверь запуск видео, меню озвучки и переключение серий. After Dark не может читать дорожки внутри чужого iframe, если сервис не передаёт их через API.");
+      note.textContent = provider + " открыт. Если внутри пусто или ошибка — нажми ссылку под плеером, чтобы проверить источник отдельно.";
+    }
+    for (const source of sources) {
+      const card = document.createElement("div");
+      card.className = "source-lab__item";
+      const info = document.createElement("div");
+      info.className = "source-lab__info";
+      const title = document.createElement("strong");
+      title.textContent = source.name;
+      const detail = document.createElement("span");
+      detail.textContent = source.detail;
+      info.append(title, detail);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "source-result";
+      button.textContent = source.mode === "embed" ? "ОТКРЫТЬ В AFTER DARK" : "НАЙТИ НАЗВАНИЕ";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const {season, episode} = getEpisode();
+          const titleText = film.title || film.name || film.original_title || film.original_name || "";
+          const year = String(film.release_date || film.first_air_date || "").slice(0,4);
+          if (source.id === "hdrezka") {
+            const query = "site:hdrezka." + " " + titleText + " " + year;
+            const url = "https://yandex.ru/search/?text=" + encodeURIComponent(query);
+            window.open(url, "_blank", "noopener,noreferrer");
+            note.textContent = "HDRezka: открыл поиск. Выбери карточку сериала, затем проверь перевод и доступность сезонов. Автоматический разбор страницы пока не подтверждён.";
+            return;
+          }
+          if (source.id === "alloha") {
+            const query = titleText + " " + year + " смотреть онлайн Alloha";
+            const url = "https://yandex.ru/search/?text=" + encodeURIComponent(query);
+            window.open(url, "_blank", "noopener,noreferrer");
+            note.textContent = "Alloha: открыл поиск. API-каталог ранее находил переводы, но найденный iframe endpoint вернул 404; проверяем актуальную страницу источника.";
+            return;
+          }
+          if (source.id === "vidrift") {
+            const tmdbId = Number(film.tmdbId ?? film.tmdb_id ?? film.id);
+            if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("Не найден TMDB ID.");
+            const url = isSeries
+              ? "https://embed.vidrift.net/embed/tv/" + tmdbId + "/" + season + "/" + episode
+              : "https://embed.vidrift.net/embed/movie/" + tmdbId;
+            launchFrame(url, "VIDRIFT");
+            return;
+          }
+          if (source.id === "apiplayer") {
+            const imdbId = await getImdbId();
+            const url = isSeries
+              ? "https://apiplayer.ru/embed/tv/" + imdbId + "/" + season + "/" + episode
+              : "https://apiplayer.ru/embed/movie/" + imdbId;
+            launchFrame(url, "APIPLAYER");
+            return;
+          }
+        } catch (error) {
+          note.textContent = error.message || "Не удалось запустить источник.";
+          streamStatus(note.textContent, true);
+        } finally {
+          button.disabled = false;
         }
-        if (!sources.length) {
-          const empty = document.createElement("p");
-          empty.textContent = "ДЛЯ " + (isSeries ? season + " СЕЗОНА, " + episode + " СЕРИИ" : "ЭТОГО НАЗВАНИЯ") + " ПРЯМОЙ ПОТОК НЕ НАЙДЕН. ВАЖНО: НЕ ПОДМЕНЯЮ ЕГО ДРУГОЙ СЕРИЕЙ.";
-          output.appendChild(empty);
-          return;
-        }
-        sources.forEach(source => {
-          const option = document.createElement("button");
-          option.type = "button";
-          option.className = "source-result";
-          const title = document.createElement("span");
-          title.className = "source-result__title";
-          title.textContent = source.title;
-          const meta = document.createElement("span");
-          meta.className = "source-result__meta";
-          meta.textContent = (isSeries ? "СЕЗОН " + season + " · СЕРИЯ " + episode + " · " : "") + "ПРЯМОЙ HLS · VENOM / MATTEBOX";
-          option.append(title, meta);
-          option.addEventListener("click", async () => {
-            option.disabled = true;
-            option.classList.add("is-loading");
-            try {
-              openDirectStream(source.url);
-              status("ЗАПУСКАЮ · " + source.title.toUpperCase());
-              streamStatus("Выбран вариант «" + source.title + "». Подключаю видеопоток…");
-              const video = $("#playerStage video");
-              if (!video) throw new Error("Видеоплеер не создался.");
-              const startPlayback = () => {
-                const playResult = video.play();
-                if (playResult && typeof playResult.catch === "function") {
-                  playResult.catch(() => streamStatus("Поток подключён. Нажми ▶ в самом видео, чтобы начать воспроизведение.", true));
-                }
-              };
-              if (video.readyState >= 2) startPlayback();
-              else {
-                video.addEventListener("canplay", startPlayback, { once: true });
-                video.addEventListener("error", () => streamStatus("Источник не смог загрузить видео. Попробуй другой вариант озвучки.", true), { once: true });
-              }
-            } catch (error) {
-              streamStatus(error.message || "Не удалось открыть источник.", true);
-            } finally {
-              option.disabled = false;
-              option.classList.remove("is-loading");
-            }
-          });
-          output.appendChild(option);
-        });
-        status("НАЙДЕНО ВАРИАНТОВ: " + sources.length + " · ВЫБЕРИ ОЗВУЧКУ НИЖЕ");
-      } catch (error) {
-        output.textContent = error.message || "НЕ УДАЛОСЬ ПОЛУЧИТЬ СПИСОК ИСТОЧНИКОВ.";
-      } finally {
-        button.disabled = false;
-        button.textContent = "ОБНОВИТЬ ВАРИАНТЫ ОЗВУЧКИ";
-      }
-    });
-    // Populate the real voiceover choices immediately; the video itself is not autoplayed.
-    button.click();
+      });
+      card.append(info, button);
+      list.appendChild(card);
+    }
   }
 
   async function tryExternalPlayerFallback(film) {
