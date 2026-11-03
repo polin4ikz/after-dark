@@ -219,3 +219,6 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-episodes__list{display:grid;gap:5px;max-height:min(44vh,340px);overflow:auto}
 .vidrift-episodes__item{padding:9px 10px;border:1px solid rgba(232,221,200,.1);background:rgba(232,221,200,.025);color:#e8ddc8;text-align:left;font:12px/1.4 Arial,sans-serif;cursor:pointer}
 .vidrift-episodes__item:hover,.vidrift-episodes__item[aria-current="true"]{border-color:rgba(179,76,92,.7);background:rgba(121,21,34,.28)}
+
+.vidrift-controls>.vidrift-controls__panel{order:3;flex:1 0 100%}
+.vidrift-episodes{order:2}
