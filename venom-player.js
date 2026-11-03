@@ -185,6 +185,8 @@
       select.replaceChildren(new Option("Источник не предоставил список дорожек", "-1"));
       select.disabled = true;
       panel.hidden = false;
+      const label = form.dataset.adVoiceover ? " · " + form.dataset.adVoiceover : "";
+      setStatus(form.closest("#adWatchPlayer"), "ПОТОК ЗАПУЩЕН, НО СПИСОК АУДИОДОРОЖЕК НЕ ПЕРЕДАН" + label, false);
       return;
     }
     let russianIndex = tracks.findIndex(isRussianTrack);
@@ -203,8 +205,9 @@
     });
     select.disabled = tracks.length < 2;
     panel.hidden = false;
-    if (russianIndex >= 0) setStatus(form.closest("#adWatchPlayer"), "РУССКАЯ ДОРОЖКА НАЙДЕНА · ВЫБИРАЮ АВТОМАТИЧЕСКИ", false);
-    else setStatus(form.closest("#adWatchPlayer"), tracks.some(track => track.lang || track.name) ? "РУССКАЯ ДОРОЖКА НЕ ЗАЯВЛЕНА В МЕТАДАННЫХ" : "ЯЗЫКИ ДОРОЖЕК НЕ УКАЗАНЫ ИСТОЧНИКОМ", false);
+    const sourceLabel = form.dataset.adVoiceover ? " · " + form.dataset.adVoiceover : "";
+    if (russianIndex >= 0) setStatus(form.closest("#adWatchPlayer"), "РУССКАЯ ДОРОЖКА НАЙДЕНА · ВЫБИРАЮ АВТОМАТИЧЕСКИ" + sourceLabel, false);
+    else setStatus(form.closest("#adWatchPlayer"), (tracks.some(track => track.lang || track.name) ? "РУССКАЯ ДОРОЖКА НЕ ЗАЯВЛЕНА В МЕТАДАННЫХ" : "ЯЗЫКИ ДОРОЖЕК НЕ УКАЗАНЫ ИСТОЧНИКОМ") + sourceLabel, false);
   }
   async function tryMattebox(modal, form, stage, source, requestToken) {
     if (!["hls", "dash"].includes(source.kind)) return false;
@@ -312,6 +315,8 @@
     else $(".ad-watch-player__window", modal)?.appendChild(form);
 
     const resumePanel = $(".ad-venom-resume", form);
+    const sourceInput = $("#adVenomSource", form);
+    sourceInput.addEventListener("input", () => { delete form.dataset.adVoiceover; });
     const resumeLabel = $(".ad-venom-resume__label", form);
     const startOverButton = $(".ad-venom-start-over", form);
     startOverButton.addEventListener("click", () => {
