@@ -1020,14 +1020,25 @@
     return { sources: [{ url: parsed.href, title: String(data.title || data.provider || "CDN · HLS").slice(0, 120) }], catalog: [] };
   }
 
-  function languageOf(item) {
+  function languageOf(item, originalLanguage = "") {
     const values = [
       item && item.label, item && item.name, item && item.title,
       item && item.language, item && item.lang, item && item.description
     ].filter(Boolean).join(" ").toLowerCase();
     if (/\b(ru|rus)\b|русск|russian/i.test(values)) return "ru";
     if (/\b(en|eng)\b|англ|english/i.test(values)) return "en";
+    if (/\boriginal\b|оригинал/i.test(values)) {
+      if (/^ru(?:[-_]|$)/i.test(String(originalLanguage))) return "ru";
+      if (/^en(?:[-_]|$)/i.test(String(originalLanguage))) return "en";
+    }
     return "";
+  }
+  function trackLabel(item, language) {
+    const label = String(item && (item.label || item.name || item.title || item.value) || "");
+    if (/\boriginal\b|оригинал/i.test(label)) {
+      return language === "ru" ? "Русский · оригинал" : language === "en" ? "English · original" : label;
+    }
+    return label;
   }
 
   function mountVidriftControls(frame, film) {
@@ -1082,7 +1093,7 @@
     frame._afterDarkVidriftState = state => {
       list.replaceChildren();
       const sources = (Array.isArray(state.sources) ? state.sources : [])
-        .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
+        .map(item => { const lang = languageOf(item, film.original_language); return { value: item.value, label: trackLabel(item, lang), lang }; })
         .filter(item => item.value != null && item.lang);
       const audios = (Array.isArray(state.audios) ? state.audios : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item) }))
