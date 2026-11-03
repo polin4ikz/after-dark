@@ -208,3 +208,14 @@ h1{margin:20px 0 10px;font-size:clamp(36px,7vw,84px);font-weight:400;letter-spac
 .vidrift-episode-info h2{margin:0 0 7px;font-size:clamp(16px,2vw,23px);font-weight:500}
 .vidrift-episode-info p{margin:0;color:rgba(242,233,220,.78);font-size:clamp(12px,1.2vw,14px);line-height:1.5}
 @media(max-width:600px){.vidrift-controls__list{grid-template-columns:1fr}.vidrift-controls__toggle{width:100%;min-height:44px}.vidrift-episode-info{bottom:58px;padding:12px;max-height:34%}}
+
+
+/* Localized series chooser lives beneath the frame and replaces VidRift's English Episodes panel. */
+.vidrift-controls{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.vidrift-controls__toggle{display:inline-flex;align-items:center;justify-content:center}
+.vidrift-episodes{position:relative}
+.vidrift-episodes__panel{position:absolute;top:calc(100% + 7px);left:0;z-index:12;width:min(440px,calc(100vw - 40px))}
+.vidrift-episodes__season{width:100%;min-height:40px;margin-bottom:10px;padding:8px 10px;border:1px solid rgba(232,221,200,.25);background:#171311;color:#e8ddc8;font:12px "Geist Mono",monospace}
+.vidrift-episodes__list{display:grid;gap:5px;max-height:min(44vh,340px);overflow:auto}
+.vidrift-episodes__item{padding:9px 10px;border:1px solid rgba(232,221,200,.1);background:rgba(232,221,200,.025);color:#e8ddc8;text-align:left;font:12px/1.4 Arial,sans-serif;cursor:pointer}
+.vidrift-episodes__item:hover,.vidrift-episodes__item[aria-current="true"]{border-color:rgba(179,76,92,.7);background:rgba(121,21,34,.28)}
