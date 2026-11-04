@@ -10,7 +10,7 @@
     if(/^https?:\/\//i.test(path)){
       try{
         const imageUrl=new URL(path);
-        const match=imageUrl.hostname==="image.tmdb.org"&&imageUrl.pathname.match(/^\/t\/p\/(?:w\\d+|original)(\/.*)$/);
+        const match=imageUrl.hostname==="image.tmdb.org"&&imageUrl.pathname.match(/^\/t\/p\/(?:w[0-9]+|original)(\/.*)$/);
         if(match)path=match[1];
         else return path;
       }catch{return""}
