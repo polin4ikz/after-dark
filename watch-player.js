@@ -1,0 +1,621 @@
+/* AFTER DARK — safe third-party embed player foundation.
+   Official HTTPS embed URLs only. Source URLs stay on this device; Supabase is untouched. */
+(function () {
+  "use strict";
+  const SOURCE_STORAGE_KEY = "after-dark:watch-source:v1";
+  const SOURCE_CACHE = new Map();
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+
+  function normalizeEmbedUrl(input) {
+    if (typeof input !== "string" || !input.trim()) throw new Error("Вставь ссылку на официальный встраиваемый плеер.");
+    let url;
+    try { url = new URL(input.trim()); } catch { throw new Error("Не удалось распознать ссылку."); }
+    if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) {
+      throw new Error("Поддерживаются только безопасные HTTPS-ссылки.");
+    }
+    const host = url.hostname.toLowerCase();
+    let match;
+    if (["youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(host)) {
+      match = url.pathname.match(/^\/embed\/([A-Za-z0-9_-]{11})\/?$/);
+      if (!match && url.pathname === "/watch") {
+        const id = url.searchParams.get("v") || "";
+        if (/^[A-Za-z0-9_-]{11}$/.test(id)) match = [url.pathname, id];
+      }
+      if (!match) throw new Error("Нужна ссылка на YouTube embed-плеер.");
+      return { provider: "youtube", url: "https://www.youtube-nocookie.com/embed/" + match[1] + "?playsinline=1" };
+    }
+    if (host === "youtu.be") {
+      match = url.pathname.match(/^\/([A-Za-z0-9_-]{11})\/?$/);
+      if (!match) throw new Error("Не удалось распознать видео YouTube.");
+      return { provider: "youtube", url: "https://www.youtube-nocookie.com/embed/" + match[1] + "?playsinline=1" };
+    }
+    if (host === "vimeo.com" || host === "www.vimeo.com" || host === "player.vimeo.com") {
+      match = url.pathname.match(host === "player.vimeo.com" ? /^\/video\/(\d+)\/?$/ : /^\/(\d+)\/?$/);
+      if (!match) throw new Error("Нужна ссылка на видео Vimeo.");
+      return { provider: "vimeo", url: "https://player.vimeo.com/video/" + match[1] };
+    }
+    if (host === "archive.org" || host === "www.archive.org") {
+      match = url.pathname.match(/^\/(?:embed|details)\/([A-Za-z0-9._-]{1,120})\/?$/);
+      if (!match) throw new Error("Нужна ссылка на страницу или embed Archive.org.");
+      return { provider: "archive", url: "https://archive.org/embed/" + match[1] };
+    }
+    throw new Error("Этот сайт пока не поддерживается. Доступны YouTube, Vimeo и Archive.org.");
+  }
+
+  function restoreSourceCache() {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const saved = JSON.parse(localStorage.getItem(SOURCE_STORAGE_KEY) || "{}");
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) return;
+      for (const [key, value] of Object.entries(saved)) {
+        if (!/^(movie|tv):[0-9]+$/.test(key) || !value || typeof value.url !== "string") continue;
+        try {
+          // Revalidate persisted values before ever using them as iframe URLs.
+          SOURCE_CACHE.set(key, normalizeEmbedUrl(value.url));
+        } catch { /* Ignore stale or malformed saved entries. */ }
+      }
+    } catch { /* Storage may be unavailable or contain invalid JSON. */ }
+  }
+
+  function persistSourceCache() {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const saved = Object.fromEntries(SOURCE_CACHE.entries());
+      localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(saved));
+    } catch { /* Playback should still work if browser storage is full or disabled. */ }
+  }
+
+  function filmKey(film) {
+    const id = film && (film.tmdbId ?? film.id);
+    if (id == null || !String(id).trim()) return "";
+    const type = film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date ? "tv" : "movie";
+    return type + ":" + String(id);
+  }
+  function titleOf(film) { return film && (film.title || film.name) || "Без названия"; }
+
+  async function searchNeoWatchSources(film, season, episode) {
+    const tmdbId = Number(film && (film.tmdbId ?? film.id));
+    const isSeries = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date);
+    if (!Number.isSafeInteger(tmdbId) || tmdbId < 1) throw new Error("TMDB_ID_MISSING");
+    if (isSeries && (!Number.isInteger(season) || season < 1 || !Number.isInteger(episode) || episode < 1)) {
+      return { sources: [], message: "УКАЖИ СЕЗОН И СЕРИЮ, ЧТОБЫ НАЙТИ ДОСТУПНУЮ ОЗВУЧКУ." };
+    }
+    const type = isSeries ? "tv" : "movie";
+    const idsResponse = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(tmdbId)) + "/external_ids", {
+      headers: { accept: "application/json" }, signal: AbortSignal.timeout(10000)
+    });
+    if (!idsResponse.ok) throw new Error("TMDB_EXTERNAL_IDS_UNAVAILABLE");
+    const ids = await idsResponse.json();
+    const imdbId = String(ids && ids.imdb_id || "");
+    if (!/^tt\d{5,12}$/.test(imdbId)) {
+      return { sources: [], message: "У ЭТОГО НАЗВАНИЯ НЕТ IMDb ID ДЛЯ ПОИСКА ПЛЕЕРА." };
+    }
+    const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
+    if (isSeries) {
+      url.searchParams.set("season", String(season));
+      url.searchParams.set("episode", String(episode));
+    }
+    const response = await fetch(url.href, {
+      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error("NEOWATCH_CDN_" + response.status);
+    const payload = await response.json();
+    const data = payload && payload.data || {};
+    const streamUrl = String(data.m3u8Url || "");
+    if (!payload.success || !streamUrl) {
+      return { sources: [], message: "CDN-ПЛЕЕР НЕ ВЕРНУЛ ВИДЕО ДЛЯ ВЫБРАННОЙ СЕРИИ ИЛИ ФИЛЬМА." };
+    }
+    let parsed;
+    try { parsed = new URL(streamUrl); } catch (_) { return { sources: [], message: "CDN ВЕРНУЛ НЕКОРРЕКТНУЮ ССЫЛКУ НА ПОТОК." }; }
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443")) {
+      return { sources: [], message: "CDN ВЕРНУЛ НЕБЕЗОПАСНУЮ ССЫЛКУ НА ПОТОК." };
+    }
+    const episodeOptions = isSeries && Array.isArray(data.episodes)
+      ? data.episodes.filter(item => item && item.season === season && item.episode === episode && typeof item.m3u8Url === "string" && item.m3u8Url)
+      : [];
+    const candidates = episodeOptions.length ? episodeOptions : [{ title: "CDN · HLS", m3u8Url: streamUrl }];
+    const sources = [];
+    for (const item of candidates) {
+      let itemUrl;
+      try { itemUrl = new URL(String(item.m3u8Url || streamUrl)); } catch (_) { continue; }
+      if (itemUrl.protocol !== "https:" || itemUrl.username || itemUrl.password || (itemUrl.port && itemUrl.port !== "443")) continue;
+      const label = String(item.title || data.title || data.provider || "CDN").slice(0, 120);
+      if (!sources.some(source => source.embedUrl === itemUrl.href)) {
+        sources.push({
+          provider: label,
+          embedUrl: itemUrl.href,
+          kind: "hls",
+          year: String(film.release_date || film.first_air_date || "").slice(0, 4) || null,
+          season: isSeries ? season : null,
+          episode: isSeries ? episode : null
+        });
+      }
+    }
+    return {
+      sources,
+      message: sources.length ? "" : "CDN-ПЛЕЕР НЕ ВЕРНУЛ ДОСТУПНУЮ HLS-ДОРОЖКУ ДЛЯ ВЫБРАННОЙ СЕРИИ ИЛИ ФИЛЬМА."
+    };
+  }
+
+  function ensureModal() {
+    let modal = $("#adWatchPlayer");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "adWatchPlayer";
+    modal.className = "ad-watch-player";
+    modal.setAttribute("aria-hidden", "true");
+    modal.innerHTML = [
+      '<div class="ad-watch-player__backdrop" data-ad-watch-close></div>',
+      '<section class="ad-watch-player__window" role="dialog" aria-modal="true" aria-labelledby="adWatchTitle">',
+      '<div class="ad-watch-player__topline"><span>PRIVATE CINEMA / PLAYER</span><button type="button" data-ad-watch-close>ЗАКРЫТЬ ×</button></div>',
+      '<h2 id="adWatchTitle" class="ad-watch-player__title"></h2>',
+      '<p class="ad-watch-player__hint">Сначала проверь легальные варианты просмотра. Доступность зависит от страны и подписки.</p>',
+      '<div class="ad-watch-player__availability"><label for="adWatchRegion">СТРАНА</label><select id="adWatchRegion"><option value="RU">РОССИЯ</option><option value="DE">ГЕРМАНИЯ</option><option value="US">США</option><option value="GB">ВЕЛИКОБРИТАНИЯ</option><option value="CA">КАНАДА</option></select><button class="ad-watch-player__search" type="button" data-ad-watchmode-search>ГДЕ ПОСМОТРЕТЬ ↗</button></div>',
+      '<div class="ad-watch-player__availability-results" aria-live="polite"></div>',
+      '<p class="ad-watch-player__attribution">ДАННЫЕ О ДОСТУПНОСТИ: <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">WATCHMODE</a>. СЕРВИСЫ ОТКРЫВАЮТСЯ НА ИХ ОФИЦИАЛЬНЫХ САЙТАХ.</p>',
+      '<button class="ad-watch-player__search" type="button" data-ad-archive-search>ПОИСКАТЬ В INTERNET ARCHIVE ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-stremio-open>ПОПРОБОВАТЬ STREMIO ↗</button>',
+      '<button class="ad-watch-player__search" type="button" data-ad-neowatch-search>ПОИСК ПЛЕЕРОВ NEO WATCH ↗</button>',
+      '<div class="ad-watch-player__episode-fields" hidden data-ad-episode-fields><label>СЕЗОН <input type="number" min="1" max="100" step="1" value="1" data-ad-season></label><label>СЕРИЯ <input type="number" min="1" max="500" step="1" value="1" data-ad-episode></label></div>',
+      '<p class="ad-watch-player__footnote">Stremio откроется отдельно; доступность и язык зависят от установленных дополнений и источника.</p>',
+      '<div class="ad-watch-player__results" aria-live="polite"></div>',
+      '<form class="ad-watch-player__form"><label for="adWatchSource">ИЛИ ССЫЛКА НА ВСТРАИВАЕМЫЙ ПЛЕЕР</label>',
+      '<div class="ad-watch-player__input-row"><input id="adWatchSource" name="source" type="url" inputmode="url" placeholder="https://archive.org/embed/…" autocomplete="url"><button type="submit">ОТКРЫТЬ ↗</button></div></form>',
+      '<div class="ad-vidrift-tracks" aria-label="Настройки дорожек"><label>АУДИО <select class="ad-vidrift-audio" aria-label="Аудиодорожка" disabled><option>Загрузка вариантов…</option></select><small class="ad-vidrift-audio-note">Варианты обновятся после загрузки плеера.</small></label><label>СУБТИТРЫ <select class="ad-vidrift-subtitles" aria-label="Субтитры" disabled><option>Загрузка вариантов…</option></select><small class="ad-vidrift-subtitles-note">Варианты обновятся после загрузки плеера.</small></label></div>',
+      '<p class="ad-watch-player__status" aria-live="polite"></p><div class="ad-watch-player__stage"></div>',
+      '<p class="ad-watch-player__footnote">YouTube · Vimeo · Archive.org / полноэкранный режим зависит от источника</p>',
+      '</section>'
+    ].join("");
+    document.body.appendChild(modal);
+    modal.addEventListener("click", async event => {
+      const searchButton = event.target.closest("[data-ad-archive-search]");
+      const availabilityButton = event.target.closest("[data-ad-watchmode-search]");
+      const resultButton = event.target.closest("[data-ad-archive-identifier]");
+      const stremioButton = event.target.closest("[data-ad-stremio-open]");
+      const neoSearchButton = event.target.closest("[data-ad-neowatch-search]");
+      const neoSourceButton = event.target.closest("[data-ad-neowatch-source]");
+      if (neoSourceButton) {
+        const sourceUrl = neoSourceButton.dataset.adNeowatchSource || "";
+        const label = neoSourceButton.dataset.provider || "NEOWATCH";
+        const kind = neoSourceButton.dataset.sourceKind || "iframe";
+        const status = $(".ad-watch-player__status", modal);
+        if (kind === "hls") {
+          const form = $(".ad-venom-panel", modal);
+          const input = $("#adVenomSource", form);
+          const kindSelect = $("#adVenomKind", form);
+          if (!form || !input || !kindSelect) {
+            if (status) { status.textContent = "VENOM PLAYER ЕЩЁ ЗАГРУЖАЕТСЯ. ПОВТОРИ ЧЕРЕЗ СЕКУНДУ."; status.classList.add("is-error"); }
+            return;
+          }
+          input.value = sourceUrl;
+          kindSelect.value = "hls";
+          form.dataset.adVoiceover = label;
+          form.dataset.adDoNotSaveSource = "1";
+          form.requestSubmit();
+          return;
+        }
+        const film = modal._film;
+        const stage = $(".ad-watch-player__stage", modal);
+        try {
+          const url = new URL(sourceUrl);
+          if (url.protocol !== "https:" || url.username || url.password) throw new Error("UNSAFE_SOURCE");
+          stage.innerHTML = '<iframe src="' + esc(url.href) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+          if (status) { status.textContent = "ИСТОЧНИК ОТКРЫТ · " + label; status.classList.remove("is-error"); }
+        } catch (_) {
+          if (status) { status.textContent = "НЕ УДАЛОСЬ ОТКРЫТЬ ЭТОТ ИСТОЧНИК."; status.classList.add("is-error"); }
+        }
+        return;
+      }
+      if (neoSearchButton) {
+        const film = modal._film;
+        const query = titleOf(film).trim();
+        const year = String(film && (film.release_date || film.first_air_date) || "").slice(0, 4);
+        const results = $(".ad-watch-player__results", modal);
+        const status = $(".ad-watch-player__status", modal);
+        if (!query || !results) return;
+        neoSearchButton.disabled = true;
+        results.textContent = "ИЩУ ДОСТУПНЫЕ ИСТОЧНИКИ…";
+        if (status) { status.textContent = "ПРОБУЮ NEO WATCH / NEOMOVIES."; status.classList.remove("is-error"); }
+        try {
+          const season = Number($("[data-ad-season]", modal)?.value);
+          const episode = Number($("[data-ad-episode]", modal)?.value);
+          const validEpisode = Number.isInteger(season) && season >= 1 && season <= 100 &&
+            Number.isInteger(episode) && episode >= 1 && episode <= 500;
+          const data = await searchNeoWatchSources(film, validEpisode ? season : 0, validEpisode ? episode : 0);
+          const sources = Array.isArray(data.sources) ? data.sources : [];
+          if (!sources.length) {
+            results.textContent = data.message || "ИСТОЧНИКИ НЕ НАЙДЕНЫ. ОСТАЛЬНЫЕ ВАРИАНТЫ ПРОСМОТРА НЕ ЗАТРОНУТЫ.";
+          } else {
+            results.innerHTML = '<p class="ad-watch-player__result-description">ДОСТУПНЫЙ ПОТОК · ' + (sources[0].kind === "hls" ? "ПРЯМАЯ HLS-ДОРОЖКА ДЛЯ VENOM / MATTEBOX" : "ВНЕШНИЙ ПЛЕЕР") + '</p>' + sources.map(source =>
+              '<button type="button" class="ad-watch-player__result" data-ad-neowatch-source="' + esc(source.embedUrl) + '" data-source-kind="' + esc(source.kind || "iframe") + '" data-provider="' + esc(source.provider) + '">' +
+              '<span class="ad-watch-player__result-title">' + esc(source.provider) + '</span>' +
+              '<span class="ad-watch-player__result-meta">' + (source.season ? "СЕЗОН " + esc(source.season) + " · СЕРИЯ " + esc(source.episode) + " · " : "") + esc(source.year || year || "ГОД НЕ УКАЗАН") + '</span>' +
+              '</button>'
+            ).join("");
+            if (status) status.textContent = "НАЙДЕНО ИСТОЧНИКОВ: " + sources.length + ". ВЫБЕРИ ОДИН НИЖЕ.";
+          }
+        } catch (error) {
+          results.textContent = "НЕ УДАЛОСЬ ПОЛУЧИТЬ ИСТОЧНИКИ. МОЖНО ПРОВЕРИТЬ STREMIO ИЛИ ВСТАВИТЬ ССЫЛКУ ВРУЧНУЮ.";
+          if (status) { status.textContent = "ПОИСК ИСТОЧНИКОВ ВРЕМЕННО НЕДОСТУПЕН."; status.classList.add("is-error"); }
+        } finally {
+          neoSearchButton.disabled = false;
+        }
+        return;
+      }
+      if (stremioButton) {
+        const film = modal._film;
+        const id = Number(film && (film.tmdbId ?? film.id));
+        const type = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
+        const status = $(".ad-watch-player__status", modal);
+        if (!Number.isSafeInteger(id) || id < 1) {
+          if (status) status.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ ID ФИЛЬМА.";
+          return;
+        }
+        stremioButton.disabled = true;
+        // Open the tab synchronously inside the click gesture to avoid popup blockers.
+        const popup = window.open("about:blank", "_blank");
+        if (popup) popup.opener = null;
+        if (status) status.textContent = "ПОЛУЧАЮ IMDb ID ДЛЯ STREMIO…";
+        try {
+          const response = await fetch("/api/tmdb?path=/" + type + "/" + encodeURIComponent(String(id)) + "/external_ids", { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "TMDB_EXTERNAL_IDS_UNAVAILABLE");
+          const imdbId = String(data && data.imdb_id || "");
+          if (!/^tt\d{5,12}$/.test(imdbId)) throw new Error("IMDB_ID_NOT_FOUND");
+          const target = "https://web.stremio.com/#/detail/" + (type === "tv" ? "series" : "movie") + "/" + encodeURIComponent(imdbId);
+          if (popup) popup.location.replace(target);
+          else throw new Error("POPUP_BLOCKED");
+          if (status) status.textContent = "STREMIO ОТКРЫТ. ВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ ДОСТУПНЫХ ДОПОЛНЕНИЙ И ИСТОЧНИКОВ.";
+        } catch (error) {
+          if (popup) popup.close();
+          if (status) status.textContent = error.message === "IMDB_ID_NOT_FOUND"
+            ? "У ЭТОГО НАЗВАНИЯ НЕТ IMDb ID ДЛЯ ПОИСКА В STREMIO."
+            : error.message === "POPUP_BLOCKED"
+              ? "БРАУЗЕР ЗАБЛОКИРОВАЛ НОВУЮ ВКЛАДКУ. РАЗРЕШИ ВСПЛЫВАЮЩИЕ ОКНА И ПОВТОРИ."
+              : "НЕ УДАЛОСЬ ОТКРЫТЬ STREMIO. ПРОВЕРЬ TMDB ИЛИ ПОПРОБУЙ ПОЗЖЕ.";
+        } finally {
+          stremioButton.disabled = false;
+        }
+        return;
+      }
+      if (availabilityButton) {
+        const film = modal._film;
+        const id = Number(film && (film.tmdbId ?? film.id));
+        const type = film && (film.type === "series" || film.type === "tv" || film.media_type === "tv" || film.first_air_date) ? "tv" : "movie";
+        const region = $("#adWatchRegion", modal)?.value || "RU";
+        const output = $(".ad-watch-player__availability-results", modal);
+        if (!Number.isSafeInteger(id) || id < 1 || !output) {
+          if (output) output.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ ID ФИЛЬМА В TMDB.";
+          return;
+        }
+        availabilityButton.disabled = true;
+        output.textContent = "ПРОВЕРЯЮ ДОСТУПНОСТЬ…";
+        try {
+          const response = await fetch("/api/watchmode?tmdbId=" + encodeURIComponent(String(id)) + "&type=" + type + "&region=" + encodeURIComponent(region), { headers: { accept: "application/json" } });
+          const data = await response.json();
+          if (!response.ok) {
+            if (data.error === "WATCHMODE_NOT_CONFIGURED") throw new Error("WATCHMODE_NOT_CONFIGURED");
+            if (data.error === "WATCHMODE_REGION_OR_TITLE_UNAVAILABLE") throw new Error("REGION_UNAVAILABLE");
+            throw new Error("AVAILABILITY_UNAVAILABLE");
+          }
+          const sources = Array.isArray(data.sources) ? data.sources : [];
+          if (!sources.length) {
+            output.textContent = "В ВЫБРАННОЙ СТРАНЕ ДОСТУПНЫЕ СЕРВИСЫ НЕ НАЙДЕНЫ.";
+          } else {
+            const labels = { sub: "ПОДПИСКА", rent: "АРЕНДА", buy: "ПОКУПКА", free: "БЕСПЛАТНО", tv: "ТВ" };
+            output.innerHTML = sources.map(source => '<a class="ad-watch-player__result" href="' + esc(source.webUrl) + '" target="_blank" rel="noopener noreferrer"><span class="ad-watch-player__result-title">' + esc(source.name) + '</span><span class="ad-watch-player__result-meta">' + esc(labels[source.type] || source.type.toUpperCase()) + (source.price ? " · " + esc(source.price) : "") + '</span>' + (source.format ? '<span class="ad-watch-player__result-description">' + esc(source.format) + '</span>' : '') + '</a>').join("");
+          }
+        } catch (error) {
+          output.textContent = error.message === "WATCHMODE_NOT_CONFIGURED"
+            ? "ПОИСК СЕРВИСОВ ЕЩЁ НЕ НАСТРОЕН: НУЖЕН WATCHMODE_API_KEY В VERCEL."
+            : error.message === "REGION_UNAVAILABLE"
+              ? "WATCHMODE НЕ ВЕРНУЛ ДАННЫЕ ДЛЯ ЭТОЙ СТРАНЫ. ПРОВЕРЬ ДОСТУПНЫЕ РЕГИОНЫ ТВОЕГО ТАРИФА."
+              : "НЕ УДАЛОСЬ ПОЛУЧИТЬ СПИСОК СЕРВИСОВ. ПОПРОБУЙ ПОЗЖЕ.";
+        } finally {
+          availabilityButton.disabled = false;
+        }
+        return;
+      }
+      if (resultButton) {
+        const identifier = resultButton.dataset.adArchiveIdentifier || "";
+        if (!/^[A-Za-z0-9._-]{1,120}$/.test(identifier)) return;
+        // Open the catalog record for inspection; never assume it contains a playable feature film.
+        window.open("https://archive.org/details/" + encodeURIComponent(identifier), "_blank", "noopener,noreferrer");
+        return;
+      }
+      if (!searchButton) return;
+      const film = modal._film;
+      const query = titleOf(film).trim();
+      const results = $(".ad-watch-player__results", modal);
+      if (!query || !results) return;
+      searchButton.disabled = true;
+      results.textContent = "ИЩУ В КАТАЛОГЕ…";
+      try {
+        const response = await fetch("/api/archive-search?q=" + encodeURIComponent(query), {
+          headers: { accept: "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "ARCHIVE_SEARCH_UNAVAILABLE");
+        const blockedTitle = /\b(trailer|teaser|gameplay|walkthrough|playthrough|let'?s play|review|reaction|fan.?film|soundtrack|ost|game|игр[аыуеы]?|прохождени[ея]|трейлер|тизер|обзор|реакци[яи]|саундтрек)\b/i;
+        const wanted = query.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+        const candidates = (Array.isArray(data.results) ? data.results : [])
+          .filter(item => item && typeof item.identifier === "string" && typeof item.title === "string")
+          .map(item => {
+            const normalized = item.title.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+            const titleMatch = normalized === wanted || normalized.startsWith(wanted + " ") || wanted.startsWith(normalized + " ");
+            return { ...item, titleMatch, blocked: blockedTitle.test(item.title) || blockedTitle.test(item.description || "") };
+          });
+        // Catalog title matches are never auto-opened: they may be podcasts, books, ads, or unrelated media.
+        const visible = candidates.filter(item => !item.blocked);
+        if (!visible.length) {
+          results.innerHTML = '<p class="ad-watch-player__result-description">В Internet Archive не нашлось подходящих записей. Совпадение в каталоге в любом случае не подтверждает, что доступен полный фильм.</p>';
+          return;
+        }
+        results.innerHTML = '<p class="ad-watch-player__result-description">Ниже — записи каталога, а не проверенные видеопотоки. Не открывай результат как фильм, если в нём не подтверждено наличие полного видео.</p>' + visible.map(item =>
+          '<button type="button" class="ad-watch-player__result" data-ad-archive-identifier="' + esc(item.identifier) + '">' +
+          '<span class="ad-watch-player__result-title">' + esc(item.title) + '</span>' +
+          '<span class="ad-watch-player__result-meta">' + esc(item.year || "ГОД НЕ УКАЗАН") + '</span>' +
+          (item.description ? '<span class="ad-watch-player__result-description">' + esc(item.description) + '</span>' : '') +
+          '</button>'
+        ).join("");
+      } catch (error) {
+        results.textContent = "НЕ УДАЛОСЬ ПОИСКАТЬ В INTERNET ARCHIVE. Попробуй позже или вставь ссылку вручную.";
+      } finally {
+        searchButton.disabled = false;
+      }
+    });
+    modal.addEventListener("submit", event => {
+      const form = event.target.closest(".ad-watch-player__form");
+      if (form && form.classList.contains("ad-venom-panel")) return;
+      if (!form) return;
+      event.preventDefault();
+      const film = modal._film;
+      const key = filmKey(film);
+      const input = $("#adWatchSource", modal);
+      const status = $(".ad-watch-player__status", modal);
+      try {
+        const source = normalizeEmbedUrl(input.value);
+        if (key) {
+          SOURCE_CACHE.set(key, source);
+          persistSourceCache();
+        }
+        status.textContent = "ИСТОЧНИК ПОДКЛЮЧЁН · " + source.provider.toUpperCase();
+        status.classList.remove("is-error");
+        $(".ad-watch-player__stage", modal).innerHTML =
+          '<iframe src="' + esc(source.url) + '" title="' + esc(titleOf(film)) + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+      } catch (error) {
+        status.textContent = error.message || "Не удалось открыть источник.";
+        status.classList.add("is-error");
+        if (activeVidriftFrame && $(".ad-watch-player__stage", modal)?.contains(activeVidriftFrame)) activeVidriftFrame = null;
+    $(".ad-watch-player__stage", modal).replaceChildren();
+      }
+    });
+    modal.addEventListener("click", event => {
+      if (event.target.closest("[data-ad-watch-close]")) closePlayer();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && modal.classList.contains("is-open")) closePlayer();
+    });
+    return modal;
+  }
+
+  const VIDRIFT_ORIGIN = "https://embed.vidrift.net";
+  let activeVidriftFrame = null;
+  const VIDRIFT_PROGRESS_KEY = "after-dark:vidrift-progress:v1";
+  function trackLanguage(item) {
+    const label = String(item && (item.label || item.name || item.lang || item.language || "") || "");
+    const value = String(item && item.value || "");
+    const text = (label + " " + value).toLowerCase();
+    if (/\\b(ru|rus)([-_ ]|$)|русск|russian/.test(text)) return "ru";
+    if (/\\b(en|eng)([-_ ]|$)|англ|english/.test(text)) return "en";
+    return "";
+  }
+  function renderVidriftTracks(modal, state) {
+    const controls = $(".ad-vidrift-tracks", modal);
+    if (!controls) return;
+    const audio = $(".ad-vidrift-audio", controls);
+    const subtitles = $(".ad-vidrift-subtitles", controls);
+    const audioNote = $(".ad-vidrift-audio-note", controls);
+    const subtitleNote = $(".ad-vidrift-subtitles-note", controls);
+    const audioOptions = (Array.isArray(state.audios) ? state.audios : [])
+      .filter(item => trackLanguage(item) === "ru" || trackLanguage(item) === "en");
+    audio.replaceChildren();
+    if (audioOptions.length) {
+      audioOptions.forEach(item => audio.add(new Option(item.label || item.name || (trackLanguage(item) === "ru" ? "Русский" : "English"), String(item.value))));
+      audio.value = String(state.audio ?? audioOptions[0].value);
+    } else {
+      audio.add(new Option("Один вариант или источник не передал список", ""));
+    }
+    audio.disabled = audioOptions.length < 2;
+    audioNote.textContent = audioOptions.length > 1 ? "Выберите русскую или английскую дорожку." : "Переключение появится, если источник передаст несколько подходящих дорожек.";
+    const subtitleOptions = (Array.isArray(state.subtitles) ? state.subtitles : [])
+      .filter(item => String(item.value) === "off" || trackLanguage(item) === "ru" || trackLanguage(item) === "en");
+    const languageOptions = subtitleOptions.filter(item => item.value !== "off");
+    subtitles.replaceChildren();
+    if (languageOptions.length) {
+      const off = subtitleOptions.find(item => String(item.value) === "off");
+      if (off) subtitles.add(new Option(off.label || "Выкл.", String(off.value)));
+      languageOptions.forEach(item => subtitles.add(new Option(item.label || item.name || (trackLanguage(item) === "ru" ? "Русские" : "English"), String(item.value))));
+      subtitles.value = String(state.subtitle ?? (off ? off.value : languageOptions[0].value));
+    } else {
+      subtitles.add(new Option("Нет русских или английских субтитров", ""));
+    }
+    subtitles.disabled = languageOptions.length < 2;
+    subtitleNote.textContent = languageOptions.length > 1 ? "Доступно несколько языковых вариантов." : "Переключение появится, если источник передаст несколько подходящих вариантов.";
+  }
+  function savedVidriftProgress(film) {
+    try { return JSON.parse(localStorage.getItem(VIDRIFT_PROGRESS_KEY + ":" + filmKey(film)) || "null"); } catch (_) { return null; }
+  }
+  function saveVidriftProgress(film, data) {
+    const time = Number(data.currentTime);
+    const duration = Number(data.duration);
+    if (!Number.isFinite(time) || time < 0) return;
+    const item = { time: Math.floor(time), duration: Number.isFinite(duration) ? Math.floor(duration) : 0, season: data.season, episode: data.episode, updatedAt: Date.now() };
+    try { localStorage.setItem(VIDRIFT_PROGRESS_KEY + ":" + filmKey(film), JSON.stringify(item)); } catch (_) {}
+    const series = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
+    window.afterDarkProgress?.save?.({
+      tmdb_id: Number(film.tmdbId ?? film.id), title: titleOf(film),
+      media_type: series ? "tv" : "movie", position_seconds: item.time,
+      duration_seconds: item.duration, status: data.type === "vidrift:ended" ? "completed" : "in_progress",
+      season_number: Number(data.season) || undefined, episode_number: Number(data.episode) || undefined,
+      source_provider: "VidRift"
+    }).catch?.(() => {});
+  }
+  function attachVidriftControls(modal, frame, film) {
+    const controls = $(".ad-vidrift-tracks", modal);
+    let didResume = false;
+    const audio = $(".ad-vidrift-audio", controls);
+    const subtitles = $(".ad-vidrift-subtitles", controls);
+    audio.onchange = () => frame.contentWindow.postMessage({ type: "vidrift:set", audio: audio.value }, VIDRIFT_ORIGIN);
+    subtitles.onchange = () => frame.contentWindow.postMessage({ type: "vidrift:set", subtitle: subtitles.value }, VIDRIFT_ORIGIN);
+    frame.addEventListener("load", () => {
+      if (activeVidriftFrame !== frame) return;
+      frame.contentWindow.postMessage({ type: "vidrift:get-state" }, VIDRIFT_ORIGIN);
+      if (didResume) return;
+      didResume = true;
+      const saved = savedVidriftProgress(film) || window.afterDarkProgress?.get?.(film.tmdbId ?? film.id);
+      const time = Number(saved?.time ?? saved?.position_seconds);
+      if (Number.isFinite(time) && time > 10) frame.contentWindow.postMessage({ type: "vidrift:resume", currentTime: time }, VIDRIFT_ORIGIN);
+    });
+    window.addEventListener("message", event => {
+      if (event.origin !== VIDRIFT_ORIGIN || event.source !== frame.contentWindow || activeVidriftFrame !== frame) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "vidrift:state") renderVidriftTracks(modal, data);
+      if (data.type === "vidrift:progress" || data.type === "vidrift:paused" || data.type === "vidrift:ended") saveVidriftProgress(film, data);
+      if (data.type === "vidrift:episode") saveVidriftProgress(film, { ...data, type: "vidrift:progress", currentTime: 0, duration: 0 });
+    });
+  }
+  function openPlayer(film) {
+    if (!film) return;
+    const modal = ensureModal();
+    modal._film = film;
+    $("#adWatchTitle", modal).textContent = titleOf(film);
+    const isSeries = film.type === "series" || film.type === "tv" || film.media_type === "tv" || Boolean(film.first_air_date);
+    const savedProgress = savedVidriftProgress(film) || window.afterDarkProgress?.get?.(film.tmdbId ?? film.id);
+    const seasonField = $("[data-ad-season]", modal);
+    const episodeField = $("[data-ad-episode]", modal);
+    if (isSeries && savedProgress) {
+      if (seasonField && Number(savedProgress.season ?? savedProgress.season_number) > 0) seasonField.value = String(savedProgress.season ?? savedProgress.season_number);
+      if (episodeField && Number(savedProgress.episode ?? savedProgress.episode_number) > 0) episodeField.value = String(savedProgress.episode ?? savedProgress.episode_number);
+    }
+    const season = Number(seasonField?.value || 1);
+    const episode = Number(episodeField?.value || 1);
+    const id = Number(film.tmdbId ?? film.id);
+    const stage = $(".ad-watch-player__stage", modal);
+    const status = $(".ad-watch-player__status", modal);
+    const tracks = $(".ad-vidrift-tracks", modal);
+    if (tracks) {
+      $(".ad-vidrift-audio", tracks).replaceChildren(new Option("Загрузка вариантов…", ""));
+      $(".ad-vidrift-subtitles", tracks).replaceChildren(new Option("Загрузка вариантов…", ""));
+      $(".ad-vidrift-audio", tracks).disabled = true;
+      $(".ad-vidrift-subtitles", tracks).disabled = true;
+    }
+    stage.replaceChildren();
+    status.textContent = "";
+    status.classList.remove("is-error");
+    if (!Number.isSafeInteger(id) || id < 1) {
+      status.textContent = "НЕ УДАЛОСЬ ОПРЕДЕЛИТЬ TMDB ID ДЛЯ VIDRIFT.";
+      status.classList.add("is-error");
+      return;
+    }
+    const route = isSeries
+      ? "/embed/tv/" + encodeURIComponent(String(id)) + "/" + Math.max(1, season) + "/" + Math.max(1, episode)
+      : "/embed/movie/" + encodeURIComponent(String(id));
+    const url = new URL(route, VIDRIFT_ORIGIN);
+    url.searchParams.set("title", titleOf(film));
+    const frame = document.createElement("iframe");
+    frame.title = titleOf(film);
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.src = url.href;
+    stage.replaceChildren(frame);
+    activeVidriftFrame = frame;
+    attachVidriftControls(modal, frame, film);
+    status.textContent = "VIDRIFT ЗАПУСКАЕТСЯ · АВТОВОСПРОИЗВЕДЕНИЕ ЗАВИСИТ ОТ БРАУЗЕРА";
+    modal.dataset.openToken = String((Number(modal.dataset.openToken) || 0) + 1);
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("ad-watch-player-open");
+  }
+  function closePlayer() {
+    const modal = $("#adWatchPlayer");
+    if (!modal) return;
+    $(".ad-watch-player__stage", modal).replaceChildren();
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("ad-watch-player-open");
+  }
+  function getArchiveFilm(id) {
+    return window.afterDarkGetFilm?.(Number(id))
+      || (window.getArchiveFilms?.() || []).find(item => Number(item.tmdbId) === Number(id))
+      || null;
+  }
+  function injectButtons() {
+    document.querySelectorAll(".archive-card").forEach(card => {
+      const actions = $(".archive-actions", card);
+      if (!actions || actions.querySelector("[data-ad-watch-trigger]")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "archive-action ad-watch-trigger";
+      button.dataset.adWatchTrigger = "archive";
+      button.textContent = "WATCH ↗";
+      actions.appendChild(button);
+    });
+    const nightActions = $(".movie-night-final-actions");
+    if (nightActions && !nightActions.querySelector("[data-ad-watch-trigger]")) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "movie-night-action ad-watch-trigger";
+      button.dataset.adWatchTrigger = "movie-night";
+      button.textContent = "WATCH ↗";
+      nightActions.appendChild(button);
+    }
+    const detailActions = $(".ad-film-detail-actions");
+    if (detailActions && !detailActions.querySelector("[data-ad-watch-trigger]")) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "ad-watch-detail-trigger ad-watch-trigger";
+      button.dataset.adWatchTrigger = "detail";
+      button.textContent = "WATCH ↗";
+      detailActions.prepend(button);
+    }
+  }
+  function onWatchClick(event) {
+    const button = event.target.closest("[data-ad-watch-trigger]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    let film = null;
+    if (button.dataset.adWatchTrigger === "movie-night") {
+      const result = window.movieNight?.result;
+      if (result) film = Object.assign({}, result, {
+        tmdbId: result.tmdbId ?? result.id,
+        type: result.type === "tv" || result.media_type === "tv" || result.first_air_date ? "series" : (result.type || "film")
+      });
+    } else if (button.dataset.adWatchTrigger === "detail") {
+      film = $("#afterDarkFilmDetail")?._film || null;
+    } else {
+      const card = button.closest(".archive-card");
+      film = card ? getArchiveFilm(card.dataset.id) : null;
+    }
+    if (film) openPlayer(film);
+  }
+  function init() {
+    restoreSourceCache();
+    document.addEventListener("click", onWatchClick, true);
+    injectButtons();
+    new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
+    window.afterDarkWatchPlayer = { open: openPlayer, close: closePlayer, normalizeEmbedUrl };
+  }
+  if (typeof module !== "undefined" && module.exports) module.exports = { normalizeEmbedUrl, filmKey, restoreSourceCache, persistSourceCache, SOURCE_CACHE, SOURCE_STORAGE_KEY };
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+    else init();
+  }
+})();

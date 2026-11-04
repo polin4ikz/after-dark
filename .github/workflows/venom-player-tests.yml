@@ -1,0 +1,104 @@
+name: Venom player tests
+
+on:
+  pull_request:
+    branches:
+      - compat/current-player-client-tmdb
+  push:
+    branches:
+      - fix/integrate-venom-into-watch-modal
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run source validation tests
+        run: node --test tests/*.test.js
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --save-dev playwright
+          npx playwright install --with-deps chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/after-dark-http.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl --fail http://127.0.0.1:4173/player-lab.html >/dev/null && break
+            sleep 1
+          done
+      - name: Smoke-test Shaka demo stream
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          try {
+            const page = await browser.newPage();
+            const errors = [];
+            page.on('pageerror', error => errors.push(error.message));
+            await page.goto('http://127.0.0.1:4173/player-lab.html', { waitUntil: 'domcontentloaded' });
+            await page.getByRole('button', { name: 'ЗАГРУЗИТЬ ДЕМО SHAKA' }).click();
+            await page.waitForFunction(() => {
+              const status = document.querySelector('#status')?.textContent || '';
+              return status.includes('ПОТОК ЗАГРУЖЕН') || status.includes('НЕ УДАЛОСЬ') || status.includes('ОШИБКА SHAKA') || status.includes('SHAKA НЕ ЗАГРУЗИЛАСЬ');
+            }, { timeout: 60000 });
+            const status = await page.locator('#status').innerText();
+            const log = await page.locator('#log').innerText();
+            console.log('Player lab status:', status);
+            console.log('Diagnostics:', log);
+            if (!status.includes('ПОТОК ЗАГРУЖЕН')) throw new Error('Shaka demo did not initialize: ' + status);
+            if (errors.length) throw new Error('Browser errors: ' + errors.join('; '));
+          } finally {
+            await browser.close();
+          }
+          NODE
+      - name: Verify main player no longer duplicates episode controls or sends users to external players
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          try {
+            const page = await browser.newPage();
+            const errors = [];
+            page.on('pageerror', error => errors.push(error.message));
+            await page.route('**/*', async route => {
+              const url = new URL(route.request().url());
+              if (url.origin === 'http://127.0.0.1:4173') return route.continue();
+              return route.abort();
+            });
+            await page.addInitScript(() => {
+              localStorage.setItem('after-dark:venom-current-film:v1', JSON.stringify({
+                tmdbId: 123, type: 'series', media_type: 'tv', title: 'Test Series',
+                first_air_date: '2020-01-01'
+              }));
+              window.afterDarkProgressReady = Promise.resolve(true);
+              window.afterDarkProgress = {
+                get: () => null,
+                save: async () => true,
+                formatTime: seconds => Math.floor(seconds / 60) + ' мин.'
+              };
+            });
+            await page.goto('http://127.0.0.1:4173/venom-watch.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('#playerStage');
+            const controls = await page.locator('#seasonSelect, #episodeSelect, #episodePicker').count();
+            if (controls !== 0) throw new Error('Duplicate season/episode controls still exist in the page');
+            const html = await page.locator('body').innerText();
+            if (/ОТКРЫТЬ STREMIO|ОТКРЫТЬ STELLAR/i.test(html)) throw new Error('External player CTA still appears in page');
+            const script = await page.locator('script[src*="venom-watch-page.js"]').getAttribute('src');
+            if (!script || !script.includes('20261029-player-cleanup2')) throw new Error('Player script cache version was not updated');
+            const appErrors = errors.filter(message => !message.includes("Failed to read the 'localStorage' property from 'Window': Access is denied for this document."));
+            if (appErrors.length) throw new Error('Main player browser errors: ' + appErrors.join('; '));
+            console.log('Verified: no duplicate season/episode picker and no Stremio/Stellar external CTA.');
+          } finally {
+            await browser.close();
+          }
+          NODE

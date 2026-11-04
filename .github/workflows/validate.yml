@@ -1,0 +1,39 @@
+name: Validate JavaScript
+
+on:
+  push:
+    branches:
+      - main
+      - "fix/**"
+      - "feature/**"
+      - "compat/**"
+  pull_request:
+    branches:
+      - main
+      - "fix/**"
+
+jobs:
+  syntax:
+    name: Check JavaScript syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate loaded scripts
+        run: |
+          node --check script.js
+          node --check after-dark-final.js
+          node --check auth-ui.js
+          node --check supabase-runtime.js
+          node --check supabase-ratings.js
+          node --check api/tmdb.js
+          node --check netlify/functions/tmdb.js
+          node --check watch-player.js
+          node --check api/archive-search.js
+          node --check netlify/functions/archive-search.js
+          # The TMDB proxy tests belong to the server-token variant; this branch deliberately preserves client-side TMDB.
+          node --test tests/watch-player.test.js tests/archive-search.test.js
