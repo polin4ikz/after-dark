@@ -2949,3 +2949,8 @@ body {
 .movie-night-check label{white-space:normal!important;align-items:center!important}
 @media(max-width:1100px){.movie-night-settings{transform:none!important}.movie-night-layout{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)!important;gap:36px!important}}
 @media(max-width:800px){.movie-night-layout{grid-template-columns:minmax(0,1fr)!important;gap:30px!important}.movie-night-settings{transform:none!important}}
+
+.movie-night-year-specific{margin-top:0!important;align-self:center!important;display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important}
+.movie-night-year-specific-label{font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.1em!important;color:rgba(232,221,200,.58)!important;opacity:1!important;white-space:nowrap!important}
+.movie-night-year-specific-select{width:112px!important;min-width:112px!important;height:38px!important;padding:8px 24px 8px 10px!important;border-color:rgba(232,221,200,.18)!important;background:#171311!important;font:500 9px/1 "Geist Mono",monospace!important;color:var(--milk)!important}
+.movie-night-options-wide .movie-night-option{flex:0 1 auto!important}
