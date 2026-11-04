@@ -123,10 +123,10 @@
     wrap.className="movie-night-year-specific";
     const label=document.createElement("span");
     label.className="movie-night-year-specific-label";
-    label.textContent="EXACT YEAR";
+    label.textContent="ТОЧНЫЙ ГОД";
     const select=document.createElement("select");
     select.className="movie-night-year-specific-select";
-    select.innerHTML='<option value="">SELECT</option><option value="2020+">2020+</option>';
+    select.innerHTML='<option value="">ВЫБРАТЬ</option><option value="2020+">2020+</option>';
     for(let year=2026;year>=1950;year--){
       const option=document.createElement("option");
       option.value=String(year);
@@ -165,7 +165,7 @@
       if(emptyState)return;
       emptyState=document.createElement("div");
       emptyState.className="movie-night-error-overlay";
-      emptyState.innerHTML="<span>NO TITLES FOUND<br>TRY CHANGING THE PARAMETERS</span>";
+      emptyState.innerHTML="<span>НЕТ ПОДХОДЯЩИХ ВАРИАНТОВ<br>ИЗМЕНИТЕ ФИЛЬТРЫ</span>";
       modalWindow.appendChild(emptyState);
     };
     const check=()=>{
