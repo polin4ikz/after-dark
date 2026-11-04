@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100e0d">
+  <title>AFTER DARK — Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="venom-watch.css?v=20261103-player-cleanup3">
+</head>
+<body>
+  <main class="player-page">
+    <header class="player-header">
+      <a class="wordmark" href="index.html#archive">AFTER <em>DARK</em></a>
+      <span>PRIVATE CINEMA / PLAYER</span>
+      <a class="back-link" href="index.html#archive">← В АРХИВ</a>
+    </header>
+    <section class="player-content">
+      <div class="eyebrow">NOW PLAYING <span id="mediaType">PRIVATE SELECTION</span></div>
+      <h1 id="mediaTitle">Загрузка…</h1>
+      <p id="mediaMeta" class="media-meta"></p>
+      <div id="playerStatus" class="player-status" role="status" aria-live="polite">Подготовка поиска…</div>
+      <div class="vidrift-player-shell">
+        <div id="playerStage" class="player-stage"><div class="player-placeholder">AFTER<br><em>DARK</em></div></div>
+      </div>
+      <section id="vidriftControls" class="vidrift-controls" aria-label="Качество, аудио и субтитры"></section>
+      <section id="trackControls" class="track-controls" hidden aria-label="Внутренние дорожки"><label>ОЗВУЧКА<select id="audioTrack" disabled><option value="-1">Источник не предоставляет выбор</option></select></label><label>СУБТИТРЫ<select id="subtitleTrack" disabled><option value="-1">Нет доступных дорожек</option></select></label></section>
+      <div class="player-actions" aria-label="Действия с просмотром"><button type="button" data-player-action="watched">ОТМЕТИТЬ ПРОСМОТРЕННЫМ</button><button type="button" data-player-action="rate">ОЦЕНИТЬ</button></div>
+
+      <p id="streamStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+      <details class="reserve-source">
+        <summary><span>Резервная ссылка</span><small>если плеер не найдёт фильм</small></summary>
+        <div class="reserve-source__body">
+          <p class="reserve-source__hint">Сохрани ссылку и открой сайт-источник отдельно. After Dark не может автоматически считывать время из чужого плеера; последнее место можно записать вручную.</p>
+          <form id="manualSourceForm" class="reserve-source__form">
+            <label for="manualSourceUrl">ССЫЛКА НА САЙТ-ИСТОЧНИК</label>
+            <div class="reserve-source__row">
+              <input id="manualSourceUrl" name="sourceUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://…" aria-describedby="externalSourceHint" required>
+              <button type="submit">СОХРАНИТЬ ССЫЛКУ</button>
+            </div>
+            <p id="externalSourceHint" class="visually-hidden">Ссылка откроет исходный сайт в новой вкладке и не будет воспроизводиться внутри After Dark.</p>
+          </form>
+          <section id="externalSourceSaved" class="external-source-saved" hidden>
+            <a id="externalSourceLink" target="_blank" rel="noopener noreferrer"></a>
+            <label for="externalPosition">ГДЕ ОСТАНОВИЛАСЬ <span>например, 17:27</span></label>
+            <div class="reserve-source__row">
+              <input id="externalPosition" type="text" inputmode="numeric" placeholder="мин:сек или ч:мин:сек" autocomplete="off">
+              <button id="saveExternalPosition" type="button">СОХРАНИТЬ ВРЕМЯ</button>
+            </div>
+            <p id="externalPositionStatus" class="external-source-saved__status" role="status" aria-live="polite"></p>
+          </section>
+        </div>
+      </details>
+      <div id="sourceResults" hidden aria-live="polite"></div>
+    </section>
+    <footer class="player-footer"><span>AFTER DARK / EST. 2026</span><span>FILMS · SERIES · ANIMATION</span></footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
+  <script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
+  <script src="watch-progress.js?v=20261028-step2-progress1"></script>
+  <script src="venom-watch-page.js?v=20261103-player-cleanup3"></script>
+</body>
+</html>

@@ -1,9 +1,23 @@
 (()=>{
-  const state={filter:"all",status:"all",rows:[],session:null};
+  const state={filter:"all",rows:[],session:null};
   let modal=null;
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
   const yearOf=x=>(x?.release_date||x?.first_air_date||"").slice(0,4)||"—";
+  const posterUrl=x=>{
+    let path=String(x?.poster_path||"").trim();
+    if(!path)return"";
+    if(/^https?:\/\//i.test(path)){
+      try{
+        const imageUrl=new URL(path);
+        const match=imageUrl.hostname==="image.tmdb.org"&&imageUrl.pathname.match(/^\/t\/p\/(?:w[0-9]+|original)(\/.*)$/);
+        if(match)path=match[1];
+        else return path;
+      }catch{return""}
+    }
+    if(!path.startsWith("/"))path="/"+path;
+    return"/api/tmdb-image?size=w342&path="+encodeURIComponent(path);
+  };
 
   function addStyles(){
     if(document.querySelector("#supabaseRatingsStyles"))return;
@@ -39,7 +53,7 @@
       .ratings-list .rating-score{display:flex!important;flex-direction:column!important;min-width:0!important;visibility:visible!important;opacity:1!important}
       .ratings-list .rating-score strong{display:block!important}
       #ratings .ratings-controls{display:flex!important;align-items:center!important;justify-content:flex-start!important;margin-bottom:18px!important;flex-wrap:wrap!important;gap:12px!important}
-      #ratings .rating-status-filters{display:flex!important;gap:0!important;border:1px solid rgba(23,18,20,.18)!important}
+      #ratings .rating-status-filters{display:none!important}
       #ratings .rating-status-filter{margin:0!important;padding:11px 14px!important;border:0!important;border-right:1px solid rgba(23,18,20,.14)!important;background:transparent!important;color:rgba(23,18,20,.52)!important;font:500 8px/1 "Geist Mono",monospace!important;letter-spacing:.08em!important;cursor:pointer!important}
       #ratings .rating-status-filter:last-child{border-right:0!important}
       #ratings .rating-status-filter.active{background:#791526!important;color:#f1ece5!important}
@@ -126,7 +140,8 @@
     });
   }
 
-  function closeModal(){modal?.classList.remove("active");document.body.style.overflow=""}
+  function clearRequestedRating(){const url=new URL(location.href);if(!url.searchParams.has("rate"))return;url.searchParams.delete("rate");history.replaceState(history.state,"",url.pathname+url.search+url.hash)}
+  function closeModal(){modal?.classList.remove("active");document.body.style.overflow="";clearRequestedRating()}
   async function currentSession(){await supabaseReady;const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;return data.session||null}
   async function openRating(id){try{const session=await currentSession();if(!session){openAuth();return}state.session=session;const film=window.afterDarkGetFilm?.(id);if(!film)return;const{data,error}=await supabaseClient.from("ratings").select("rating").eq("tmdb_id",Number(id)).eq("user_id",session.user.id).maybeSingle();if(error)throw error;const m=ensureModal();m.dataset.tmdbId=String(id);m.querySelector(".supabase-rating-title").textContent=titleOf(film).toUpperCase();m.querySelector(".supabase-rating-current").textContent=data?`YOUR CURRENT RATING · ${Number(data.rating).toFixed(1)}`:"YOUR RATING · 0 — 10";m.querySelector(".supabase-rating-save").disabled=false;setRatingVisual(Math.round(Number(data?.rating)||0));m.classList.add("active");document.body.style.overflow="hidden";setTimeout(()=>m.querySelector(".supabase-rating-input")?.focus(),50)}catch(e){console.error("RATING OPEN FAILED",e);authError(e.message)}}
   async function saveRating(){const m=ensureModal(),id=Number(m.dataset.tmdbId),button=m.querySelector(".supabase-rating-save"),value=Number(m.dataset.rating||0);if(!Number.isFinite(value)||value<1||value>10){return}try{button.disabled=true;const session=state.session||await currentSession();if(!session){closeModal();openAuth();return}const{error}=await supabaseClient.from("ratings").upsert({tmdb_id:id,user_id:session.user.id,rating:value,updated_at:new Date().toISOString()},{onConflict:"tmdb_id,user_id"});if(error)throw error;closeModal();await loadRatings()}catch(e){console.error("RATING SAVE FAILED",e);alert(`RATING COULD NOT BE SAVED: ${e.message}`)}finally{button.disabled=false}}
@@ -134,7 +149,7 @@
   async function deleteMyRating(id){try{const session=state.session||await currentSession();if(!session){openAuth();return}const{error}=await supabaseClient.from("ratings").delete().eq("tmdb_id",Number(id)).eq("user_id",session.user.id);if(error)throw error;await loadRatings()}catch(e){console.error("RATING DELETE FAILED",e);alert(`RATING COULD NOT BE DELETED: ${e.message}`)}}
   function render(){
     const list=document.querySelector("#ratingsList");if(!list)return;
-    let data=state.rows.filter(r=>(state.filter==="all"||r.film.type===state.filter)&&(state.status==="all"||(state.status==="upcoming"&&r.film.in_watchlist!==false&&!r.film.watched)||(state.status==="watched"&&(r.film.in_watchlist===false||r.film.watched))));
+    let data=state.rows.filter(r=>state.filter==="all"||r.film.type===state.filter);
     list.innerHTML=data.length?data.map((r,i)=>{
       const scores=(r.people||[]).map(person=>{
         const rating=r.userRatings?.[person.id];
@@ -144,7 +159,7 @@
       }).join("");
       const avg=r.average==null?"—":r.average.toFixed(1);
       const averageScore=`<div class="rating-score is-average"><span class="rating-score-label">Общая</span><strong>${avg}${r.average==null?"":' <small>/10</small>'}</strong></div>`;
-      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-scores">${scores}${averageScore}</div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
+      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="${esc(posterUrl(r.film))}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-scores">${scores}${averageScore}</div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
   }
 
   async function loadRatings(){
@@ -168,12 +183,6 @@
         const latest=g.items.reduce((max,x)=>x.updated_at>max?x.updated_at:max,"");
         return{...g,people,userRatings,byUser:g.items.find(x=>x.user_id===session.user.id),average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,latest};
       });
-      const ratedIds=new Set(rows.map(r=>Number(r.film.tmdb_id)));
-      (filmsRes.data||[]).forEach(f=>{
-        const id=Number(f.tmdb_id);
-        if(ratedIds.has(id)||!(f.watched===true||f.in_watchlist===false))return;
-        rows.push({film:f,items:[],people,userRatings:{},byUser:null,average:null,latest:f.created_at||""});
-      });
       state.rows=rows.sort((a,b)=>(b.latest||"").localeCompare(a.latest||""));
       render();
     }catch(e){
@@ -183,8 +192,8 @@
     }
   }
 
-  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return}const status=e.target.closest("#ratings .rating-status-filter");if(status){e.preventDefault();e.stopImmediatePropagation();state.status=status.dataset.ratingStatus||"all";document.querySelectorAll("#ratings .rating-status-filter").forEach(x=>x.classList.remove("active"));status.classList.add("active");render();return}},true)}
+  function intercept(){document.addEventListener("click",async e=>{const rate=e.target.closest("#archiveTrack [data-action='rate']");if(rate){e.preventDefault();e.stopImmediatePropagation();await openRating(Number(rate.dataset.id));return}const del=e.target.closest("#ratingsList .rating-delete");if(del){e.preventDefault();e.stopImmediatePropagation();await deleteMyRating(Number(del.dataset.ratingId));return}const row=e.target.closest("#ratingsList .rating-card");if(row&&!e.target.closest(".rating-delete")){e.preventDefault();e.stopImmediatePropagation();window.openFilmCard?.(Number(row.dataset.tmdbId));return}const filter=e.target.closest("#ratings .rating-filter");if(filter){e.preventDefault();e.stopImmediatePropagation();state.filter=filter.dataset.ratingFilter||"all";document.querySelectorAll("#ratings .rating-filter").forEach(x=>x.classList.remove("active"));filter.classList.add("active");render();return}},true)}
   window.refreshSupabaseRatings=loadRatings;
-   async function init(){addStyles();intercept();try{await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{state.session=session||null;loadRatings()});await loadRatings()}catch(e){console.error("SUPABASE RATINGS INIT FAILED",e)}}
+   async function init(){addStyles();intercept();try{await supabaseReady;supabaseClient.auth.onAuthStateChange((_event,session)=>{state.session=session||null;loadRatings()});await loadRatings();const requestedRating=Number(window.__afterDarkPendingRating||new URLSearchParams(location.search).get("rate"));window.__afterDarkPendingRating=null;if(requestedRating>0){clearRequestedRating();setTimeout(()=>openRating(requestedRating),350)}}catch(e){console.error("SUPABASE RATINGS INIT FAILED",e)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();

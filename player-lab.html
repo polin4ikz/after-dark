@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AFTER DARK — Player Lab</title>
+<style>
+:root{color-scheme:dark;--milk:#e8ddc8;--muted:rgba(232,221,200,.62);--line:rgba(232,221,200,.18);--red:#791522;--bg:#100e0d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,rgba(121,21,34,.2),transparent 55%),var(--bg);color:var(--milk);font:15px/1.5 Arial,sans-serif}
+main{width:min(100%,1000px);margin:auto;padding:clamp(18px,4vw,42px)}header{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px;font:10px monospace;letter-spacing:.12em;color:var(--muted)}header strong{font:20px Georgia,serif;color:var(--milk);letter-spacing:0}h1{font:clamp(32px,6vw,56px)/1 Georgia,serif;font-weight:400;letter-spacing:-.04em;margin:30px 0 10px}p{color:var(--muted)}.tag{font:10px monospace;letter-spacing:.12em;color:#d6a2a5}
+.panel{border:1px solid var(--line);background:rgba(232,221,200,.025);padding:16px;margin:18px 0}.row{display:flex;gap:8px;flex-wrap:wrap}input,select,button{font:inherit;min-width:0;padding:12px;background:#171311;color:var(--milk);border:1px solid var(--line);border-radius:0}input{flex:1;width:100%}button{cursor:pointer;background:var(--red)}button.secondary{background:transparent}label{display:block;color:var(--muted);font:10px monospace;letter-spacing:.1em;margin:12px 0 6px}video{display:block;width:100%;aspect-ratio:16/9;background:#000;border:1px solid var(--line);margin-top:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#d9c7ae;font:12px/1.6 monospace;background:#080706;padding:14px;min-height:90px}.status{font:11px monospace;letter-spacing:.06em;color:var(--muted)}.note{font-size:13px}.good{color:#b9d1b1}.bad{color:#e3a0a0}@media(max-width:560px){.row>*{width:100%}header{align-items:flex-start}}
+</style>
+</head>
+<body><main>
+<header><strong>AFTER DARK</strong><span>PLAYER LAB / EST. 2026</span></header>
+<h1>Тест плеера</h1><div class="tag">ИЗОЛИРОВАННАЯ СРЕДА · НЕ МЕНЯЕТ ОСНОВНОЙ ПЛЕЕР</div>
+<p>Проверяем поддержку HLS/DASH, доступные аудиодорожки и поведение на устройстве. Этот стенд не ищет и не предоставляет видео — вставь прямую ссылку на поток, который разрешено воспроизводить.</p>
+<section class="panel">
+<label for="url">ССЫЛКА НА HLS (.m3u8) ИЛИ DASH (.mpd)</label>
+<div class="row"><input id="url" type="url" inputmode="url" placeholder="https://example.com/stream.m3u8" autocomplete="off"><button id="load">ЗАГРУЗИТЬ</button></div>
+<div class="row" style="margin-top:8px"><button class="secondary" id="demo">ЗАГРУЗИТЬ ДЕМО SHAKA</button><button class="secondary" id="clear">СБРОСИТЬ</button></div>
+<label for="engine">ДВИЖОК</label><select id="engine"><option value="shaka">Shaka Player (HLS/DASH)</option><option value="native">Нативный HTML5 / Safari HLS</option></select>
+<video id="video" controls playsinline preload="metadata"></video>
+<label for="audio">АУДИОДОРОЖКА (если доступна)</label><div class="row"><select id="audio" disabled><option>Сначала загрузи поток</option></select><button class="secondary" id="refresh">ОБНОВИТЬ ДОРОЖКИ</button></div>
+<div class="status" id="status" role="status" aria-live="polite">ГОТОВ К ТЕСТУ</div>
+</section>
+<section class="panel"><label>ДИАГНОСТИКА</label><pre id="log">События плеера появятся здесь.</pre></section>
+<p class="note">Важно: наличие переключателя не гарантирует русскую озвучку. Дорожки должны присутствовать в самом потоке. На iPhone Safari может ограничивать программное переключение HLS-аудио; это отдельно фиксируем в результатах.</p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.12/dist/shaka-player.compiled.js"></script>
+<script>
+(() => {
+const $=id=>document.getElementById(id), video=$("video"), audio=$("audio"), status=$("status"), log=$("log");
+let player=null, nativeTracks=null, currentUrl="";
+function report(message, error=false){status.textContent=message;status.className="status "+(error?"bad":"good");}
+function write(message){log.textContent=new Date().toLocaleTimeString()+" — "+message+"\n"+log.textContent.slice(0,7000);}
+function clearPlayer(){if(player){player.destroy().catch(()=>{});player=null;}video.pause();video.removeAttribute("src");video.load();nativeTracks=null;audio.replaceChildren();audio.disabled=true;currentUrl="";}
+function refreshAudio(){
+ audio.replaceChildren();
+ if(player){
+  const tracks=player.getAudioTracks();
+  if(!tracks.length){audio.add(new Option("Аудиодорожек не обнаружено",""));audio.disabled=true;write("Shaka: аудиодорожек не обнаружено.");return;}
+  tracks.forEach((t,i)=>audio.add(new Option((t.language||"неизвестный язык")+" · "+(t.label||("дорожка "+(i+1)))+(t.active?" · АКТИВНА":""),String(t.id))));
+  audio.disabled=false;audio.value=String((tracks.find(t=>t.active)||tracks[0]).id);write("Shaka: найдено аудиодорожек: "+tracks.length+"; языки: "+tracks.map(t=>t.language||"?").join(", "));
+ }else{
+  const list=video.audioTracks;
+  if(list && list.length){
+   nativeTracks=list;Array.from(list).forEach((t,i)=>audio.add(new Option((t.language||"неизвестный язык")+" · "+(t.label||("дорожка "+(i+1))),String(i))));
+   audio.disabled=false;const active=Array.from(list).findIndex(t=>t.enabled);audio.value=String(Math.max(0,active));write("Native HTML5: найдено аудиодорожек: "+list.length+"; языки: "+Array.from(list).map(t=>t.language||"?").join(", "));
+  }else{audio.add(new Option("Браузер не раскрывает список дорожек",""));audio.disabled=true;write("Native HTML5: video.audioTracks недоступен или дорожек не обнаружено.");}
+ }
+}
+async function load(url){
+ if(!/^https:\/\//i.test(url)){report("НУЖНА ПРЯМАЯ HTTPS-ССЫЛКА",true);return;}
+ clearPlayer();currentUrl=url;const engine=$("engine").value;report("ЗАГРУЖАЮ ПОТОК…");write("Загрузка: "+url+"; движок: "+engine);
+ if(engine==="shaka"){
+  if(!window.shaka){report("SHAKA НЕ ЗАГРУЗИЛАСЬ — ПРОВЕРЬ CDN/СЕТЬ",true);return;}
+  shaka.polyfill.installAll();
+  if(!shaka.Player.isBrowserSupported()){report("БРАУЗЕР НЕ ПОДДЕРЖИВАЕТ SHAKA",true);return;}
+  player=new shaka.Player();await player.attach(video);
+  player.addEventListener("error",e=>{const d=e.detail||{};report("ОШИБКА SHAKA "+(d.code||""),true);write("Shaka error: "+JSON.stringify({code:d.code,category:d.category,severity:d.severity,data:d.data}));});
+  player.addEventListener("trackschanged",refreshAudio);
+  player.addEventListener("adaptation",refreshAudio);
+  try{await player.load(url);refreshAudio();report("ПОТОК ЗАГРУЖЕН · НАЖМИ PLAY");}
+  catch(e){report("НЕ УДАЛОСЬ ЗАГРУЗИТЬ ПОТОК",true);write("Shaka load error: "+JSON.stringify({code:e.code,category:e.category,data:e.data}));}
+ }else{
+  video.addEventListener("loadedmetadata",refreshAudio,{once:true});
+  video.addEventListener("error",()=>{report("ОШИБКА HTML5 "+(video.error?.code||""),true);write("Native video error code: "+(video.error?.code||"unknown"));},{once:true});
+  video.src=url;video.load();
+  report("ССЫЛКА ПЕРЕДАНА HTML5 · ЖДЁМ МЕТАДАННЫЕ");
+ }
+}
+$("load").addEventListener("click",()=>load($("url").value.trim()));
+$("demo").addEventListener("click",()=>{$("url").value="https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8";$("engine").value="shaka";load($("url").value);});
+$("clear").addEventListener("click",()=>{clearPlayer();report("ГОТОВ К ТЕСТУ");log.textContent="Сброшено.";});
+$("refresh").addEventListener("click",refreshAudio);
+$("engine").addEventListener("change",()=>{if(currentUrl)load(currentUrl);});
+audio.addEventListener("change",()=>{
+ if(player){const t=player.getAudioTracks().find(t=>String(t.id)===audio.value);if(t){player.selectAudioTrack(t);write("Выбрана Shaka-дорожка: "+(t.language||"?")+" / "+(t.label||t.id));}}
+ else if(nativeTracks){const idx=Number(audio.value);Array.from(nativeTracks).forEach((t,i)=>{t.enabled=i===idx;});write("Запрошено переключение native-дорожки: "+idx+"; браузер может игнорировать API.");}
+});
+["loadedmetadata","canplay","playing","pause","waiting","ended"].forEach(name=>video.addEventListener(name,()=>{write("HTMLVideoElement: "+name+(Number.isFinite(video.currentTime)?" @ "+Math.floor(video.currentTime)+"s":""));if(name==="playing")report("ВОСПРОИЗВЕДЕНИЕ ИДЁТ");}));
+if(window.shaka){shaka.polyfill.installAll();}
+})();
+</script>
+</body></html>
