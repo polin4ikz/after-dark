@@ -44,6 +44,8 @@
   window.addEventListener("afterdark:progress-updated", render);
   window.addEventListener("afterdark:archive-updated", render);
   document.addEventListener("DOMContentLoaded", render);
+  const archiveTrack = document.getElementById("archiveTrack");
+  if (archiveTrack && window.MutationObserver) new MutationObserver(render).observe(archiveTrack, { childList: true });
   render();
   window.afterDarkRenderContinueWatching = render;
 })();
