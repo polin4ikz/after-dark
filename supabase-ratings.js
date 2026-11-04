@@ -4,6 +4,20 @@
   const esc=v=>String(v??"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
   const titleOf=x=>x?.title||x?.name||"UNTITLED";
   const yearOf=x=>(x?.release_date||x?.first_air_date||"").slice(0,4)||"—";
+  const posterUrl=x=>{
+    let path=String(x?.poster_path||"").trim();
+    if(!path)return"";
+    if(/^https?:\/\//i.test(path)){
+      try{
+        const imageUrl=new URL(path);
+        const match=imageUrl.hostname==="image.tmdb.org"&&imageUrl.pathname.match(/^\/t\/p\/(?:w\\d+|original)(\/.*)$/);
+        if(match)path=match[1];
+        else return path;
+      }catch{return""}
+    }
+    if(!path.startsWith("/"))path="/"+path;
+    return"/api/tmdb-image?size=w342&path="+encodeURIComponent(path);
+  };
 
   function addStyles(){
     if(document.querySelector("#supabaseRatingsStyles"))return;
@@ -145,7 +159,7 @@
       }).join("");
       const avg=r.average==null?"—":r.average.toFixed(1);
       const averageScore=`<div class="rating-score is-average"><span class="rating-score-label">Общая</span><strong>${avg}${r.average==null?"":' <small>/10</small>'}</strong></div>`;
-      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="https://image.tmdb.org/t/p/w342${esc(r.film.poster_path)}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-scores">${scores}${averageScore}</div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
+      return `<article class="rating-card" data-tmdb-id="${esc(r.film.tmdb_id)}"><span class="rating-number">${String(i+1).padStart(2,"0")}</span><div class="rating-poster">${r.film.poster_path?`<img src="${esc(posterUrl(r.film))}" alt="" loading="lazy">`:""}</div><div class="rating-main"><h3 class="rating-title">${esc(titleOf(r.film))}</h3><div class="rating-info"><span>${esc((r.film.type||"film").toUpperCase())}</span><span>${esc(yearOf(r.film))}</span></div></div><div class="rating-scores">${scores}${averageScore}</div>${r.byUser?`<button class="rating-delete" type="button" data-rating-id="${esc(r.film.tmdb_id)}" aria-label="Remove my rating">×</button>`:""}<span class="rating-open-file">OPEN FILE ↗</span></article>`}).join(""):'<div class="rating-empty">NO RATINGS YET.</div>';
   }
 
   async function loadRatings(){
