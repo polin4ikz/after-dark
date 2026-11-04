@@ -20,6 +20,12 @@
           ? "series" : (result.type || "film")
       });
     }
+    if (button.dataset.adWatchTrigger === "progress") {
+      const row = window.afterDarkProgress?.get(Number(button.dataset.id));
+      if (!row) return null;
+      const saved = getArchiveFilm(row.tmdb_id) || {};
+      return Object.assign({}, saved, { tmdbId: row.tmdb_id, id: row.tmdb_id, title: row.title || saved.title || "Без названия", type: row.media_type === "tv" ? "series" : (saved.type || "film"), media_type: row.media_type });
+    }
     if (button.dataset.adWatchTrigger === "detail") {
       return $("#afterDarkFilmDetail")?._film || null;
     }
