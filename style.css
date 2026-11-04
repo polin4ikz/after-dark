@@ -2959,7 +2959,7 @@ body {
 
 /* CONTINUE WATCHING — light interval in the dark page */
 .continue-section{position:relative;isolation:isolate;background:var(--milk,#e8ddc8)!important;color:var(--black,#171214)!important;border:0!important;padding-top:clamp(42px,5vw,72px)!important;padding-bottom:clamp(44px,5vw,76px)!important}
-.continue-section:before{content:"";position:absolute;z-index:-1;top:0;left:0;right:0;height:3px;background:var(--red2,#8f2030)}
+.continue-section:before{display:none!important}
 .continue-heading{padding-bottom:20px;border-bottom:1px solid rgba(84,19,31,.24);margin-bottom:20px!important;align-items:flex-end!important}
 .continue-heading .eyebrow{color:#54131f!important;opacity:.72;font-size:9px!important}
 .continue-heading h2{color:#171214!important;font:500 clamp(26px,3vw,42px)/1 "Geist Mono",monospace!important;letter-spacing:-.065em!important;text-transform:uppercase}
@@ -2969,3 +2969,6 @@ body {
 .continue-times{color:rgba(23,18,20,.6)!important}.continue-progress{background:rgba(84,19,31,.16)!important}.continue-progress i{background:#8f2030!important}
 .continue-resume{color:#54131f!important;font-weight:500!important}.continue-resume:hover{color:#8f2030!important}
 .continue-poster{background:#211716!important}
+
+/* Restore a soft lower fade on the hero; keep text above it. */
+.hero:after{content:""!important;position:absolute!important;z-index:1!important;left:0!important;right:0!important;bottom:0!important;height:clamp(110px,19vh,230px)!important;pointer-events:none!important;background:linear-gradient(to bottom,rgba(23,18,20,0) 0%,rgba(23,18,20,.34) 58%,rgba(23,18,20,.72) 100%)!important}
