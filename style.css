@@ -3192,7 +3192,7 @@ body {
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     grid-template-rows:repeat(2,auto)!important;grid-auto-flow:row!important;
     align-content:start!important;align-items:start!important;
-    gap:22px 12px!important;padding:0 18px!important;
+    gap:22px 14px!important;padding:0 26px!important;
     box-sizing:border-box!important;scroll-snap-align:start!important;
   }
   .archive-page .archive-card{
