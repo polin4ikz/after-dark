@@ -3984,3 +3984,12 @@ body {
     padding:11px 0 9px!important;
   }
 }
+
+
+/* MOVIE NIGHT — never lock the document scroll; contain gestures inside the fixed overlay */
+@media (max-width:700px){
+  .movie-night-modal{touch-action:none!important;pointer-events:none!important}
+  .movie-night-modal.active{pointer-events:auto!important}
+  .movie-night-modal-backdrop{touch-action:none!important;pointer-events:auto!important}
+  .movie-night-modal-window{touch-action:pan-y!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+}
