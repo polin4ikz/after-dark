@@ -4115,3 +4115,31 @@ body {
     max-height:398px!important;
   }
 }
+
+
+/* SEARCH ALIGNMENT — align controls and results with the section edge, keep the title offset */
+.search-box,
+.search-info,
+#searchResults.search-results{
+  margin-left:0!important;
+  margin-right:0!important;
+  width:min(680px,100%)!important;
+  max-width:680px!important;
+}
+#searchResults .search-results-head{
+  padding-left:12px!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:800px){
+  .search-box,
+  .search-info,
+  #searchResults.search-results{
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+  #searchResults .search-results-head{
+    padding-left:12px!important;
+  }
+}
