@@ -132,7 +132,7 @@ async function archiveSyncUpsert(f){
 async function archiveSyncRemove(id){
   const user=await archiveSyncUser();
   if(!user)return false;
-  const{data,error}=await supabaseClient.from("archive").update({in_watchlist:false,updated_at:new Date().toISOString()}).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
+  const{data,error}=await supabaseClient.from("archive").update({in_watchlist:false,watched:false,updated_at:new Date().toISOString()}).eq("tmdb_id",Number(id)).select("tmdb_id").maybeSingle();
   if(error){
     console.error("ARCHIVE REMOVE FAILED",error);
     return false;
