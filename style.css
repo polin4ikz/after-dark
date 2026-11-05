@@ -2972,3 +2972,57 @@ body {
 
 /* Restore a soft lower fade on the hero; keep text above it. */
 .hero:after{content:""!important;position:absolute!important;z-index:1!important;left:0!important;right:0!important;bottom:0!important;height:clamp(110px,19vh,230px)!important;pointer-events:none!important;background:linear-gradient(to bottom,rgba(23,18,20,0) 0%,rgba(23,18,20,.34) 58%,rgba(23,18,20,.72) 100%)!important}
+
+
+/* MOBILE + LIBRARY REFINEMENT — 2026-11-05 */
+.index-trigger{display:grid!important;place-items:center!important;position:relative!important}
+.index-trigger i{position:absolute!important;left:50%!important;top:calc(50% - 2.5px)!important;transform:translate(-50%,-50%)!important;margin:0!important}
+.index-trigger i:after{left:0!important;top:5px!important}
+.search-box{display:flex!important;align-items:center!important;min-width:0!important;width:min(680px,calc(100% - 8vw))!important;box-sizing:border-box!important}
+.search-box input{display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;font-size:16px!important;line-height:1.35!important;-webkit-text-size-adjust:100%!important}
+.search-box button{display:none!important}
+.search-info{width:min(680px,calc(100% - 8vw))!important;max-width:calc(100% - 8vw)!important;box-sizing:border-box!important;min-width:0!important;flex-wrap:wrap!important;gap:8px 14px!important}
+.search-results{width:min(680px,calc(100% - 8vw))!important;max-width:calc(100% - 8vw)!important;box-sizing:border-box!important;min-width:0!important}
+.search-result{min-width:0!important;grid-template-columns:24px 56px minmax(0,1fr)!important;gap:12px!important;padding-right:0!important;box-sizing:border-box!important}
+.search-result-info{min-width:0!important;overflow-wrap:anywhere!important}
+.search-result-info h3{overflow-wrap:anywhere!important}
+.search-result-add{grid-column:3!important;justify-self:start!important;margin:4px 0 0!important}
+.search-result:after{display:none!important}
+
+/* Library becomes a vertically scrollable poster grid; controls remain available. */
+.archive-track-wrap{max-height:min(74vh,820px)!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;touch-action:pan-y!important;scroll-behavior:smooth!important;scrollbar-width:thin!important;scrollbar-color:rgba(232,221,200,.32) rgba(232,221,200,.05)!important}
+.archive-track-wrap::-webkit-scrollbar{width:5px!important}
+.archive-track-wrap::-webkit-scrollbar-thumb{background:rgba(232,221,200,.3)!important}
+.archive-track{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:30px 18px!important;width:100%!important;padding:22px var(--pad,6vw)!important;overflow:visible!important;scroll-snap-type:none!important;box-sizing:border-box!important}
+.archive-card{display:flex!important;flex-direction:column!important;min-width:0!important;width:100%!important;flex:none!important;padding:0 0 12px!important;scroll-snap-align:none!important}
+.archive-card-poster{width:100%!important;aspect-ratio:2/3!important;flex:none!important}
+.archive-card-poster img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+.archive-card h3{height:auto!important;min-height:2.1em!important;font-size:clamp(14px,1.5vw,20px)!important;line-height:1.05!important;display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;overflow-wrap:anywhere!important}
+.archive-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important}
+.archive-action{min-width:0!important;padding:10px 8px!important;font-size:8px!important}
+.archive-carousel-ui{position:sticky!important;bottom:0!important;z-index:5!important;padding:12px var(--pad,6vw)!important;background:linear-gradient(to bottom,rgba(17,15,14,.82),rgba(17,15,14,.98))!important;backdrop-filter:blur(12px)!important;border-top:1px solid rgba(232,221,200,.14)!important}
+.archive-carousel-progress{display:none!important}
+.archive-carousel-position{margin-left:auto!important}
+.archive-carousel-button:disabled{opacity:.25!important;pointer-events:none!important}
+@media(max-width:900px){.archive-track{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:24px 14px!important}}
+@media(max-width:640px){
+  .site-header{padding-top:16px!important;padding-bottom:16px!important}
+  .index-trigger{width:38px!important;height:38px!important}
+  .search-section{overflow-x:clip!important}
+  .search-box,.search-info,.search-results{margin-left:0!important;width:100%!important;max-width:100%!important}
+  .search-box{min-height:62px!important}
+  .search-box input{font-size:16px!important;padding:16px 0!important}
+  .search-info{font-size:8px!important}
+  .search-result{grid-template-columns:18px 54px minmax(0,1fr)!important;gap:9px!important}
+  .search-result-info h3{font-size:clamp(18px,5.5vw,24px)!important;line-height:1.04!important}
+  .search-result-overview{font-size:10px!important;line-height:1.4!important}
+  .search-result-topline{flex-wrap:wrap!important;gap:5px 8px!important}
+  .archive-track-wrap{max-height:72svh!important}
+  .archive-track{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:22px 12px!important;padding:16px 18px!important}
+  .archive-card h3{font-size:clamp(14px,4.1vw,18px)!important;min-height:2.1em!important}
+  .archive-card-meta{font-size:8px!important}
+  .archive-actions{gap:6px!important}
+  .archive-action{padding:9px 6px!important;font-size:7px!important;letter-spacing:.02em!important}
+  .archive-remove{font-size:8px!important}
+  .archive-carousel-ui{padding:10px 18px!important}
+}
