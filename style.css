@@ -4143,3 +4143,29 @@ body {
     padding-left:12px!important;
   }
 }
+
+
+/* SEARCH ALIGNMENT FIX — extend left edges to the viewport edge, keep section title inset */
+@media(max-width:800px){
+  .search-box,
+  .search-info,
+  #searchResults.search-results{
+    margin-left:calc(-1 * 16px)!important;
+    width:calc(100% + 16px)!important;
+    max-width:none!important;
+  }
+  #searchResults .search-results-head{
+    padding-left:28px!important;
+  }
+}
+@media(max-width:380px){
+  .search-box,
+  .search-info,
+  #searchResults.search-results{
+    margin-left:calc(-1 * clamp(14px,4.5vw,18px))!important;
+    width:calc(100% + clamp(14px,4.5vw,18px))!important;
+  }
+  #searchResults .search-results-head{
+    padding-left:calc(clamp(14px,4.5vw,18px) + 12px)!important;
+  }
+}
