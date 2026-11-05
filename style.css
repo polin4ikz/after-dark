@@ -3740,3 +3740,109 @@ body {
     width:100%!important;height:100%!important;min-height:0!important;
   }
 }
+
+
+/* RESPONSIVE FIT — preserve the 15 Pro Max layout, reflow for compact / zoomed phones */
+@media (max-width: 700px){
+  .search-section,
+  .search-box,
+  .search-info,
+  .search-results,
+  .search-result,
+  .search-result-info,
+  .movie-night,
+  .movie-night-layout,
+  .movie-night-intro,
+  .movie-night-settings,
+  .movie-night-filter,
+  .movie-night-options,
+  .movie-night-options-wide{
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+  .search-results{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .search-result{
+    height:auto!important;
+    min-height:0!important;
+    align-items:start!important;
+    grid-template-columns:clamp(44px,14vw,56px) minmax(0,1fr)!important;
+    gap:10px!important;
+    padding:14px 0!important;
+  }
+  .search-result-index{display:none!important}
+  .search-result-poster,
+  .search-result-poster img{
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    height:auto!important;min-height:0!important;max-height:none!important;
+    aspect-ratio:2/3!important;object-fit:cover!important;
+  }
+  .search-result-info{grid-column:2!important;grid-row:1!important}
+  .search-result-info h3{
+    font-size:clamp(16px,4.8vw,22px)!important;
+    line-height:1.08!important;overflow-wrap:anywhere!important;
+  }
+  .search-result-overview{
+    font-size:clamp(12px,3.4vw,14px)!important;
+    line-height:1.42!important;overflow-wrap:anywhere!important;
+  }
+  .search-result-topline,
+  .search-result-rating{font-size:clamp(9px,2.7vw,11px)!important;line-height:1.35!important}
+  .search-result-add{
+    grid-column:2!important;grid-row:2!important;
+    justify-self:start!important;max-width:100%!important;
+    min-height:38px!important;padding:9px 12px!important;
+    white-space:normal!important;text-align:left!important;
+    font-size:clamp(10px,2.8vw,12px)!important;
+  }
+  .movie-night-layout{grid-template-columns:minmax(0,1fr)!important}
+  .movie-night-options,.movie-night-options-wide{
+    display:flex!important;flex-wrap:wrap!important;align-items:stretch!important;
+    gap:8px!important;overflow:visible!important;
+  }
+  .movie-night-option{
+    flex:0 1 auto!important;min-width:0!important;max-width:100%!important;
+    height:auto!important;min-height:40px!important;
+    padding:10px clamp(9px,3vw,13px)!important;
+    white-space:normal!important;overflow-wrap:anywhere!important;
+    line-height:1.25!important;font-size:clamp(10px,2.8vw,12px)!important;
+  }
+  .movie-night-filter-head{flex-wrap:wrap!important;gap:8px!important}
+  .movie-night-filter-head strong{font-size:clamp(10px,2.8vw,12px)!important}
+  .movie-night-country-select{
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    height:auto!important;min-height:44px!important;font-size:14px!important;
+  }
+  .movie-night-check label{
+    display:flex!important;align-items:flex-start!important;gap:10px!important;
+    white-space:normal!important;line-height:1.4!important;
+  }
+  .decide-button{width:100%!important;min-width:0!important;padding:16px 48px 16px 16px!important}
+}
+@media (max-width:380px){
+  .search-section{padding-left:clamp(14px,4.5vw,18px)!important;padding-right:clamp(14px,4.5vw,18px)!important}
+  .search-head{margin-top:clamp(22px,7vw,32px)!important;margin-bottom:clamp(18px,5vw,24px)!important}
+  .search-box,.search-info,.search-results{width:100%!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
+  .search-box{min-height:58px!important}
+  .search-box input{font-size:16px!important;line-height:1.4!important;padding:14px 0!important}
+  .search-info{gap:6px 10px!important;font-size:clamp(8px,2.5vw,10px)!important}
+  .search-result{grid-template-columns:46px minmax(0,1fr)!important;gap:9px!important}
+  .search-result-info h3{font-size:clamp(15px,4.7vw,18px)!important}
+  .search-result-overview{font-size:clamp(11px,3.4vw,13px)!important}
+  .search-result-add{grid-column:2!important;font-size:10px!important}
+  .movie-night{padding-left:clamp(12px,4vw,16px)!important;padding-right:clamp(12px,4vw,16px)!important}
+  .movie-night-filter{padding:16px 0!important}
+  .movie-night-options,.movie-night-options-wide{gap:7px!important}
+  .movie-night-option{flex:1 1 auto!important;min-width:calc(50% - 7px)!important;text-align:center!important}
+  .movie-night-year-specific{flex-wrap:wrap!important;max-width:100%!important}
+  .movie-night-year-specific-select{width:min(100%,150px)!important;min-width:0!important}
+  .decide-button span{font-size:clamp(25px,8vw,34px)!important}
+  .movie-night-modal-window:has(.movie-night-reveal:not(.done)){
+    width:calc(100vw - 16px)!important;min-width:0!important;
+    min-height:min(68dvh,520px)!important;height:min(68dvh,520px)!important;
+  }
+}
