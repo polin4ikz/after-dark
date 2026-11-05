@@ -3954,3 +3954,33 @@ body {
     letter-spacing:0!important;font-variant-numeric:tabular-nums!important;
   }
 }
+
+
+/* MOBILE SEARCH — keep only a couple of results visible; scroll inside the results panel */
+@media (max-width:800px){
+  #searchResults.search-results{
+    display:block!important;
+    height:clamp(260px,42dvh,380px)!important;
+    min-height:0!important;
+    max-height:380px!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+    scrollbar-width:none!important;
+    padding:0 10px 14px 0!important;
+    box-sizing:border-box!important;
+  }
+  #searchResults.search-results::-webkit-scrollbar{
+    display:none!important;
+    width:0!important;
+  }
+  #searchResults .search-results-head{
+    position:sticky!important;
+    top:0!important;
+    z-index:6!important;
+    background:rgba(17,15,14,.97)!important;
+    padding:11px 0 9px!important;
+  }
+}
