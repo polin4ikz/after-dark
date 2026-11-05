@@ -98,48 +98,86 @@ window.openFilmCard=async function(id){
   }
 };
 function archiveActions(f){return`<div class="archive-actions"><button class="archive-action ad-watch-trigger" data-ad-watch-trigger="archive" data-id="${esc(f.tmdbId)}" type="button">СМОТРЕТЬ ↗</button><button class="archive-remove" data-action="remove" data-id="${esc(f.tmdbId)}" type="button">УДАЛИТЬ ×</button></div>`}
-function renderArchive(){if(!archiveTrack)return;const list=archiveList();archiveTrack.innerHTML=list.length?list.map((f,i)=>`<article class="archive-card" data-id="${esc(f.tmdbId)}"><div class="archive-card-poster" data-action="detail" onclick="window.openFilmCard(Number(this.closest(\'.archive-card\').dataset.id))">${posterOf(f)?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:'<div class="poster-fallback"><b>AFTER<br>DARK</b><span>ПОСТЕР НЕ НАЙДЕН</span></div>'}<span>${String(i+1).padStart(2,"0")}</span></div><div class="archive-card-meta"><span>${esc((f.type||"film").toUpperCase())}</span><span>${esc(yearOf(f))}</span></div><h3>${esc(titleOf(f))}</h3>${archiveActions(f)}</article>`).join(""):(window.archiveSyncStatus==="loading"?`<div class="archive-empty"><span>···</span><p>ЗАГРУЖАЕМ КОЛЛЕКЦИЮ…</p><small>Подождите, пока загрузится коллекция.</small></div>`:window.archiveSyncStatus==="error"?`<div class="archive-empty"><span>!</span><p>НЕ УДАЛОСЬ ЗАГРУЗИТЬ КОЛЛЕКЦИЮ.</p><small>Проверьте подключение и обновите страницу.</small></div>`:`<div class="archive-empty"><span>00</span><p>КОЛЛЕКЦИЯ ПОКА ПУСТА.</p><small>Найдите фильм выше и добавьте его в коллекцию.</small></div>`);updateArchiveCounters(list.length);updateCarousel()}
-window.renderArchive=renderArchive;
+function renderArchive(){
+  if(!archiveTrack)return;
+  const list=archiveList();
+  const cards=list.map((f,i)=>`<article class="archive-card" data-id="${esc(f.tmdbId)}"><div class="archive-card-poster" data-action="detail" onclick="window.openFilmCard(Number(this.closest('.archive-card').dataset.id))">${posterOf(f)?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:'<div class="poster-fallback"><b>AFTER<br>DARK</b><span>ПОСТЕР НЕ НАЙДЕН</span></div>'}<span>${String(i+1).padStart(2,"0")}</span></div><div class="archive-card-meta"><span>${esc((f.type||"film").toUpperCase())}</span><span>${esc(yearOf(f))}</span></div><h3>${esc(titleOf(f))}</h3>${archiveActions(f)}</article>`).join("");
+  if(list.length&&window.matchMedia("(max-width: 900px)").matches){
+    const temp=document.createElement("div");temp.innerHTML=cards;
+    const items=[...temp.children];
+    archiveTrack.innerHTML="";
+    for(let i=0;i<items.length;i+=4){
+      const page=document.createElement("div");
+      page.className="archive-page";
+      items.slice(i,i+4).forEach(card=>page.appendChild(card));
+      archiveTrack.appendChild(page);
+    }
+  }else{
+    archiveTrack.innerHTML=cards||(window.archiveSyncStatus==="loading"?`<div class="archive-empty"><span>···</span><p>ЗАГРУЖАЕМ КОЛЛЕКЦИЮ…</p><small>Подождите, пока загрузится коллекция.</small></div>`:window.archiveSyncStatus==="error"?`<div class="archive-empty"><span>!</span><p>НЕ УДАЛОСЬ ЗАГРУЗИТЬ КОЛЛЕКЦИЮ.</p><small>Проверьте подключение и обновите страницу.</small></div>`:`<div class="archive-empty"><span>00</span><p>КОЛЛЕКЦИЯ ПОКА ПУСТА.</p><small>Найдите фильм выше и добавьте его в коллекцию.</small></div>`);
+  }
+  updateArchiveCounters(list.length);
+  updateCarousel();
+}
+
 async function enrichArchivePosters(){const missing=films.filter(f=>!f.poster_path&&f.tmdbId);if(!missing.length)return;await Promise.all(missing.slice(0,12).map(async f=>{try{const d=await tmdb(f.type==="series"?`/tv/${f.tmdbId}`:`/movie/${f.tmdbId}`,{language:"ru-RU"});if(d.poster_path){f.poster_path=d.poster_path;f.backdrop_path=d.backdrop_path||f.backdrop_path}}catch{}}));renderArchive()}
 window.removeArchiveFilmLocal=function(id){const film=films.find(x=>Number(x.tmdbId)===Number(id));if(!film)return;film.inWatchlist=false;renderArchive();window.afterDarkRatingsReady?.then(()=>window.refreshSupabaseRatings?.())};
 function addFilm(f){const existing=films.find(x=>Number(x.tmdbId)===Number(f.id));if(existing){if(existing.inWatchlist!==false&&!existing.watched)return false;existing.inWatchlist=true;existing.watched=false;renderArchive();return true}films.unshift({tmdbId:f.id,title:titleOf(f),name:f.name,poster_path:f.poster_path||"",backdrop_path:f.backdrop_path||"",release_date:f.release_date||"",first_air_date:f.first_air_date||"",type:typeOf(f),vote_average:f.vote_average||0,genre_ids:f.genre_ids||[],originCountries:f.origin_country||[],watched:false,inWatchlist:true});renderArchive();return true}
 window.filterArchive=function(type){const allowed=["all","film","series","animation"];currentType=allowed.includes(type)?type:"all";document.querySelectorAll(".archive-controls .filter").forEach(x=>{const active=(x.dataset.type||"all")===currentType;x.classList.toggle("active",active);x.setAttribute("aria-pressed",String(active))});renderArchive()};
 window.filterArchiveStatus=function(status){const allowed=["upcoming","watched","all"];currentArchiveStatus=allowed.includes(status)?status:"upcoming";document.querySelectorAll(".archive-status-filter").forEach(x=>{const active=x.dataset.archiveStatus===currentArchiveStatus;x.classList.toggle("active",active);x.setAttribute("aria-pressed",String(active))});renderArchive()};
-function initArchive(){renderArchive();$$(".archive-status-filter").forEach(b=>b.addEventListener("click",e=>{e.preventDefault();window.filterArchiveStatus(b.dataset.archiveStatus)}));archiveTrack?.addEventListener("click",e=>{const poster=e.target.closest(".archive-card-poster");if(!poster)return;const card=poster.closest(".archive-card");const id=Number(card?.dataset.id);if(!id)return;e.preventDefault();e.stopPropagation();window.openFilmCard?.(id)},true);$$('.filter').forEach(b=>b.addEventListener("click",e=>{e.preventDefault();window.filterArchive(b.dataset.type||"all")}));let drag=false,moved=false,suppressClick=false,start=0,scroll=0;archiveTrack?.addEventListener("click",async e=>{const b=e.target.closest("[data-action]");if(!b)return;const id=Number(b.dataset.id||b.closest(".archive-card")?.dataset.id),f=films.find(x=>Number(x.tmdbId)===id);if(!f)return;if(b.dataset.action==="detail"){openFilmCard(id);return}if(b.dataset.action==="remove"){films=films.filter(x=>Number(x.tmdbId)!==id);renderArchive()}else if(b.dataset.action==="watch"){f.watched=true;renderArchive();window.open(tmdbUrl(f),"_blank","noopener")}else if(b.dataset.action==="rate"){try{await window.afterDarkRatingsReady;if(typeof window.openSupabaseRating!=="function")throw new Error("RATING OPEN FUNCTION IS UNAVAILABLE");await window.openSupabaseRating(id)}catch(e){console.error("RATING MODULE FAILED",e);authError(e.message)}}});archiveTrack?.addEventListener("pointerdown",e=>{if(e.target.closest("button,a"))return;drag=true;moved=false;start=e.clientX;scroll=archiveTrack.scrollLeft});archiveTrack?.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-start;if(Math.abs(dx)<8)return;if(!moved){moved=true;suppressClick=true;archiveTrack.classList.add("is-dragging");try{archiveTrack.setPointerCapture(e.pointerId)}catch{}}archiveTrack.scrollLeft=scroll-dx*1.15});["pointerup","pointercancel","lostpointercapture"].forEach(n=>archiveTrack?.addEventListener(n,()=>{drag=false;moved=false;archiveTrack.classList.remove("is-dragging");if(suppressClick)setTimeout(()=>{suppressClick=false},0)}))}function initCarousel(){
+function initArchive(){renderArchive();$$(".archive-status-filter").forEach(b=>b.addEventListener("click",e=>{e.preventDefault();window.filterArchiveStatus(b.dataset.archiveStatus)}));archiveTrack?.addEventListener("click",e=>{const poster=e.target.closest(".archive-card-poster");if(!poster)return;const card=poster.closest(".archive-card");const id=Number(card?.dataset.id);if(!id)return;e.preventDefault();e.stopPropagation();window.openFilmCard?.(id)},true);$$('.filter').forEach(b=>b.addEventListener("click",e=>{e.preventDefault();window.filterArchive(b.dataset.type||"all")}));}function initCarousel(){
   if(!archiveTrack)return;
+  const wrap=archiveTrack.parentElement;
   let ui=$(".archive-carousel-ui");
   if(!ui){
     ui=document.createElement("div");
     ui.className="archive-carousel-ui";
     ui.innerHTML='<div class="archive-carousel-buttons"><button class="archive-carousel-button" data-carousel="prev" type="button" aria-label="Предыдущая страница">←</button><button class="archive-carousel-button" data-carousel="next" type="button" aria-label="Следующая страница">→</button></div><div class="archive-carousel-progress"></div><div class="archive-carousel-position">01 / 01</div>';
-    $(".archive-track-wrap")?.appendChild(ui);
   }
+  if(ui.parentElement!==wrap.parentElement)wrap.insertAdjacentElement("afterend",ui);
   ui.addEventListener("click",e=>{
     const b=e.target.closest("[data-carousel]");
     if(!b)return;
-    const wrap=archiveTrack.parentElement;
-    if(!wrap)return;
-    wrap.scrollBy({left:(b.dataset.carousel==="next"?1:-1)*wrap.clientWidth,behavior:"smooth"});
+    const pages=[...archiveTrack.querySelectorAll(".archive-page")];
+    if(pages.length){
+      const current=pages.reduce((best,page,index)=>{
+        const delta=Math.abs(page.getBoundingClientRect().left-wrap.getBoundingClientRect().left);
+        return delta<best.delta?{index,delta}:best;
+      },{index:0,delta:Infinity}).index;
+      const target=pages[Math.max(0,Math.min(pages.length-1,current+(b.dataset.carousel==="next"?1:-1)))];
+      if(target)wrap.scrollTo({left:wrap.scrollLeft+target.getBoundingClientRect().left-wrap.getBoundingClientRect().left,behavior:"smooth"});
+    }else{
+      wrap.scrollBy({left:(b.dataset.carousel==="next"?1:-1)*wrap.clientWidth,behavior:"smooth"});
+    }
     setTimeout(updateCarousel,450);
   });
-  archiveTrack.parentElement.addEventListener("scroll",()=>requestAnimationFrame(updateCarousel),{passive:true});
+  wrap.addEventListener("scroll",()=>requestAnimationFrame(updateCarousel),{passive:true});
   updateCarousel();
 }
 function updateCarousel(){
   const pos=$(".archive-carousel-position");
   if(!pos||!archiveTrack)return;
   const wrap=archiveTrack.parentElement;
-  const max=Math.max(0,wrap.scrollWidth-wrap.clientWidth);
-  const pageWidth=Math.max(1,wrap.clientWidth);
-  const pages=Math.max(1,Math.ceil((wrap.scrollWidth-1)/pageWidth));
-  const current=Math.min(pages,Math.max(1,Math.round(wrap.scrollLeft/pageWidth)+1));
-  pos.textContent=`${String(current).padStart(2,"0")} / ${String(pages).padStart(2,"0")}`;
-  const buttons=$$(".archive-carousel-button",wrap.parentElement||document);
-  buttons.forEach(b=>{
-    b.disabled=(b.dataset.carousel==="prev"&&wrap.scrollLeft<=2)||(b.dataset.carousel==="next"&&wrap.scrollLeft>=max-2);
-  });
+  const pages=[...archiveTrack.querySelectorAll(".archive-page")];
+  let total=1,current=1;
+  if(pages.length){
+    total=pages.length;
+    const left=wrap.getBoundingClientRect().left;
+    current=pages.reduce((best,page,index)=>{
+      const delta=Math.abs(page.getBoundingClientRect().left-left);
+      return delta<best.delta?{index:index+1,delta}:best;
+    },{index:1,delta:Infinity}).index;
+  }else{
+    const max=Math.max(0,wrap.scrollWidth-wrap.clientWidth);
+    const pageWidth=Math.max(1,wrap.clientWidth);
+    total=Math.max(1,Math.ceil((wrap.scrollWidth-1)/pageWidth));
+    current=Math.min(total,Math.max(1,Math.round(wrap.scrollLeft/pageWidth)+1));
+  }
+  pos.textContent=`${String(current).padStart(2,"0")} / ${String(total).padStart(2,"0")}`;
+  const buttons=$$(".archive-carousel-button",uiParent());
+  buttons.forEach(b=>{b.disabled=(b.dataset.carousel==="prev"&&current<=1)||(b.dataset.carousel==="next"&&current>=total)});
   const progress=$(".archive-carousel-progress");
-  if(progress)progress.style.setProperty("--archive-progress",`${max?wrap.scrollLeft/max*100:100}%`);
+  if(progress)progress.style.setProperty("--archive-progress",total>1?`${(current-1)/(total-1)*100}%`:"100%");
+  function uiParent(){return wrap.parentElement||document}
 }
 function renderSearch(items){window.__searchResults=items;if(!searchResults)return;searchResults.innerHTML=items.length?`<div class="search-results-head"><span>РЕЗУЛЬТАТЫ ПОИСКА</span><span>${String(items.length).padStart(2,"0")} ФИЛЬМОВ</span></div>`+items.map((f,i)=>{const inA=films.some(x=>Number(x.tmdbId)===Number(f.id)&&x.inWatchlist!==false&&!x.watched);const original=f.original_title||f.original_name||"";const overview=(f.overview||"").trim();const desc=overview.length>150?overview.slice(0,150).replace(/\s+\S*$/,"")+"…":overview;const country=(f.origin_country||[]).slice(0,2).join(" / ");return `<article class="search-result" data-id="${esc(f.id)}"><span class="search-result-index">${String(i+1).padStart(2,"0")}</span><div class="search-result-poster">${f.poster_path?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:`<div class="poster-fallback"><b>AFTER<br>DARK</b><span>ПОСТЕР НЕ НАЙДЕН</span></div>`}</div><div class="search-result-info"><div class="search-result-topline"><span>${esc(typeOf(f).toUpperCase())}</span><span>${esc(yearOf(f))}</span>${country?`<span>${esc(country)}</span>`:""}</div><h3>${esc(titleOf(f))}</h3>${original&&original!==titleOf(f)?`<p class="search-result-original">${esc(original)}</p>`:""}<p class="search-result-overview">${esc(desc||"ОПИСАНИЕ НЕДОСТУПНО")}</p><div class="search-result-rating">★ ${Number(f.vote_average||0).toFixed(1)} <span>/ 10</span></div></div><button class="search-result-add ${inA?"added":""}" type="button" data-action="add">${inA?"В КОЛЛЕКЦИИ":"ДОБАВИТЬ +"}</button></article>`}).join(""):`<div class="search-state search-empty-state"><strong>НИЧЕГО НЕ НАЙДЕНО</strong><span>Попробуйте другое название.</span></div>`}async function search(){const q=searchInput?.value.trim();if(!q){searchResults.innerHTML="";return}searchController?.abort();searchController=new AbortController();const signal=searchController.signal;searchResults.innerHTML='<div class="search-state">ИЩЕМ ФИЛЬМЫ И СЕРИАЛЫ<span></span></div>';try{let items=[];let primaryError=null;try{const d=await tmdb("/search/multi",{query:q,include_adult:"false",language:"ru-RU",page:1},signal);items=(d.results||[]).filter(x=>x.media_type==="movie"||x.media_type==="tv")}catch(e){if(e.name==="AbortError")throw e;primaryError=e}if(!items.length){const results=await Promise.allSettled([tmdb("/search/tv",{query:q,include_adult:"false",language:"ru-RU",page:1},signal),tmdb("/search/movie",{query:q,include_adult:"false",language:"ru-RU",page:1},signal)]);for(let i=0;i<results.length;i++){const result=results[i];if(result.status==="fulfilled"){const kind=i===0?"tv":"movie";items.push(...(result.value.results||[]).map(x=>({...x,media_type:kind})))}}if(!items.length&&primaryError&&results.every(x=>x.status==="rejected"))throw primaryError}const seen=new Set();items=items.filter(x=>{const key=String(x.media_type)+":"+String(x.id);if(seen.has(key))return false;seen.add(key);return true});items.sort((a,b)=>{const exact=x=>[x.title,x.name,x.original_title,x.original_name].some(t=>String(t||"").localeCompare(q,"ru",{sensitivity:"base"})===0);return Number(exact(b))-Number(exact(a))});renderSearch(items.slice(0,12))}catch(e){if(e.name!=="AbortError")searchResults.innerHTML='<div class="search-state"><strong>НЕ УДАЛОСЬ ЗАГРУЗИТЬ РЕЗУЛЬТАТЫ</strong><span>Проверь подключение и попробуй ещё раз.</span></div>'}}
 function initSearch(){$("#searchButton")?.addEventListener("click",search);searchInput?.addEventListener("keydown",e=>{if(e.key==="Enter")search()});searchInput?.addEventListener("input",()=>{clearTimeout(searchTimer);if(!searchInput.value.trim()){searchResults.innerHTML="";return}searchTimer=setTimeout(search,450)});searchResults?.addEventListener("click",e=>{const b=e.target.closest("[data-action='add']");if(!b)return;const row=b.closest(".search-result"),item=window.__searchResults?.find(x=>Number(x.id)===Number(row?.dataset.id));if(item&&addFilm(item)){b.textContent="В КОЛЛЕКЦИИ";b.classList.add("added")}})}
