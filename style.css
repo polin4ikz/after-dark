@@ -3634,3 +3634,93 @@ body {
   .ad-film-detail-title{font-size:clamp(19px,6vw,24px)!important}
   .ad-film-detail-overview{font-size:10.5px!important;line-height:1.4!important}
 }
+
+
+/* MOVIE NIGHT RESULT — MATCH LIBRARY FILM DETAIL */
+@media (max-width:700px){
+  .movie-night-modal{
+    position:fixed!important;inset:0!important;z-index:10000!important;
+    padding:12px!important;overflow:hidden!important;box-sizing:border-box!important;
+    overscroll-behavior:contain!important;touch-action:pan-y!important;
+  }
+  .movie-night-modal-backdrop{
+    position:fixed!important;inset:0!important;touch-action:none!important;
+    overscroll-behavior:contain!important;
+  }
+  .movie-night-modal-window{
+    position:relative!important;z-index:1!important;
+    display:block!important;width:100%!important;max-width:560px!important;
+    height:auto!important;max-height:88dvh!important;min-height:0!important;
+    margin:0 auto!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+    box-sizing:border-box!important;overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;
+  }
+  .movie-night-final{
+    display:block!important;width:100%!important;max-width:100%!important;
+    height:auto!important;min-height:0!important;padding:18px 16px 20px!important;
+    overflow:visible!important;box-sizing:border-box!important;
+  }
+  .movie-night-final-poster{
+    float:left!important;display:block!important;position:relative!important;
+    width:37%!important;height:248px!important;min-height:0!important;max-height:248px!important;
+    margin:0 16px 12px 0!important;overflow:hidden!important;aspect-ratio:auto!important;
+  }
+  .movie-night-final-poster img{
+    display:block!important;width:100%!important;height:100%!important;
+    min-height:0!important;max-height:100%!important;
+    object-fit:cover!important;object-position:center!important;
+  }
+  .movie-night-final-content{
+    display:block!important;position:static!important;
+    width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;
+    max-height:none!important;overflow:visible!important;
+    padding:0!important;margin:0!important;box-sizing:border-box!important;
+  }
+  .movie-night-final-meta{
+    display:flex!important;flex-wrap:wrap!important;gap:5px!important;
+    margin:3px 0 9px!important;font-size:8px!important;line-height:1.35!important;
+  }
+  .movie-night-final-content h3{
+    width:auto!important;max-width:none!important;max-height:none!important;
+    margin:0 0 9px!important;font-size:clamp(21px,6.3vw,29px)!important;
+    line-height:.98!important;letter-spacing:-.045em!important;
+    overflow:visible!important;overflow-wrap:anywhere!important;
+  }
+  .movie-night-final-submeta{
+    margin:0 0 10px!important;font-size:8px!important;line-height:1.35!important;
+    max-height:none!important;overflow:visible!important;
+  }
+  .movie-night-final-overview{
+    display:block!important;width:auto!important;max-width:none!important;max-height:none!important;
+    margin:0!important;padding:0!important;font-size:11px!important;line-height:1.42!important;
+    white-space:normal!important;overflow:visible!important;overflow-wrap:break-word!important;
+    -webkit-line-clamp:unset!important;
+  }
+  .movie-night-final-status,.movie-night-final-actions{
+    clear:both!important;
+  }
+  .movie-night-final-status{
+    margin:0!important;padding:15px 0 12px!important;
+    border-top:1px solid rgba(23,18,20,.18)!important;
+  }
+  .movie-night-final-actions{
+    display:grid!important;grid-template-columns:1fr!important;
+    gap:7px!important;width:100%!important;margin:0!important;padding:13px 0 0!important;
+    border-top:1px solid rgba(23,18,20,.18)!important;box-sizing:border-box!important;
+  }
+  .movie-night-final-actions .movie-night-action{
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    min-height:42px!important;margin:0!important;padding:8px 10px!important;
+    font-size:8px!important;line-height:1.2!important;white-space:normal!important;
+  }
+  .movie-night-modal-close{
+    position:sticky!important;top:0!important;float:right!important;
+    z-index:5!important;margin:0 0 -34px!important;padding:8px 9px!important;
+  }
+}
+@media (max-width:380px){
+  .movie-night-final{padding:15px 13px 17px!important}
+  .movie-night-final-poster{width:35%!important;height:220px!important;margin-right:12px!important}
+  .movie-night-final-content h3{font-size:clamp(19px,6vw,24px)!important}
+  .movie-night-final-overview{font-size:10.5px!important;line-height:1.4!important}
+}
