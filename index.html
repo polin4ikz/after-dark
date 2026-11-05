@@ -3,6 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (() => {
+      const navigation = performance.getEntriesByType("navigation")[0];
+      if (navigation?.type !== "reload") return;
+      try { history.scrollRestoration = "manual"; } catch {}
+      if (location.hash) history.replaceState(history.state, "", location.pathname + location.search);
+      const toTop = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+      toTop();
+      window.addEventListener("pageshow", () => {
+        toTop();
+        requestAnimationFrame(() => {
+          toTop();
+          requestAnimationFrame(toTop);
+        });
+      }, { once: true });
+    })();
+  </script>
   <meta name="description" content="AFTER DARK — личная коллекция кино">
   <title>AFTER DARK — Cinema</title>
   <script>
@@ -19,7 +40,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,200..800&family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261105-mobile-recovery2">
+  <link rel="stylesheet" href="style.css?v=20261105-sticky-search-top-reset1">
   <link rel="stylesheet" href="watch-player.css?v=20261103-vidrift-tracks1">
 </head>
 <body>
@@ -81,7 +102,7 @@
   <script src="watch-navigation.js?v=20261027-page1"></script>
   <script src="watch-player.js?v=20261103-vidrift-api1"></script>
   <script src="venom-player.js?v=20261029-mattebox-audio2"></script>
-  <script src="script.js?v=20261105-mobile-recovery2"></script>
+  <script src="script.js?v=20261105-sticky-search-top-reset1"></script>
   <script src="auth-ui.js?v=20261104-movie-night-ru1"></script>
   <script src="supabase-runtime.js?v=20261105-rating-target1"></script>
   <script src="continue-watching.js?v=20261104-progress-fallback1"></script>
