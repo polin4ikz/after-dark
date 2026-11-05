@@ -3289,3 +3289,165 @@ body {
     border-color: var(--milk, #e8ddc8) !important;
   }
 }
+
+
+/* FILM DETAIL — FULL DESCRIPTION + REFINED MOBILE DOSSIER */
+.ad-film-detail-window{
+  border:1px solid rgba(23,18,20,.22)!important;
+  border-radius:2px!important;
+}
+.ad-film-detail-content{
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(145,23,40,.45) transparent!important;
+}
+.ad-film-detail-overview{
+  display:block!important;
+  -webkit-line-clamp:unset!important;
+  overflow:visible!important;
+  max-height:none!important;
+  white-space:normal!important;
+}
+.ad-film-detail-extra{
+  border-top-color:rgba(23,18,20,.16)!important;
+}
+@media(max-width:600px){
+  .ad-film-detail{
+    align-items:flex-start!important;
+    justify-content:center!important;
+    overflow-y:auto!important;
+    padding:10px!important;
+  }
+  .ad-film-detail-window{
+    width:calc(100vw - 20px)!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0 auto 10px!important;
+    overflow:visible!important;
+    border-radius:3px!important;
+  }
+  .ad-film-detail-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:190px auto!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  .ad-film-detail-poster,
+  .ad-film-detail-image{
+    width:100%!important;
+    height:190px!important;
+    min-height:190px!important;
+    object-fit:cover!important;
+    object-position:center 35%!important;
+  }
+  .ad-film-detail-content{
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-start!important;
+    gap:0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-sizing:border-box!important;
+    padding:20px 17px 17px!important;
+  }
+  .ad-film-detail-kicker{
+    margin:0 0 10px!important;
+    font-size:8px!important;
+    letter-spacing:.16em!important;
+    opacity:.55!important;
+  }
+  .ad-film-detail-meta{
+    order:1!important;
+    margin:0 0 10px!important;
+    font-size:9px!important;
+    letter-spacing:.08em!important;
+    line-height:1.5!important;
+  }
+  .ad-film-detail-title{
+    order:2!important;
+    max-height:none!important;
+    margin:0!important;
+    font-size:clamp(27px,8vw,38px)!important;
+    line-height:.94!important;
+    overflow:visible!important;
+    overflow-wrap:anywhere!important;
+  }
+  .ad-film-detail-original{
+    order:3!important;
+    max-height:none!important;
+    margin:9px 0 17px!important;
+    font-size:13px!important;
+    line-height:1.2!important;
+    overflow:visible!important;
+  }
+  .ad-film-detail-overview{
+    order:4!important;
+    display:block!important;
+    max-width:none!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0 0 17px!important;
+    font-size:13px!important;
+    line-height:1.55!important;
+    letter-spacing:-.01em!important;
+    overflow:visible!important;
+    white-space:normal!important;
+  }
+  .ad-film-detail-extra{
+    order:5!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:14px 12px!important;
+    margin:0!important;
+    padding:15px 0 17px!important;
+    font-size:9px!important;
+    line-height:1.45!important;
+    border-top:1px solid rgba(23,18,20,.18)!important;
+  }
+  .ad-film-detail-extra > div{
+    min-width:0!important;
+    gap:6px!important;
+  }
+  .ad-film-detail-extra small{
+    font-size:7px!important;
+    letter-spacing:.14em!important;
+    opacity:.5!important;
+  }
+  .ad-film-detail-extra span{
+    font-size:10px!important;
+    line-height:1.4!important;
+    overflow-wrap:anywhere!important;
+  }
+  .ad-film-detail-actions{
+    order:6!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    margin:0!important;
+    padding:15px 0 0!important;
+    border-top:1px solid rgba(23,18,20,.18)!important;
+  }
+  .ad-film-detail-actions button{
+    min-width:0!important;
+    min-height:44px!important;
+    padding:10px 8px!important;
+    font-size:8px!important;
+    line-height:1.25!important;
+    letter-spacing:.04em!important;
+  }
+  .ad-film-detail-close{
+    position:sticky!important;
+    top:8px!important;
+    float:right!important;
+    margin:8px 8px -40px 0!important;
+    padding:9px 10px!important;
+    background:rgba(238,231,220,.94)!important;
+    border:1px solid rgba(23,18,20,.18)!important;
+    z-index:5!important;
+  }
+}
