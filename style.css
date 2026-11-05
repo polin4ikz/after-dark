@@ -3902,3 +3902,55 @@ body {
   }
   .movie-night-modal-window .movie-night-reveal.has-error{min-height:240px!important;padding:22px 18px!important}
 }
+
+
+/* MOBILE SEARCH — keep the query field in view while results pass beneath it */
+@media (max-width: 800px){
+  .search-box{
+    position:sticky!important;
+    top:0!important;
+    z-index:80!important;
+    max-width:none!important;
+    width:100%!important;
+    margin:0!important;
+    padding:12px 12px 8px!important;
+    box-sizing:border-box!important;
+    background:rgba(17,15,14,.97)!important;
+    border-top:1px solid rgba(232,221,200,.22)!important;
+    border-bottom:1px solid rgba(232,221,200,.28)!important;
+    -webkit-backdrop-filter:blur(14px)!important;
+    backdrop-filter:blur(14px)!important;
+  }
+  .search-box:before{left:12px!important;background:#110f0e!important}
+  .search-box input{min-width:0!important}
+  /* Use the page scroll, not a small nested scrolling box. */
+  .search-results{
+    height:auto!important;min-height:0!important;max-height:none!important;
+    overflow:visible!important;overflow-y:visible!important;
+    overscroll-behavior:auto!important;
+    padding-right:0!important;margin-top:18px!important;
+  }
+  .search-results-head{position:sticky!important;top:76px!important;z-index:5!important}
+}
+
+/* MOBILE LIBRARY — reserve a real four-digit slot for the year */
+@media (max-width: 900px){
+  .archive-page .archive-card{overflow:visible!important;padding-right:4px!important}
+  .archive-page .archive-card-meta{
+    display:grid!important;grid-template-columns:minmax(0,1fr) 5ch!important;
+    align-items:center!important;column-gap:4px!important;
+    width:100%!important;min-width:0!important;box-sizing:border-box!important;
+    overflow:visible!important;padding-right:2px!important;
+  }
+  .archive-page .archive-card-meta .archive-card-type{
+    min-width:0!important;white-space:nowrap!important;overflow:hidden!important;
+    text-overflow:ellipsis!important;letter-spacing:0!important;
+  }
+  .archive-page .archive-card-meta .archive-card-year{
+    display:block!important;width:5ch!important;min-width:5ch!important;
+    max-width:none!important;flex:none!important;text-align:right!important;
+    white-space:nowrap!important;overflow:visible!important;
+    font-size:9px!important;line-height:1.2!important;
+    letter-spacing:0!important;font-variant-numeric:tabular-nums!important;
+  }
+}
