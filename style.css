@@ -3183,16 +3183,16 @@ body {
   .archive-track{
     display:flex!important;flex-flow:row nowrap!important;align-items:stretch!important;
     width:max-content!important;min-width:100%!important;gap:0!important;
-    padding:16px 18px 20px!important;margin:0!important;overflow:visible!important;
+    padding:16px 0 20px!important;margin:0!important;overflow:visible!important;
     box-sizing:border-box!important;
   }
   .archive-page{
-    display:grid!important;flex:0 0 calc(100vw - 36px)!important;
-    width:calc(100vw - 36px)!important;min-width:calc(100vw - 36px)!important;
+    display:grid!important;flex:0 0 100vw!important;
+    width:100vw!important;min-width:100vw!important;
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     grid-template-rows:repeat(2,auto)!important;grid-auto-flow:row!important;
     align-content:start!important;align-items:start!important;
-    gap:22px 12px!important;padding-right:12px!important;
+    gap:22px 12px!important;padding:0 18px!important;
     box-sizing:border-box!important;scroll-snap-align:start!important;
   }
   .archive-page .archive-card{
