@@ -4143,3 +4143,27 @@ body {
     padding-left:12px!important;
   }
 }
+
+
+/* MOBILE SEARCH — shorter query field, preserve text size and breathing room; give saved height to results */
+@media(max-width:800px){
+  .search-box{
+    height:66px!important;
+    min-height:66px!important;
+    max-height:66px!important;
+    flex:0 0 66px!important;
+    padding:8px 12px!important;
+  }
+  .search-box input{
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+    line-height:22px!important;
+    padding:8px 0!important;
+    box-sizing:border-box!important;
+  }
+  #searchResults.search-results{
+    height:calc(clamp(260px,42dvh,380px) + 34px)!important;
+    max-height:414px!important;
+  }
+}
