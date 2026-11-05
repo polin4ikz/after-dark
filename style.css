@@ -4167,3 +4167,18 @@ body {
     max-height:414px!important;
   }
 }
+
+
+/* MOBILE SEARCH — transfer the unused gap before the library into the scrollable results panel */
+@media(max-width:800px){
+  .search-section{
+    padding-bottom:12px!important;
+  }
+  .search-section:after{
+    bottom:5px!important;
+  }
+  #searchResults.search-results{
+    height:calc(clamp(260px,42dvh,380px) + 87px)!important;
+    max-height:467px!important;
+  }
+}
