@@ -3724,3 +3724,19 @@ body {
   .movie-night-final-content h3{font-size:clamp(19px,6vw,24px)!important}
   .movie-night-final-overview{font-size:10.5px!important;line-height:1.4!important}
 }
+
+
+/* MOVIE NIGHT — GIVE SEARCH ANIMATION ITS FULL MOBILE STAGE */
+@media (max-width:700px){
+  .movie-night-modal-window:has(.movie-night-reveal:not(.done)){
+    width:calc(100vw - 24px)!important;
+    max-width:none!important;
+    min-width:calc(100vw - 24px)!important;
+    min-height:min(72dvh,560px)!important;
+    height:min(72dvh,560px)!important;
+    max-height:88dvh!important;
+  }
+  .movie-night-modal-window:has(.movie-night-reveal:not(.done)) .movie-night-reveal{
+    width:100%!important;height:100%!important;min-height:0!important;
+  }
+}
