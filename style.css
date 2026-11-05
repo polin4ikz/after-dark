@@ -3846,3 +3846,59 @@ body {
     min-height:min(68dvh,520px)!important;height:min(68dvh,520px)!important;
   }
 }
+
+
+/* MOBILE LIBRARY — keep the complete release year visible in narrow columns */
+@media (max-width: 900px){
+  .archive-page .archive-card-meta{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    width:100%!important;min-width:0!important;gap:4px!important;overflow:visible!important;
+  }
+  .archive-page .archive-card-meta span{
+    min-width:0!important;white-space:nowrap!important;letter-spacing:0!important;
+  }
+  .archive-page .archive-card-meta span:last-child{
+    flex:0 0 auto!important;max-width:none!important;
+    font-size:clamp(7px,2vw,8px)!important;font-variant-numeric:tabular-nums!important;
+  }
+}
+
+/* MOVIE NIGHT — full-width, readable no-results state on compact screens */
+@media (max-width:700px){
+  .movie-night-modal-window:has(.movie-night-reveal.has-error){
+    display:flex!important;align-items:stretch!important;
+    width:calc(100vw - 24px)!important;min-width:0!important;
+    max-width:none!important;height:min(54dvh,420px)!important;
+    min-height:260px!important;max-height:75dvh!important;
+    overflow:hidden!important;
+  }
+  .movie-night-modal-window .movie-night-reveal.has-error{
+    position:relative!important;inset:auto!important;
+    display:flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;
+    width:100%!important;height:100%!important;min-height:260px!important;
+    padding:clamp(24px,7vw,42px)!important;box-sizing:border-box!important;
+    overflow:hidden!important;text-align:center!important;
+  }
+  .movie-night-reveal.has-error .movie-night-reveal-track{
+    position:relative!important;inset:auto!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:100%!important;min-width:0!important;height:auto!important;
+    padding:0!important;overflow:visible!important;
+  }
+  .movie-night-reveal.has-error .movie-night-reveal-track .error{
+    display:block!important;position:relative!important;
+    width:100%!important;max-width:100%!important;
+    white-space:normal!important;overflow-wrap:anywhere!important;
+    font-size:clamp(15px,4.5vw,21px)!important;
+    line-height:1.35!important;text-align:center!important;
+  }
+  .movie-night-modal-window .movie-night-modal-close{flex:0 0 auto!important}
+}
+@media (max-width:380px){
+  .movie-night-modal-window:has(.movie-night-reveal.has-error){
+    width:calc(100vw - 16px)!important;min-height:240px!important;
+    height:min(50dvh,360px)!important;
+  }
+  .movie-night-modal-window .movie-night-reveal.has-error{min-height:240px!important;padding:22px 18px!important}
+}
