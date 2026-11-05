@@ -3237,3 +3237,14 @@ body {
     width: 100% !important;
   }
 }
+
+
+/* MOBILE LIBRARY — refine title and action scale */
+@media (max-width: 900px) {
+  .archive-page .archive-card h3 { font-size: clamp(13px, 3.7vw, 16px) !important; line-height: 1.08 !important; min-height: 2.16em !important; }
+  .archive-page .archive-actions { gap: 5px !important; margin-top: 5px !important; }
+  .archive-page .archive-action { padding: 7px 5px !important; font-size: 6.5px !important; letter-spacing: 0 !important; line-height: 1.1 !important; }
+  .archive-page .archive-remove { font-size: 7px !important; }
+  .archive-page .archive-card-meta { font-size: 7px !important; margin-top: 5px !important; }
+  .archive-carousel-ui { padding: 8px 16px !important; }
+}
