@@ -4007,3 +4007,20 @@ body {
 @media(max-width:800px){
   #searchResults.search-results:empty::before{min-height:100%;padding:24px 20px;font-size:9px;line-height:2.1}
 }
+
+/* MOBILE SEARCH — stabilize sticky field during iOS page scrolling */
+@media(max-width:800px){
+  .search-box{
+    display:flex!important;align-items:center!important;
+    height:82px!important;min-height:82px!important;max-height:82px!important;
+    flex:0 0 82px!important;
+    contain:layout paint!important;
+    transform:translate3d(0,0,0)!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  }
+  .search-box input{
+    height:42px!important;min-height:42px!important;max-height:42px!important;
+    line-height:22px!important;box-sizing:border-box!important;
+    padding-top:10px!important;padding-bottom:10px!important;
+  }
+}
