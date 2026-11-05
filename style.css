@@ -3224,3 +3224,16 @@ body {
     border-top:1px solid rgba(232,221,200,.14)!important;
   }
 }
+
+
+/* SMALLER MOBILE POSTERS — keep the 2x2 layout, add breathing room */
+@media (max-width: 900px) {
+  .archive-page .archive-card {
+    width: 92% !important;
+    max-width: 160px !important;
+    justify-self: center !important;
+  }
+  .archive-page .archive-card-poster {
+    width: 100% !important;
+  }
+}
