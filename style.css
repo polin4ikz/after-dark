@@ -4105,3 +4105,13 @@ body {
     font-size:8px!important;
   }
 }
+
+
+/* SEARCH — bring category filters closer to the results label and reclaim that space for scrolling */
+@media(max-width:800px){
+  #searchResults.search-results{
+    margin-top:0!important;
+    height:calc(clamp(260px,42dvh,380px) + 18px)!important;
+    max-height:398px!important;
+  }
+}
