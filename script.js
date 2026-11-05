@@ -97,7 +97,7 @@ window.openFilmCard=async function(id){
     modal.querySelector(".ad-film-detail-overview").textContent="НЕ УДАЛОСЬ ЗАГРУЗИТЬ ОПИСАНИЕ.";
   }
 };
-function archiveActions(f){return`<div class="archive-actions"><button class="archive-action ad-watch-trigger" data-ad-watch-trigger="archive" data-id="${esc(f.tmdbId)}" type="button">СМОТРЕТЬ ↗</button><button class="archive-remove" data-action="remove" data-id="${esc(f.tmdbId)}" type="button">УДАЛИТЬ ×</button></div>`}
+function archiveActions(f){return`<div class="archive-actions"><button class="archive-action ad-watch-trigger" data-ad-watch-trigger="archive" data-id="${esc(f.tmdbId)}" type="button">СМОТРЕТЬ ↗</button><button class="archive-action archive-remove" data-action="remove" data-id="${esc(f.tmdbId)}" type="button">УДАЛИТЬ ×</button></div>`}
 function renderArchive(){
   if(!archiveTrack)return;
   const list=archiveList();
