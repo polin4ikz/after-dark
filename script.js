@@ -34,7 +34,7 @@ window.openFilmCard=async function(id){
     modal.className="ad-film-detail";
     modal.innerHTML='<div class="ad-film-detail-backdrop"></div><div class="ad-film-detail-window"><button class="ad-film-detail-close" type="button">ЗАКРЫТЬ ×</button><div class="ad-film-detail-grid"><div class="ad-film-detail-poster"><img class="ad-film-detail-image" alt=""></div><div class="ad-film-detail-content"><div class="ad-film-detail-kicker">КАРТОЧКА ФИЛЬМА</div><div class="ad-film-detail-meta"></div><h2 class="ad-film-detail-title"></h2><p class="ad-film-detail-original"></p><p class="ad-film-detail-overview"></p><div class="ad-film-detail-extra"></div><div class="ad-film-detail-actions"><button type="button" class="ad-detail-watch" data-ad-watch-trigger="detail">СМОТРЕТЬ ↗</button><button type="button" data-detail-action="watched">ОТМЕТИТЬ ПРОСМОТРЕННЫМ</button><button type="button" data-detail-action="rate">RATE</button><button type="button" data-detail-action="tmdb">ОТКРЫТЬ TMDB ↗</button></div></div></div></div>';
     document.body.appendChild(modal);
-    const close=()=>{modal.classList.remove("active");document.body.style.overflow=""};
+    const close=()=>{modal.classList.remove("active");const y=Number(document.body.dataset.adFilmScrollY||0);document.body.style.position="";document.body.style.top="";document.body.style.left="";document.body.style.right="";document.body.style.width="";document.body.style.overflow="";delete document.body.dataset.adFilmScrollY;window.scrollTo(0,y)};
     modal.querySelector(".ad-film-detail-close").addEventListener("click",close);
     modal.querySelector(".ad-film-detail-backdrop").addEventListener("click",close);
     modal.addEventListener("click",async e=>{
@@ -84,7 +84,7 @@ window.openFilmCard=async function(id){
   const watched=modal.querySelector("[data-detail-action='watched']");
   if(watched)watched.textContent=film.watched?"ПРОСМОТРЕНО ✓":"ОТМЕТИТЬ ПРОСМОТРЕННЫМ";
   modal.classList.add("active");
-  document.body.style.overflow="hidden";
+  const scrollY=window.scrollY||window.pageYOffset||0;document.body.dataset.adFilmScrollY=String(scrollY);document.body.style.position="fixed";document.body.style.top="-"+scrollY+"px";document.body.style.left="0";document.body.style.right="0";document.body.style.width="100%";document.body.style.overflow="hidden";
   try{
     const ep=typeOf(film)==="series"?"/tv/"+id:"/movie/"+id;
     const d=await tmdb(ep,{language:"ru-RU"});
