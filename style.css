@@ -3261,3 +3261,31 @@ body {
     padding-right: 10px !important;
   }
 }
+
+
+/* MOBILE LIBRARY — align action pair and accent the remove button */
+@media (max-width: 900px) {
+  .archive-page .archive-actions {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 7px !important;
+  }
+  .archive-page .archive-action {
+    flex: 0 0 auto !important;
+  }
+  .archive-page .archive-remove {
+    color: var(--milk, #e8ddc8) !important;
+    background: var(--red, #8f2030) !important;
+    border: 1px solid var(--red, #8f2030) !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .archive-page .archive-remove:hover {
+    color: var(--milk, #e8ddc8) !important;
+    background: transparent !important;
+    border-color: var(--milk, #e8ddc8) !important;
+  }
+}
