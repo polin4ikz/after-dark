@@ -101,7 +101,7 @@ function archiveActions(f){return`<div class="archive-actions"><button class="ar
 function renderArchive(){
   if(!archiveTrack)return;
   const list=archiveList();
-  const cards=list.map((f,i)=>`<article class="archive-card" data-id="${esc(f.tmdbId)}"><div class="archive-card-poster" data-action="detail" onclick="window.openFilmCard(Number(this.closest('.archive-card').dataset.id))">${posterOf(f)?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:'<div class="poster-fallback"><b>AFTER<br>DARK</b><span>ПОСТЕР НЕ НАЙДЕН</span></div>'}<span>${String(i+1).padStart(2,"0")}</span></div><div class="archive-card-meta"><span>${esc((f.type||"film").toUpperCase())}</span><span>${esc(yearOf(f))}</span></div><h3>${esc(titleOf(f))}</h3>${archiveActions(f)}</article>`).join("");
+  const cards=list.map((f,i)=>`<article class="archive-card" data-id="${esc(f.tmdbId)}"><div class="archive-card-poster" data-action="detail" onclick="window.openFilmCard(Number(this.closest('.archive-card').dataset.id))">${posterOf(f)?`<img src="${esc(posterOf(f))}" alt="${esc(titleOf(f))}" loading="lazy">`:'<div class="poster-fallback"><b>AFTER<br>DARK</b><span>ПОСТЕР НЕ НАЙДЕН</span></div>'}<span>${String(i+1).padStart(2,"0")}</span></div><div class="archive-card-meta"><span class="archive-card-type">${esc((f.type||"film").toUpperCase())}</span><span class="archive-card-year">${esc(yearOf(f))}</span></div><h3>${esc(titleOf(f))}</h3>${archiveActions(f)}</article>`).join("");
   if(list.length&&window.matchMedia("(max-width: 900px)").matches){
     const temp=document.createElement("div");temp.innerHTML=cards;
     const items=[...temp.children];
