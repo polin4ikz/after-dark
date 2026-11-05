@@ -3248,3 +3248,16 @@ body {
   .archive-page .archive-card-meta { font-size: 7px !important; margin-top: 5px !important; }
   .archive-carousel-ui { padding: 8px 16px !important; }
 }
+
+
+/* MOBILE LIBRARY — buttons should hug their labels, not fill the card */
+@media (max-width: 900px) {
+  .archive-page .archive-action {
+    width: fit-content !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+}
