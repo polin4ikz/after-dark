@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
   }
 
   const url = new URL(req.url || "/", "https://after-dark.invalid");
-  const match = url.pathname.match(/^\\/api\\/neome\\/(tt\\d{5,12})$/);
+  const match = url.pathname.match(/^\/api\/neome\/(tt\d{5,12})$/);
   if (!match) return res.status(400).json({ error: "INVALID_IMDB_ID" });
 
   try {
