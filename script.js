@@ -1,6 +1,6 @@
 const API="/api/tmdb",IMG="/api/tmdb-image?size=w500&path=";
 
-const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
+const SUPABASE_URL=window.location.origin+"/api/supabase";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
 let supabaseClient=null;
 async function loadSupabaseSdk(){
