@@ -38,14 +38,28 @@
       await new Promise(resolve => setTimeout(resolve, 0));
       if (window.afterDarkSupabaseReady) return window.afterDarkSupabaseReady;
       if (window.supabase?.createClient) return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      await new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("Supabase SDK could not load"));
-        document.head.appendChild(script);
-      });
-      if (!window.supabase?.createClient) throw new Error("Supabase SDK did not expose createClient");
+      const sources = [
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+        "https://unpkg.com/@supabase/supabase-js@2"
+      ];
+      let loaded = false;
+      for (const src of sources) {
+        try {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            script.onload = () => window.supabase?.createClient ? resolve() : reject(new Error("Supabase SDK API missing"));
+            script.onerror = () => reject(new Error("Supabase SDK CDN unavailable"));
+            document.head.appendChild(script);
+          });
+          loaded = true;
+          break;
+        } catch (error) {
+          console.warn("Supabase SDK source unavailable:", src);
+        }
+      }
+      if (!loaded || !window.supabase?.createClient) throw new Error("Supabase SDK could not load from available CDNs");
       return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     })();
     return clientPromise;
