@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Bricolage+Grotesque:opsz,wght@10..48,200..800&family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Unbounded:wght@700&display=swap");
 
 :root{--black:#080706;--soft:#100e0d;--milk:#e8ddc8;--muted:#bdb09a;--red:#791522;--red2:#a32938;--line:rgba(232,221,200,.15);--mono:"Geist Mono",monospace;--display:"Bricolage Grotesque",sans-serif;--serif:"Instrument Serif",serif;--pad:clamp(20px,3vw,48px);--ease:cubic-bezier(.16,1,.3,1)}
 *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
