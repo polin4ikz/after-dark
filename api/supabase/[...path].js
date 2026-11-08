@@ -6,9 +6,7 @@ const PREFIX = "/api/supabase";
 const ALLOWED = ["/auth/v1/", "/rest/v1/", "/storage/v1/", "/functions/v1/"];
 const METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 
-module.exports.config = { api: { bodyParser: false } };
-
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cache-Control", "no-store");
 
@@ -68,3 +66,6 @@ module.exports = async function handler(req, res) {
     return res.status(502).json({ error: "SUPABASE_UPSTREAM_UNAVAILABLE" });
   }
 };
+
+module.exports = handler;
+module.exports.config = { api: { bodyParser: false } };
