@@ -3,7 +3,7 @@
  const $=(s,p=document)=>p.querySelector(s), esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
  const titleOf=x=>x&&(x.title||x.name)||"UNTITLED", yearOf=x=>((x&&(x.release_date||x.first_air_date))||"").slice(0,4)||"—";
  const typeOf=x=>((x&&x.genre_ids)||[]).map(Number).includes(16)?"animation":(x&&x.media_type==="tv")||(x&&x.first_air_date)?"series":"film";
- const posterOf=x=>x&&x.poster_path?"https://image.tmdb.org/t/p/w780"+x.poster_path:"";
+ const posterOf=x=>{const raw=String(x&&x.poster_path||"").trim();if(!raw)return"";let path=raw;if(/^https?:/i.test(path)){try{const url=new URL(path);if(url.hostname!=="image.tmdb.org")return path;const prefix="/t/p/";const index=url.pathname.indexOf(prefix);if(index<0)return"";path=url.pathname.slice(url.pathname.indexOf("/",index+prefix.length))}catch{return""}}if(!path.startsWith("/"))path="/"+path;return"/api/tmdb-image?size=w780&path="+encodeURIComponent(path)};
  const archive=()=>window.getArchiveFilms?.()||[];
 
  window.openFilmCard=async function(id,supplied){
