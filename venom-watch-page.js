@@ -1143,6 +1143,9 @@
     let expanded = false;
     let originalLanguage = String(film.original_language || "");
     let latestState = null;
+    let russianAudioAutoSelected = false;
+    let russianSubtitleAutoSelected = false;
+    const frameOrigin = () => { try { return new URL(frame.src).origin; } catch (_) { return "https://embed.vidrift.net"; } };
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "vidrift-controls__toggle";
@@ -1197,7 +1200,7 @@
       select.value = String(selected ?? items[0].value);
       select.disabled = items.length < 2;
       select.addEventListener("change", () => {
-        if (frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:set", [field]: select.value }, "https://embed.vidrift.net");
+        if (frame.contentWindow) frame.contentWindow.postMessage({ type: "vidrift:set", [field]: select.value }, frameOrigin());
       });
       label.append(caption, select);
       list.appendChild(label);
@@ -1226,6 +1229,25 @@
       const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item, originalLanguage) }))
         .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
+
+      // Prefer Russian audio and subtitles automatically when the source exposes them.
+      // Apply each preference only once so later user choices are never overwritten.
+      const russianAudio = audios.find(item => item.lang === "ru") || sources.find(item => item.lang === "ru");
+      if (russianAudio && !russianAudioAutoSelected) {
+        const field = audios.includes(russianAudio) ? "audio" : "source";
+        const current = field === "audio" ? state.audio : state.source;
+        if (String(current ?? "") !== String(russianAudio.value) && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: "vidrift:set", [field]: String(russianAudio.value) }, frameOrigin());
+        }
+        russianAudioAutoSelected = true;
+      }
+      const russianSubtitle = subtitles.find(item => item.lang === "ru");
+      if (russianSubtitle && !russianSubtitleAutoSelected) {
+        if (String(state.subtitle ?? "") !== String(russianSubtitle.value) && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: "vidrift:set", subtitle: String(russianSubtitle.value) }, frameOrigin());
+        }
+        russianSubtitleAutoSelected = true;
+      }
 
       if (audios.length > 1) addSelect("ОЗВУЧКА", "audio", audios, state.audio);
       else if (sources.length > 1) addSelect("ОЗВУЧКА", "source", sources, state.source);
@@ -1484,7 +1506,7 @@
         frame._afterDarkVidriftState?.(data);
         // A state handshake only proves that the iframe loaded, not that a video
         // server was found. Keep the fallback timers alive until playback progresses.
-        if (currentTime > 0 || (duration > 0 && data.paused === false)) {
+        if (currentTime > 0) {
           vidriftReady = true;
           clearTimeout(fallbackTimer);
           clearTimeout(providerFallbackTimer);
@@ -1605,9 +1627,9 @@
           ? "https://vaplayer.ru/embed/tv/" + id + "/" + season + "/" + episode
           : "https://vaplayer.ru/embed/movie/" + id)
           + "?primaryColor=%237B1E2D&showTitle=false&autoplay=1&resumeAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&autonext=1" : ""),
-        readyTypes: ["PLAYER_EVENT"],
-        readyEvents: ["playing", "paused", "seeked", "completed"],
-        errorEvents: ["error"]
+        readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
+        readyEvents: ["playing", "timeupdate", "play"],
+        errorEvents: ["error", "failed", "unavailable"]
       });
       candidates.push({
         name: "VIDSRC",
@@ -1616,9 +1638,9 @@
           ? "https://vidsrc.sh/embed/tv/" + id + "/" + season + "/" + episode
           : "https://vidsrc.sh/embed/movie/" + id)
           + "?ds_lang=ru&autoplay=1&startAt=" + encodeURIComponent(String(resumeAt)) + (isSeries ? "&autonext=1" : ""),
-        readyTypes: ["PLAYER_EVENT"],
-        readyEvents: ["playing", "paused", "seeked", "completed"],
-        errorEvents: ["error"]
+        readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
+        readyEvents: ["playing", "timeupdate", "play"],
+        errorEvents: ["error", "failed", "unavailable"]
       });
       candidates.push({
         name: "NHD",
@@ -1626,9 +1648,9 @@
         url: isSeries
           ? "https://nhdapi.com/tv/" + id + "/" + season + "/" + episode
           : "https://nhdapi.com/movie/" + id,
-        readyTypes: [],
-        readyEvents: [],
-        errorEvents: []
+        readyTypes: ["PLAYER_EVENT", "MEDIA_DATA"],
+        readyEvents: ["playing", "timeupdate", "play"],
+        errorEvents: ["error", "failed", "unavailable"]
       });
     }
 
@@ -1697,15 +1719,11 @@
         const timer = setTimeout(() => finish("timeout"), provider.name === "STELLAR" ? 10000 : 12000);
         window.addEventListener("message", onMessage);
         frame.addEventListener("error", () => finish("failed"), { once: true });
-        // VidSrc/NHD do not expose a readiness message we can reliably depend on.
-        // Keep the provider open after its iframe loads so it can be tested manually;
-        // iframe load alone is not proof that a playable video exists.
-        if (["VIDSRC", "NHD"].includes(provider.name)) {
-          frame.addEventListener("load", () => finish("loaded"), { once: true });
-        }
+        // An iframe load only proves that a web page responded, not that a video is playable.
+        // Keep waiting for a real playback event; otherwise continue to the next source.
       });
 
-      if (outcome === "ready" || (["VIDSRC", "NHD"].includes(provider.name) && outcome === "loaded")) {
+      if (outcome === "ready") {
         loader.classList.add("is-done");
         setTimeout(() => loader.remove(), 420);
         status("ПЛЕЕР ОТВЕТИЛ · " + provider.name);
