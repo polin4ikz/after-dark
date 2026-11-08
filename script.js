@@ -5,7 +5,7 @@ const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
 let supabaseClient=null;
 async function loadSupabaseSdk(){
   if(window.supabase?.createClient)return;
-  const sources=["/api/vendor/@supabase/supabase-js@2"];
+  const sources=["/api/vendor/@supabase/supabase-js@2/dist/umd/supabase.js"];
   for(const src of sources){
     try{
       await new Promise((resolve,reject)=>{
