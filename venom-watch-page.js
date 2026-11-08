@@ -539,7 +539,7 @@
       : sourceLabel + " открыт нативным плеером. Браузер не передал After Dark список аудиодорожек — это не доказывает отсутствие русского звука. Проверь меню самого плеера.");
   }
 
-  const MATTEBOX_CDN = "https://cdn.jsdelivr.net/npm/mattebox@0.15.0/dist/cdn/mattebox.min.js";
+  const MATTEBOX_CDN = "/api/vendor/mattebox@0.15.0/dist/cdn/mattebox.min.js";
   let matteboxScriptPromise = null;
   let matteboxInstance = null;
   let matteboxFallbackUrl = "";
@@ -761,7 +761,7 @@
     }
   }
   const VENOM_VERSION = "0.3.6";
-  const VENOM_PUBLIC_PATH = "https://cdn.jsdelivr.net/npm/player-venom@" + VENOM_VERSION + "/dist/";
+  const VENOM_PUBLIC_PATH = "/api/vendor/player-venom@" + VENOM_VERSION + "/dist/";
   let venomPlayerInstance = null;
   let venomScriptPromise = null;
 
