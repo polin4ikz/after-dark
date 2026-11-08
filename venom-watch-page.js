@@ -1451,6 +1451,27 @@
     let origin = "https://embed.vidrift.net";
     const alternateOrigin = "https://embed.vidrift.in";
     let vidriftReady = false;
+    let fallbackStarted = false;
+    let fallbackTimer = 0;
+    let providerFallbackTimer = 0;
+    const startProviderFallback = () => {
+      if (fallbackStarted || vidriftReady || !frame.isConnected) return;
+      fallbackStarted = true;
+      clearTimeout(fallbackTimer);
+      clearTimeout(providerFallbackTimer);
+      frame._afterDarkCleanup?.();
+      status("VIDRIFT НЕ ОТВЕТИЛ · ПРОБУЮ РЕЗЕРВНЫЕ ПЛЕЕРЫ");
+      streamStatus("Основной и резервный адреса VidRift не подтвердили запуск. Проверяю другие встроенные плееры автоматически; фильм и история просмотра сохраняются.");
+      void tryExternalPlayerFallback(film).then(found => {
+        if (!found) {
+          status("НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ ВИДЕО", true);
+          streamStatus("VidRift и проверенные резервные плееры не ответили. Попробуй позже или выбери другой доступный источник.", true);
+        }
+      }).catch(() => {
+        status("НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ ВИДЕО", true);
+        streamStatus("Не удалось запустить резервные плееры. Попробуй позже.", true);
+      });
+    };
     const onMessage = event => {
       if (event.origin !== origin || event.source !== frame.contentWindow) return;
       const data = event.data;
@@ -1458,6 +1479,7 @@
       if (data.type === "vidrift:state") {
         vidriftReady = true;
         clearTimeout(fallbackTimer);
+        clearTimeout(providerFallbackTimer);
         frame._afterDarkCurrentTime = Number(data.currentTime) || frame._afterDarkCurrentTime || 0;
         frame._afterDarkDuration = Number(data.duration) || frame._afterDarkDuration || 0;
         frame._afterDarkVidriftState?.(data);
@@ -1506,12 +1528,13 @@
       }
     };
     window.addEventListener("message", onMessage);
-    const fallbackTimer = setTimeout(() => {
-      if (vidriftReady || origin === alternateOrigin || !frame.isConnected) return;
+    fallbackTimer = setTimeout(() => {
+      if (vidriftReady || !frame.isConnected) return;
       origin = alternateOrigin;
       status("ПРОБУЮ РЕЗЕРВНЫЙ ДОМЕН VIDRIFT");
       streamStatus("Основной адрес плеера не ответил. Переключаюсь на резервный адрес без изменения фильма и прогресса.");
       frame.src = origin + path + "?" + params.toString();
+      providerFallbackTimer = setTimeout(startProviderFallback, 12000);
     }, 12000);
     frame.addEventListener("load", () => {
       if (frame.contentWindow) {
@@ -1531,15 +1554,16 @@
         origin = alternateOrigin;
         status("ПЕРЕКЛЮЧАЮ РЕЗЕРВНЫЙ ДОМЕН VIDRIFT");
         frame.src = origin + path + "?" + params.toString();
+        providerFallbackTimer = setTimeout(startProviderFallback, 12000);
         return;
       }
-      status("VIDRIFT НЕ ЗАГРУЗИЛСЯ", true);
-      streamStatus("Не удалось загрузить основной и резервный адреса VidRift. Проверь подключение или выбери другой источник.", true);
+      startProviderFallback();
     });
     const oldCleanup = frame._afterDarkCleanup;
     frame._afterDarkCleanup = () => {
       window.removeEventListener("message", onMessage);
       clearTimeout(fallbackTimer);
+      clearTimeout(providerFallbackTimer);
       episodeInfo?.remove();
       if (oldCleanup) oldCleanup();
     };
