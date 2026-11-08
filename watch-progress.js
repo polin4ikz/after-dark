@@ -39,8 +39,7 @@
       if (window.afterDarkSupabaseReady) return window.afterDarkSupabaseReady;
       if (window.supabase?.createClient) return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const sources = [
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-        "https://unpkg.com/@supabase/supabase-js@2"
+        "/api/vendor/@supabase/supabase-js@2"
       ];
       let loaded = false;
       for (const src of sources) {
