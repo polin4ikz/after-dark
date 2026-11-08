@@ -56,20 +56,23 @@ window.openFilmCard=async function(id){
     modal.addEventListener("click",async e=>{
       const b=e.target.closest("[data-detail-action]");
       if(!b)return;
-      if(b.dataset.detailAction==="tmdb"){window.open("https://www.themoviedb.org/"+(film.type==="series"?"tv":"movie")+"/"+film.tmdbId,"_blank","noopener");return}
+      // The detail modal is reused; always read its current film, never the film
+      // captured when the modal was first created.
+      const activeFilm=modal._film||film;
+      if(b.dataset.detailAction==="tmdb"){window.open("https://www.themoviedb.org/"+(activeFilm.type==="series"?"tv":"movie")+"/"+activeFilm.tmdbId,"_blank","noopener");return}
       if(b.dataset.detailAction==="watched"){
-        const previous=!!film.watched,previousInWatchlist=film.inWatchlist!==false;
-        film.watched=true;film.inWatchlist=false;
+        const previous=!!activeFilm.watched,previousInWatchlist=activeFilm.inWatchlist!==false;
+        activeFilm.watched=true;activeFilm.inWatchlist=false;
         b.textContent="ПРОСМОТРЕНО ✓";
         try{
-          const saved=await window.archiveSyncWatch?.(film.tmdbId,true);
+          const saved=await window.archiveSyncWatch?.(activeFilm.tmdbId,true);
           if(!saved){
-            film.watched=previous;film.inWatchlist=previousInWatchlist;
+            activeFilm.watched=previous;activeFilm.inWatchlist=previousInWatchlist;
             b.textContent=previous?"ПРОСМОТРЕНО ✓":"ОТМЕТИТЬ ПРОСМОТРЕННЫМ";
             alert("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА");
           }
         }catch(e){
-          film.watched=previous;film.inWatchlist=previousInWatchlist;
+          activeFilm.watched=previous;activeFilm.inWatchlist=previousInWatchlist;
           b.textContent=previous?"ПРОСМОТРЕНО ✓":"ОТМЕТИТЬ ПРОСМОТРЕННЫМ";
           console.error("FILM DETAIL WATCH SYNC FAILED",e);
           alert("НЕ УДАЛОСЬ СОХРАНИТЬ СТАТУС ПРОСМОТРА");
@@ -81,7 +84,7 @@ window.openFilmCard=async function(id){
         close();
         try{
           await window.afterDarkRatingsReady;
-          await window.openSupabaseRating?.(film.tmdbId);
+          await window.openSupabaseRating?.(activeFilm.tmdbId);
         }catch(e){
           console.error("RATING MODULE FAILED",e);
         }
