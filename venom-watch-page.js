@@ -1067,9 +1067,8 @@
     if (!/^tt\d{5,12}$/.test(imdbId)) return { sources: [], catalog: [] };
     // For a series, request the complete season/episode catalog once. The API returns
     // per-episode voiceover labels; requesting only one episode hides series-wide coverage.
-    const url = new URL("/api/v1/player/cdn/imdb/" + encodeURIComponent(imdbId), "https://api.neome.uk");
-    const response = await fetch(url.href, {
-      headers: { accept: "application/json" }, mode: "cors", signal: AbortSignal.timeout(20000)
+    const response = await fetch("/api/neome/" + encodeURIComponent(imdbId), {
+      headers: { accept: "application/json" }, signal: AbortSignal.timeout(20000)
     });
     if (!response.ok) throw new Error("CDN-источник ответил ошибкой " + response.status + ".");
     const payload = await response.json();
