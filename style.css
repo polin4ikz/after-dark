@@ -4226,3 +4226,10 @@ body {
   .ratings-list .rating-score strong{font-size:clamp(21px,6vw,28px)!important}
   .ratings-list .rating-score strong small{font-size:9px!important}
 }
+
+
+/* Hero wordmark — restore the lighter DARK weight */
+.hero-title > .hero-dark{
+  font-family:"Bodoni Moda",serif!important;
+  font-weight:400!important;
+}
