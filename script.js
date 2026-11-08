@@ -3,7 +3,23 @@ const API="/api/tmdb",IMG="/api/tmdb-image?size=w500&path=";
 const SUPABASE_URL="https://kwphiydboppdpmdihpca.supabase.co";
 const SUPABASE_KEY="sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
 let supabaseClient=null;
-const supabaseReady=new Promise((resolve,reject)=>{if(window.supabase){supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);resolve(supabaseClient);return}const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";s.onload=()=>{try{supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);resolve(supabaseClient)}catch(e){reject(e)}};s.onerror=()=>reject(new Error("SUPABASE SDK FAILED TO LOAD"));document.head.appendChild(s)});
+async function loadSupabaseSdk(){
+  if(window.supabase?.createClient)return;
+  const sources=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2","https://unpkg.com/@supabase/supabase-js@2"];
+  for(const src of sources){
+    try{
+      await new Promise((resolve,reject)=>{
+        const node=document.createElement("script");node.src=src;node.async=true;
+        node.onload=()=>window.supabase?.createClient?resolve():reject(new Error("Supabase SDK API missing"));
+        node.onerror=()=>reject(new Error("Supabase SDK CDN unavailable"));
+        document.head.appendChild(node);
+      });
+      if(window.supabase?.createClient)return;
+    }catch(error){console.warn("Supabase SDK source unavailable:",src)}
+  }
+  throw new Error("SUPABASE SDK FAILED TO LOAD");
+}
+const supabaseReady=(async()=>{await loadSupabaseSdk();supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return supabaseClient})();
 const $=(s,p=document)=>p.querySelector(s),$$=(s,p=document)=>[...p.querySelectorAll(s)];
 const body=document.body,cursor=$(".cursor"),archiveTrack=$("#archiveTrack"),searchInput=$("#searchInput"),searchResults=$("#searchResults");
 let films=[],currentType="all",currentArchiveStatus="upcoming",searchController=null,searchTimer=null;
