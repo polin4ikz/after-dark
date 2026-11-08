@@ -4,7 +4,7 @@
 (() => {
   "use strict";
   const STORAGE_KEY = "after-dark:watch-progress:v1";
-  const SUPABASE_URL = "https://kwphiydboppdpmdihpca.supabase.co";
+  const SUPABASE_URL = window.location.origin + "/api/supabase";
   const SUPABASE_KEY = "sb_publishable_epCYFzDjeCWaAJdzLeCVDA_rxcQEbnh";
   const records = new Map();
   let clientPromise = null;
