@@ -2,7 +2,7 @@
 // This keeps critical scripts on the After Dark origin for networks that block public CDNs.
 const PREFIX = "/api/vendor";
 const ALLOWED = [
-  /^\/@supabase\/supabase-js@2$/,
+  /^\/@supabase\/supabase-js@2\/dist\/umd\/supabase\.js$/,
   /^\/hls\.js@1\.5\.18\/dist\/hls\.min\.js$/,
   /^\/dashjs@4\.7\.4\/dist\/dash\.all\.min\.js$/,
   /^\/mattebox@0\.15\.0\/dist\/cdn\/mattebox\.min\.js$/,
