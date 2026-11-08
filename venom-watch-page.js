@@ -1477,18 +1477,31 @@
       const data = event.data;
       if (!data || typeof data !== "object") return;
       if (data.type === "vidrift:state") {
-        vidriftReady = true;
-        clearTimeout(fallbackTimer);
-        clearTimeout(providerFallbackTimer);
-        frame._afterDarkCurrentTime = Number(data.currentTime) || frame._afterDarkCurrentTime || 0;
-        frame._afterDarkDuration = Number(data.duration) || frame._afterDarkDuration || 0;
+        const currentTime = Number(data.currentTime) || 0;
+        const duration = Number(data.duration) || 0;
+        frame._afterDarkCurrentTime = currentTime || frame._afterDarkCurrentTime || 0;
+        frame._afterDarkDuration = duration || frame._afterDarkDuration || 0;
         frame._afterDarkVidriftState?.(data);
-        status("VIDRIFT ГОТОВ · " + (data.paused ? "ПАУЗА" : "ВОСПРОИЗВЕДЕНИЕ"));
+        // A state handshake only proves that the iframe loaded, not that a video
+        // server was found. Keep the fallback timers alive until playback progresses.
+        if (currentTime > 0 || (duration > 0 && data.paused === false)) {
+          vidriftReady = true;
+          clearTimeout(fallbackTimer);
+          clearTimeout(providerFallbackTimer);
+          status("VIDRIFT ГОТОВ · " + (data.paused ? "ПАУЗА" : "ВОСПРОИЗВЕДЕНИЕ"));
+        } else {
+          status("VIDRIFT ПОДКЛЮЧЁН · ИЩУ ВИДЕОСЕРВЕР");
+        }
         return;
       }
       if (data.type === "vidrift:paused") frame._afterDarkShowEpisodeInfo?.();
       if (data.type === "vidrift:unpaused") frame._afterDarkHideEpisodeInfo?.();
       if (data.type === "vidrift:progress" || data.type === "vidrift:paused") {
+        if (data.type === "vidrift:progress" && Number(data.currentTime) > 0) {
+          vidriftReady = true;
+          clearTimeout(fallbackTimer);
+          clearTimeout(providerFallbackTimer);
+        }
         const currentTime = Number(data.currentTime);
         frame._afterDarkCurrentTime = Number.isFinite(currentTime) ? currentTime : frame._afterDarkCurrentTime || 0;
         frame._afterDarkDuration = Number(data.duration) || frame._afterDarkDuration || 0;
