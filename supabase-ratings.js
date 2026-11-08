@@ -94,6 +94,41 @@
       #ratingsList .rating-score.is-average strong{font:400 clamp(30px,2.8vw,38px)/.9 "Instrument Serif",Georgia,serif!important}
       #ratingsList .rating-average{display:none!important}
       @media(max-width:600px){#ratings .ratings-list{max-height:70vh!important}#ratingsList .rating-card{grid-template-columns:26px 52px minmax(0,1fr)!important;gap:10px!important;min-height:0!important;padding:14px 28px 14px 0!important}#ratingsList .rating-poster{width:52px!important;height:70px!important}#ratingsList .rating-main{grid-column:3!important}#ratingsList .rating-scores{display:grid!important;grid-column:3!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin-top:14px!important;width:100%!important}#ratingsList .rating-score{min-width:0!important}#ratingsList .rating-score-label{font-size:8px!important;letter-spacing:0!important}#ratingsList .rating-score strong{font-size:27px!important;gap:3px!important}#ratingsList .rating-score strong small{font-size:10px!important}#ratingsList .rating-score.is-average strong{font-size:27px!important}#ratingsList .rating-score.is-average{padding-left:0!important}#ratings .rating-status-filter{padding:10px 9px!important;font-size:7px!important}}
+      @media(max-width:380px){
+        #ratingsList .rating-card{
+          grid-template-columns:18px 44px minmax(0,1fr)!important;
+          column-gap:8px!important;
+          row-gap:9px!important;
+          padding:12px 22px 13px 0!important;
+          width:100%!important;
+          box-sizing:border-box!important;
+        }
+        #ratingsList .rating-number{font-size:7px!important}
+        #ratingsList .rating-poster{width:44px!important;height:60px!important}
+        #ratingsList .rating-main{grid-column:3!important;min-width:0!important}
+        #ratingsList .rating-title{font-size:clamp(15px,5vw,18px)!important;line-height:1!important;overflow-wrap:anywhere!important}
+        #ratingsList .rating-info{gap:7px!important;font-size:7px!important;letter-spacing:0!important;flex-wrap:wrap!important}
+        #ratingsList .rating-scores{
+          grid-column:2/4!important;
+          grid-template-columns:repeat(3,minmax(0,1fr))!important;
+          gap:5px!important;
+          margin:4px 0 0!important;
+          padding:0!important;
+          width:100%!important;
+          min-width:0!important;
+          justify-items:start!important;
+        }
+        #ratingsList .rating-score{gap:5px!important;min-width:0!important}
+        #ratingsList .rating-score-label{font-size:7px!important;letter-spacing:0!important;white-space:nowrap!important}
+        #ratingsList .rating-score strong,
+        #ratingsList .rating-score.is-average strong{
+          font-size:19px!important;
+          line-height:1!important;
+          letter-spacing:-.02em!important;
+          gap:2px!important;
+        }
+        #ratingsList .rating-score strong small{font-size:8px!important}
+      }
       #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
     `;
     document.head.appendChild(style);
