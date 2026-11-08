@@ -39,7 +39,7 @@
       if (window.afterDarkSupabaseReady) return window.afterDarkSupabaseReady;
       if (window.supabase?.createClient) return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const sources = [
-        "/api/vendor/@supabase/supabase-js@2"
+        "/api/vendor/@supabase/supabase-js@2/dist/umd/supabase.js"
       ];
       let loaded = false;
       for (const src of sources) {
