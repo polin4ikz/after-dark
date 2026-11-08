@@ -15,9 +15,10 @@ async function handler(req, res) {
   }
 
   const incoming = new URL(req.url || "/", "https://after-dark.invalid");
-  const rawPath = incoming.searchParams.get("path") || "";
-  const path = "/" + rawPath.replace(/^\\/+/, "");
-  if (path.includes("\\\\") || path.split("/").includes("..") || !ALLOWED.some(prefix => path.startsWith(prefix))) {
+  let rawPath = incoming.searchParams.get("path") || "";
+  while (rawPath.startsWith("/")) rawPath = rawPath.slice(1);
+  const path = "/" + rawPath;
+  if (rawPath.includes(String.fromCharCode(92)) || rawPath.split("/").includes("..") || !ALLOWED.some(prefix => path.startsWith(prefix))) {
     return res.status(404).json({ error: "SUPABASE_ROUTE_NOT_ALLOWED" });
   }
 
