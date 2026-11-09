@@ -129,6 +129,72 @@
         }
         #ratingsList .rating-score strong small{font-size:8px!important}
       }
+      /* Narrow iPhones: keep the three score columns aligned under the poster/title row. */
+      @media(max-width:430px){
+        #ratingsList .rating-card{
+          grid-template-columns:18px 48px minmax(0,1fr)!important;
+          column-gap:9px!important;
+          row-gap:10px!important;
+          align-items:start!important;
+          min-height:0!important;
+          padding:13px 24px 15px 0!important;
+          box-sizing:border-box!important;
+        }
+        #ratingsList .rating-number{grid-column:1!important;grid-row:1!important;padding-top:4px!important}
+        #ratingsList .rating-poster{grid-column:2!important;grid-row:1!important;width:48px!important;height:66px!important}
+        #ratingsList .rating-main{grid-column:3!important;grid-row:1!important;align-self:center!important;min-width:0!important}
+        #ratingsList .rating-title{font-size:clamp(16px,4.8vw,20px)!important;line-height:1.02!important;overflow-wrap:anywhere!important}
+        #ratingsList .rating-info{font-size:7px!important;letter-spacing:0!important;gap:7px!important;flex-wrap:wrap!important}
+        #ratingsList .rating-scores{
+          grid-column:2/4!important;
+          grid-row:2!important;
+          display:grid!important;
+          grid-template-columns:repeat(3,minmax(0,1fr))!important;
+          align-items:start!important;
+          justify-items:stretch!important;
+          gap:6px!important;
+          width:100%!important;
+          min-width:0!important;
+          margin:2px 0 0!important;
+          padding:0!important;
+          box-sizing:border-box!important;
+        }
+        #ratingsList .rating-score{
+          display:flex!important;
+          flex-direction:column!important;
+          align-items:center!important;
+          justify-content:flex-start!important;
+          gap:5px!important;
+          min-width:0!important;
+          width:100%!important;
+          text-align:center!important;
+        }
+        #ratingsList .rating-score-label{
+          display:block!important;
+          width:100%!important;
+          overflow:hidden!important;
+          text-overflow:ellipsis!important;
+          white-space:nowrap!important;
+          font-size:8px!important;
+          line-height:1.2!important;
+          letter-spacing:0!important;
+          text-align:center!important;
+        }
+        #ratingsList .rating-score strong,
+        #ratingsList .rating-score.is-average strong{
+          display:inline-flex!important;
+          align-items:baseline!important;
+          justify-content:center!important;
+          gap:2px!important;
+          white-space:nowrap!important;
+          font-size:clamp(22px,6.2vw,27px)!important;
+          line-height:1!important;
+          letter-spacing:-.025em!important;
+        }
+        #ratingsList .rating-score strong small{display:inline!important;font-size:9px!important;line-height:1!important}
+        #ratingsList .rating-delete{right:0!important;top:12px!important}
+        #ratingsList .rating-card:hover{transform:none!important}
+      }
       #ratingsList .rating-empty{padding:60px 0!important;border-bottom:1px solid rgba(23,18,20,.16)!important;color:rgba(23,18,20,.48)!important;font:500 9px/1 "Geist Mono",monospace!important;letter-spacing:.12em!important}
     `;
     document.head.appendChild(style);
