@@ -1115,9 +1115,9 @@
   }
 
   const RUSSIAN_VOICEOVER_HINTS = [
-    /lost\\s*film/i, /new\\s*studio/i, /alex\\s*film/i, /baibako/i,
-    /jaskier/i, /kubik|кубик/i, /тв\\s*шоу|tvshows/i, /hdrezka/i,
-    /дубляж|русская озвучка|рус\\.?/i, /анилибрия|анидуб|anilibria|anidub/i
+    /lost\s*film/i, /new\s*studio/i, /alex\s*film/i, /baibako/i,
+    /jaskier/i, /kubik|кубик/i, /тв\s*шоу|tvshows/i, /hdrezka/i,
+    /дубляж|русская озвучка|рус\.?/i, /анилибрия|анидуб|anilibria|anidub/i
   ];
   function voiceoverText(item) {
     if (!item || typeof item !== "object") return String(item || "");
@@ -1135,9 +1135,9 @@
   }
   function languageOf(item, originalLanguage = "") {
     const values = voiceoverText(item).toLowerCase();
-    if (/\\b(ru|rus)\\b|русск|russian/i.test(values) || russianVoiceoverRank(item) < 99) return "ru";
-    if (/\\b(en|eng)\\b|англ|english/i.test(values)) return "en";
-    if (/\\boriginal\\b|оригинал/i.test(values)) {
+    if (/\b(ru|rus)\b|русск|russian/i.test(values) || russianVoiceoverRank(item) < 99) return "ru";
+    if (/\b(en|eng)\b|англ|english/i.test(values)) return "en";
+    if (/\boriginal\b|оригинал/i.test(values)) {
       if (/^ru(?:[-_]|$)/i.test(String(originalLanguage))) return "ru";
       if (/^en(?:[-_]|$)/i.test(String(originalLanguage))) return "en";
     }
@@ -1145,10 +1145,10 @@
   }
   function trackLabel(item, language) {
     const label = String(item && (item.label || item.name || item.title || item.value || item.voiceover || item.translation) || "");
-    if (/\\boriginal\\b|оригинал/i.test(label)) {
+    if (/\boriginal\b|оригинал/i.test(label)) {
       return language === "ru" ? "Русский · оригинал" : language === "en" ? "English · original" : label;
     }
-    if (language === "ru" && label && !/русск|russian|\\bru\\b/i.test(label)) return "Русский · " + label;
+    if (language === "ru" && label && !/русск|russian|\bru\b/i.test(label)) return "Русский · " + label;
     return label;
   }
 
