@@ -32,7 +32,7 @@
         attrs.NAME, attrs.name,
         ...(Array.isArray(track.labels) ? track.labels.map(item => item && (item.text || item.label || item.name)) : [])
       ].filter(Boolean).join(" ");
-      return /русск|russian/i.test(labels);
+      return /русск|russian/i.test(labels) || russianVoiceoverRank(track) < 99;
     });
   }
 
