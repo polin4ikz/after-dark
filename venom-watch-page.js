@@ -1114,24 +1114,41 @@
     } catch (_) { return ""; }
   }
 
+  const RUSSIAN_VOICEOVER_HINTS = [
+    /lost\\s*film/i, /new\\s*studio/i, /alex\\s*film/i, /baibako/i,
+    /jaskier/i, /kubik|кубик/i, /тв\\s*шоу|tvshows/i, /hdrezka/i,
+    /дубляж|русская озвучка|рус\\.?/i, /анилибрия|анидуб|anilibria|anidub/i
+  ];
+  function voiceoverText(item) {
+    if (!item || typeof item !== "object") return String(item || "");
+    return [
+      item.label, item.name, item.title, item.language, item.lang, item.value,
+      item.description, item.voiceover, item.translation, item.translationName,
+      item.dubbing, item.provider, item.studio, item.language_code,
+      item.iso_639_1, item.lang_code
+    ].filter(Boolean).join(" ");
+  }
+  function russianVoiceoverRank(item) {
+    const value = voiceoverText(item);
+    const index = RUSSIAN_VOICEOVER_HINTS.findIndex(pattern => pattern.test(value));
+    return index < 0 ? 99 : index;
+  }
   function languageOf(item, originalLanguage = "") {
-    const values = [
-      item && item.label, item && item.name, item && item.title,
-      item && item.language, item && item.lang, item && item.value, item && item.description
-    ].filter(Boolean).join(" ").toLowerCase();
-    if (/\b(ru|rus)\b|русск|russian/i.test(values)) return "ru";
-    if (/\b(en|eng)\b|англ|english/i.test(values)) return "en";
-    if (/\boriginal\b|оригинал/i.test(values)) {
+    const values = voiceoverText(item).toLowerCase();
+    if (/\\b(ru|rus)\\b|русск|russian/i.test(values) || russianVoiceoverRank(item) < 99) return "ru";
+    if (/\\b(en|eng)\\b|англ|english/i.test(values)) return "en";
+    if (/\\boriginal\\b|оригинал/i.test(values)) {
       if (/^ru(?:[-_]|$)/i.test(String(originalLanguage))) return "ru";
       if (/^en(?:[-_]|$)/i.test(String(originalLanguage))) return "en";
     }
     return "";
   }
   function trackLabel(item, language) {
-    const label = String(item && (item.label || item.name || item.title || item.value) || "");
-    if (/\boriginal\b|оригинал/i.test(label)) {
+    const label = String(item && (item.label || item.name || item.title || item.value || item.voiceover || item.translation) || "");
+    if (/\\boriginal\\b|оригинал/i.test(label)) {
       return language === "ru" ? "Русский · оригинал" : language === "en" ? "English · original" : label;
     }
+    if (language === "ru" && label && !/русск|russian|\\bru\\b/i.test(label)) return "Русский · " + label;
     return label;
   }
 
@@ -1224,8 +1241,9 @@
       else addUnavailableSelect("КАЧЕСТВО", "Качество недоступно");
 
       const audios = (Array.isArray(state.audios) ? state.audios : [])
-        .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang }; })
-        .filter(item => item.value != null && item.lang);
+        .map(item => { const lang = languageOf(item, originalLanguage); return { value: item.value, label: trackLabel(item, lang), lang, priority: lang === "ru" ? russianVoiceoverRank(item) : 100 }; })
+        .filter(item => item.value != null && item.lang)
+        .sort((a, b) => a.priority - b.priority);
       const subtitles = (Array.isArray(state.subtitles) ? state.subtitles : [])
         .map(item => ({ value: item.value, label: String(item.label || item.value || ""), lang: languageOf(item, originalLanguage) }))
         .filter(item => item.value != null && (item.lang || String(item.value).toLowerCase() === "off"));
